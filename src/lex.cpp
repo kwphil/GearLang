@@ -26,7 +26,7 @@ enum class CharType
 
 CharType getCharType(char c)
 {
-    if (isalpha(c)            ) return CharType::Alpha;
+    if (isalpha(c) || c == '_') return CharType::Alpha;
     if (isdigit(c) || c == '.') return CharType::Num;
     if (c == '('   || c == ')') return CharType::Paren;
     if (c == ' '   || c == '\n' || c == '\t') return CharType::Format;
