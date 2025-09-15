@@ -129,8 +129,6 @@ Stream tokenize(std::string& source_path)
     while (file.get(c))
     {
         state_new = getCharType(c);
-        if (state_new == CharType::Quote)
-            is_string = !is_string;
 
         //state transition -> token boundary
         if ((state_new != state_old) && !is_string)
@@ -164,6 +162,8 @@ Stream tokenize(std::string& source_path)
         }
         transition_cancle:
 
+        if (state_new == CharType::Quote)
+            is_string = !is_string;
 
         if (c == '\n')
         {
