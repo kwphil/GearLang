@@ -21,6 +21,7 @@ enum class CharType
     Paren,
     Sym,
     Format,
+    Quote,
 };
 
 CharType getCharType(char c)
@@ -29,6 +30,7 @@ CharType getCharType(char c)
     if (isdigit(c) || c == '.') return CharType::Num;
     if (c == '('   || c == ')') return CharType::Paren;
     if (c == ' '   || c == '\n' || c == '\t') return CharType::Format;
+    if (c == '"'              ) return CharType::Quote;
     return CharType::Sym;
 }
 
@@ -42,6 +44,7 @@ enum class Type
     Identifier,
     IntegerLiteral,
     FloatLiteral, 
+    StringLiteral,
     Operator,
     ParenOpen,
     ParenClose,
@@ -57,8 +60,8 @@ Type classify(std::string& content, CharType state)
     switch (state)
     {
         case CharType::Invalid: [[fallthrough]];
+
         case CharType::Format: break; //unreachable
-        
         case CharType::Alpha:
             return 
                 keywords.find(content) == keywords.end()
@@ -76,10 +79,14 @@ Type classify(std::string& content, CharType state)
         case CharType::Sym:
             //TODO implement this
             return Type::Invalid; 
+
+        case CharType::Quote:
+            return Type::StringLiteral;
     }   
 
 
     std::cerr << "This should not be reached!!!!" << '\n' << std::flush;
+    return Type::Invalid;
 }
 
 
@@ -115,17 +122,26 @@ Stream tokenize(std::string& source_path)
     uint32_t line = 1;
     CharType state_new, state_old = CharType::Invalid;
     Token tok = Token();
+
+    bool is_string = false;
+    bool is_comment = false;
+
     while (file.get(c))
     {
         state_new = getCharType(c);
-
-        std::cout << (int)c << '\n';
+        if (state_new == CharType::Quote)
+            is_string = !is_string;
 
         //state transition -> token boundary
-        if (state_new != state_old)
+        if ((state_new != state_old) && !is_string)
         {
-            //invalid state should not emit
-            if (state_old != CharType::Invalid && state_old != CharType::Format)
+            if (tok.content == "//") is_comment = true;
+
+            if (
+                state_old != CharType::Invalid &&  
+                state_old != CharType::Format  &&  
+                (!is_comment || is_string)
+            )
             {
                 tok.type = classify(tok.content, state_old);
                 tok.line = line;
@@ -139,7 +155,11 @@ Stream tokenize(std::string& source_path)
         }
 
 
-        if (c == '\n') line++;
+        if (c == '\n')
+        {
+            line++;
+            is_comment = false;
+        }
         
         tok.content += c;
         state_old = state_new;
