@@ -107,6 +107,31 @@ public:
     std::vector<Token> content;
     uint32_t index = 0;
 
+    bool has()
+    {
+        return index != content.size();
+    }
+
+    Token peek()
+    {
+        return content[index];
+    }
+
+    Token pop()
+    {
+        return content[index++];
+    }
+
+    void expect(const char* should)
+    {
+        auto is = pop().content;
+        if (is != should)
+        {
+            std::cerr << "Error: Expected '" << should << "', but got '" << is << "'\n";
+        }
+    }
+
+
 };
 
 
