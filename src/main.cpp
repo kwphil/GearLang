@@ -11,6 +11,9 @@ int main(int argc, char** argv) {
 
     std::string source_path(argv[1]);
     Lexer::Stream tokens = Lexer::tokenize(source_path);
+
+    for(Lexer::Token t : tokens.content)
+        std::cout << t.content << '\n';
     
 
     return EXIT_SUCCESS;
