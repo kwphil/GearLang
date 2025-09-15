@@ -1,5 +1,6 @@
 
 #include <vector>
+#include <memory>
 
 #include "lex.cpp"
 
@@ -11,9 +12,11 @@ namespace Ast
         class Statement
         {
         public:
+    
             //virtual void generate();
-            static Statement parse(Lexer::Stream& s);
-
+            virtual std::string show() = 0;
+            //static Statement parse(Lexer::Stream& s);
+            virtual ~Statement() = default;
         };
 
         class Expr : public Statement
@@ -33,8 +36,8 @@ namespace Ast
             {
                 struct
                 {
-                    Statement left;
-                    Statement right;
+                    Expr* left;
+                    Expr* right;
                 };
                 uint64_t uval;
                 float fval;
@@ -56,7 +59,7 @@ public:
                     return left;
 
                 Expr out = Expr();
-                out.left = left;
+                out.left = &left;
 
                 switch(s.pop().content[0])
                 {
@@ -66,7 +69,8 @@ public:
                     case '/': out.type = Type::Div; break;
                 }
 
-                out.right = parseTerm(s);
+                auto right = parseTerm(s);
+                out.right = &right;
                 return out;
             }
             static Expr parseTerm(Lexer::Stream& s)
@@ -91,6 +95,10 @@ public:
                 return out;
             }
 
+            std::string show() override
+            {
+                return std::string("a");
+            }
 
         };
 
@@ -113,15 +121,20 @@ public:
                 return that;
             }
 
+            std::string show() override
+            {
+                return std::string("a");
+            }
+
         };
 
 
-        Statement Statement::parse(Lexer::Stream& s)
+        std::unique_ptr<Statement> parseStatement(Lexer::Stream& s)
         {
-            Statement out;
-            if (s.peek().content == "let") out = Let::parse(s);
-            else                           out = Expr::parse(s);
+            std::unique_ptr<Statement> out;
 
+            if (s.peek().content == "let") out = std::make_unique<Let>(Let::parse(s));
+            else                           out = std::make_unique<Expr>(Expr::parse(s));
             s.expect(";");
 
             return out;
@@ -135,16 +148,26 @@ public:
     class Program
     {
 private:
-        std::vector<Stat::Statement> content;
+        std::vector<std::unique_ptr<Stat::Statement>> content;
        
 public: 
         static Program parse(Lexer::Stream& s)
         {
             Program that = Program();
             while (s.has())
-                that.content.push_back(Stat::Statement::parse(s));
+                that.content.push_back(Stat::parseStatement(s));
 
             return that;
+        }
+
+        std::string show()
+        {
+            std::string out;
+
+            for (auto& stat : content)
+                out += (stat->show() + "\n");
+
+            return out;
         }
 
         
