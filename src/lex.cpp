@@ -135,6 +135,15 @@ Stream tokenize(std::string& source_path)
         //state transition -> token boundary
         if ((state_new != state_old) && !is_string)
         {
+            //transition cannot happen from alpha to num,
+            //because of identifiers like 'num1'
+            if (
+                state_new == CharType::Num &&
+                state_old == CharType::Alpha
+            ) goto transition_cancle;
+
+
+
             if (tok.content == "//") is_comment = true;
 
             if (
@@ -153,6 +162,7 @@ Stream tokenize(std::string& source_path)
             else
                 tok.content.clear();
         }
+        transition_cancle:
 
 
         if (c == '\n')
