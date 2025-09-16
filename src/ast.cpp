@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "lex.cpp"
+#include "ctx.cpp"
 
 namespace Ast 
 {
@@ -14,9 +15,8 @@ namespace Ast
         public:
             virtual ~NodeBase() = default;
     
-            //virtual void generate();
             virtual std::string show() = 0;
-            //static Statement parse(Lexer::Stream& s);
+            virtual void generate(Context& ctx) = 0;
             static std::unique_ptr<NodeBase> parse(Lexer::Stream& s);
         };
 
@@ -61,6 +61,7 @@ namespace Ast
                 }
             }
 
+            void generate(Context& ctx) override {}; //TODO
         };
 
         class ExprLitInt : public Expr
@@ -72,6 +73,8 @@ namespace Ast
             static std::unique_ptr<ExprLitInt> parse(Lexer::Stream& s) 
             { return std::make_unique<ExprLitInt>((uint64_t)std::stoi(s.pop().content)); }
             std::string show() override { return std::to_string(val); }
+
+            void generate(Context& ctx) override {}; //TODO
         };
 
         class ExprLitFloat : public Expr
@@ -83,6 +86,8 @@ namespace Ast
             static std::unique_ptr<ExprLitFloat> parse(Lexer::Stream& s) 
             { return std::make_unique<ExprLitFloat>(std::stod(s.pop().content)); }
             std::string show() override { return std::to_string(val); }
+            
+            void generate(Context& ctx) override {}; //TODO
         };
 
         class ExprVar : public Expr
@@ -100,6 +105,7 @@ namespace Ast
             }
 
             std::string show() override { return *name; }
+            void generate(Context& ctx) override {}; //TODO
         };
 
 
@@ -174,6 +180,14 @@ public:
                 return "let " + *target + " = " + expr->show() + ";";
             }
 
+            void generate(Context& ctx) override
+            {
+                uint64_t var_addr = ctx.var(*target) * 4;
+                
+                expr->generate(ctx);
+                ctx.emit("mov [vars + " + std::to_string(var_addr) + "], rax");
+            }
+
         };
 
 
@@ -215,6 +229,12 @@ public:
                 out += (node->show() + "\n");
 
             return out;
+        }
+
+        void generate(Context& ctx)
+        {
+            for (const auto& expr : content)
+                expr->generate(ctx);
         }
 
         
