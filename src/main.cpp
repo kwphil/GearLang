@@ -1,4 +1,6 @@
+#include <cstdlib>
 #include <string>
+#include <iostream>
 
 #include "ast.cpp"
 
@@ -14,6 +16,20 @@ int main(int argc, char** argv) {
 
     auto root = Ast::Program::parse(tokens);
     std::cout << root.show();
+
+    Context ctx;
+    root.generate(ctx);
+    
+    std::string output = ctx.render();
+
+    std::ofstream out_file("build.asm");
+    out_file << output;
+    out_file.close();
+
+    system("fasm build.asm build");
+    system("chmod +x build");
+    system("./build; echo $?");
+
 
     return EXIT_SUCCESS;
 }
