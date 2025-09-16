@@ -61,7 +61,23 @@ namespace Ast
                 }
             }
 
-            void generate(Context& ctx) override {}; //TODO
+            void generate(Context& ctx) override 
+            {
+                left->generate(ctx);
+                ctx.emit("push rax");
+                right->generate(ctx);
+                ctx.emit("pop rbx");
+                
+                switch (type)
+                {
+                    case Add: ctx.emit("add rax, rbx"); break;
+                    case Sub: ctx.emit("sub rax, rbx"); break;
+                    case Mul: ctx.emit("mul rax, rbx"); break;
+                    case Div: ctx.emit("div rax, rbx"); break;
+                }
+
+
+            };
         };
 
         class ExprLitInt : public Expr
@@ -74,7 +90,10 @@ namespace Ast
             { return std::make_unique<ExprLitInt>((uint64_t)std::stoi(s.pop().content)); }
             std::string show() override { return std::to_string(val); }
 
-            void generate(Context& ctx) override {}; //TODO
+            void generate(Context& ctx) override 
+            {
+                ctx.emit("mov rax, " + std::to_string(val));
+            };
         };
 
         class ExprLitFloat : public Expr
@@ -105,7 +124,11 @@ namespace Ast
             }
 
             std::string show() override { return *name; }
-            void generate(Context& ctx) override {}; //TODO
+            void generate(Context& ctx) override 
+            {
+                uint64_t var_addr = ctx.var(*name) * 4;
+                ctx.emit("mov rax, [vars + " + std::to_string(var_addr) + "]");
+            };
         };
 
 
