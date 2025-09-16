@@ -12,17 +12,18 @@ namespace Ast
         class Statement
         {
         public:
+            virtual ~Statement() = default;
     
             //virtual void generate();
             virtual std::string show() = 0;
             //static Statement parse(Lexer::Stream& s);
-            virtual ~Statement() = default;
         };
 
         class Expr : public Statement
         {
             enum Type
             {
+                Invalid,
                 Add,
                 Sub,
                 Mul,
@@ -32,25 +33,27 @@ namespace Ast
                 Var,
             } type;
 
+            struct
+            {
+                std::unique_ptr<Expr> left;
+                std::unique_ptr<Expr> right;
+            } branch;
             union
             {
-                struct
-                {
-                    Expr* left;
-                    Expr* right;
-                };
                 uint64_t uval;
                 float fval;
-                const char* var;
-            };
+            } data;
+            std::unique_ptr<std::string> var;
 
 public:
-            static Expr parse(Lexer::Stream& s)
+
+
+            static std::unique_ptr<Expr> parse(Lexer::Stream& s)
             {
                 return parseExpr(s);
             }
 
-            static Expr parseExpr(Lexer::Stream& s)
+            static std::unique_ptr<Expr> parseExpr(Lexer::Stream& s)
             {
                 auto left = parseTerm(s);
                 
@@ -59,7 +62,6 @@ public:
                     return left;
 
                 Expr out = Expr();
-                out.left = &left;
 
                 switch(s.pop().content[0])
                 {
@@ -70,10 +72,9 @@ public:
                 }
 
                 auto right = parseTerm(s);
-                out.right = &right;
-                return out;
+                return std::make_unique<Expr>(Expr());
             }
-            static Expr parseTerm(Lexer::Stream& s)
+            static std::unique_ptr<Expr> parseTerm(Lexer::Stream& s)
             {
                 if (s.peek().content == "(")
                 {
@@ -83,21 +84,33 @@ public:
                     return expr;
                 }
 
-                Expr out = Expr();
                 Lexer::Token lit = s.pop();
+                double fval;
+                uint64_t uval;
+                std::string var;
                 switch (lit.type)
                 {
-                    case Lexer::Type::FloatLiteral:   out.fval = std::stof(lit.content); break;
-                    case Lexer::Type::IntegerLiteral: out.uval = std::stoi(lit.content); break;
-                    case Lexer::Type::Identifier:     out.var  = lit.content.c_str();    break;
+                    case Lexer::Type::FloatLiteral:   fval = std::stof(lit.content); break;
+                    case Lexer::Type::IntegerLiteral: uval = std::stoi(lit.content); break;
+                    case Lexer::Type::Identifier:     var  = lit.content.c_str();    break;
                 }
 
-                return out;
+                return std::make_unique<Expr>(Expr());
             }
 
             std::string show() override
             {
-                return std::string("a");
+                switch(type)
+                {
+                    case Add: return branch.left->show() + " + " + branch.right->show(); break;
+                    case Sub: return branch.left->show() + " - " + branch.right->show(); break;
+                    case Mul: return branch.left->show() + " * " + branch.right->show(); break;
+                    case Div: return branch.left->show() + " / " + branch.right->show(); break;
+
+                    case LitInt:   return std::to_string(data.uval); break;
+                    case LitFloat: return std::to_string(data.fval); break;
+                    case Var:      return std::string(*var); break;
+                }
             }
 
         };
@@ -106,24 +119,23 @@ public:
         class Let : public Statement
         {
             
-            std::string target;
-            Expr expr;
+            std::unique_ptr<std::string> target;
+            std::unique_ptr<Expr> expr;
 public:
-            static Let parse(Lexer::Stream& s)
+            static std::unique_ptr<Let> parse(Lexer::Stream& s)
             {
-                Let that = Let();
 
                 s.expect("let");
-                that.target = s.pop().content;
+                std::string target = s.pop().content;
                 s.expect("=");
-                that.expr = Expr::parse(s);
+                std::unique_ptr<Expr> expr = Expr::parse(s);
 
-                return that;
+                return std::make_unique<Let>(Let());
             }
 
             std::string show() override
             {
-                return std::string("a");
+                return "let " + *target + " = " + expr->show() + ";";
             }
 
         };
@@ -133,8 +145,8 @@ public:
         {
             std::unique_ptr<Statement> out;
 
-            if (s.peek().content == "let") out = std::make_unique<Let>(Let::parse(s));
-            else                           out = std::make_unique<Expr>(Expr::parse(s));
+            if (s.peek().content == "let") out = Let::parse(s);
+            else                           out = Expr::parse(s);
             s.expect(";");
 
             return out;
