@@ -54,10 +54,10 @@ namespace Ast
             {
                 switch (type)
                 {
-                    case Add: return left->show() + " + " + right->show(); break;
-                    case Sub: return left->show() + " - " + right->show(); break;
-                    case Mul: return left->show() + " * " + right->show(); break;
-                    case Div: return left->show() + " / " + right->show(); break;
+                    case Add: return "(" + left->show() + " + " + right->show() + ")"; break;
+                    case Sub: return "(" + left->show() + " - " + right->show() + ")"; break;
+                    case Mul: return "(" + left->show() + " * " + right->show() + ")"; break;
+                    case Div: return "(" + left->show() + " / " + right->show() + ")"; break;
                 }
             }
 
