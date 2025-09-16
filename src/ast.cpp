@@ -17,6 +17,7 @@ namespace Ast
             //virtual void generate();
             virtual std::string show() = 0;
             //static Statement parse(Lexer::Stream& s);
+            static std::unique_ptr<NodeBase> parse(Lexer::Stream& s);
         };
 
 
@@ -68,7 +69,7 @@ namespace Ast
             
         public:
             ExprLitInt(uint64_t x) : val(x) {}
-            static std::unique_ptr<ExprLitInt> parse(Lexer::Stream s) 
+            static std::unique_ptr<ExprLitInt> parse(Lexer::Stream& s) 
             { return std::make_unique<ExprLitInt>((uint64_t)std::stoi(s.pop().content)); }
             std::string show() override { return std::to_string(val); }
         };
@@ -79,7 +80,7 @@ namespace Ast
 
         public:
             ExprLitFloat(double x) : val(x) {}
-            static std::unique_ptr<ExprLitFloat> parse(Lexer::Stream s) 
+            static std::unique_ptr<ExprLitFloat> parse(Lexer::Stream& s) 
             { return std::make_unique<ExprLitFloat>(std::stod(s.pop().content)); }
             std::string show() override { return std::to_string(val); }
         };
@@ -91,7 +92,7 @@ namespace Ast
         public:
             ExprVar(std::unique_ptr<std::string> name)
             : name(std::move(name)) {};
-            static std::unique_ptr<ExprVar> parse(Lexer::Stream s)
+            static std::unique_ptr<ExprVar> parse(Lexer::Stream& s)
             { 
                 return std::make_unique<ExprVar>(
                     std::make_unique<std::string>(s.pop().content)
@@ -176,7 +177,7 @@ public:
         };
 
 
-        std::unique_ptr<NodeBase> parseStatement(Lexer::Stream& s)
+        std::unique_ptr<NodeBase> NodeBase::parse(Lexer::Stream& s)
         {
             std::unique_ptr<NodeBase> out;
 
@@ -201,7 +202,7 @@ public:
         {
             Program that = Program();
             while (s.has())
-                that.content.push_back(Nodes::parseStatement(s));
+                that.content.push_back(Nodes::NodeBase::parse(s));
 
             return that;
         }
