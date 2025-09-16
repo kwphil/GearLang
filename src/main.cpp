@@ -1,6 +1,6 @@
 #include <string>
 
-#include "lex.cpp"
+#include "ast.cpp"
 
 
 int main(int argc, char** argv) {
@@ -10,11 +10,10 @@ int main(int argc, char** argv) {
     }
 
     std::string source_path(argv[1]);
-    Lexer::Stream tokens = Lexer::tokenize(source_path);
+    auto tokens = Lexer::tokenize(source_path);
 
-    for(Lexer::Token t : tokens.content)
-        std::cout << t.content << '\n';
-    
+    auto root = Ast::Program::parse(tokens);
+    std::cout << root.show();
 
     return EXIT_SUCCESS;
 }
