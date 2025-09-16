@@ -63,9 +63,9 @@ namespace Ast
 
             void generate(Context& ctx) override 
             {
-                left->generate(ctx);
-                ctx.emit("push rax");
                 right->generate(ctx);
+                ctx.emit("push rax");
+                left->generate(ctx);
                 ctx.emit("pop rbx");
                 
                 switch (type)
@@ -126,7 +126,7 @@ namespace Ast
             std::string show() override { return *name; }
             void generate(Context& ctx) override 
             {
-                uint64_t var_addr = ctx.var(*name) * 4;
+                uint64_t var_addr = ctx.var(*name) * 8;
                 ctx.emit("mov rax, [vars + " + std::to_string(var_addr) + "]");
             };
         };
@@ -205,7 +205,7 @@ public:
 
             void generate(Context& ctx) override
             {
-                uint64_t var_addr = ctx.var(*target) * 4;
+                uint64_t var_addr = ctx.var(*target) * 8;
                 
                 expr->generate(ctx);
                 ctx.emit("mov [vars + " + std::to_string(var_addr) + "], rax");
