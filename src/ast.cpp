@@ -72,8 +72,8 @@ namespace Ast
                 {
                     case Add: ctx.emit("add rax, rbx"); break;
                     case Sub: ctx.emit("sub rax, rbx"); break;
-                    case Mul: ctx.emit("mul rax, rbx"); break;
-                    case Div: ctx.emit("div rax, rbx"); break;
+                    case Mul: ctx.emit("imul rbx"); break;
+                    case Div: ctx.emit("idiv rbx"); break;
                 }
 
 
