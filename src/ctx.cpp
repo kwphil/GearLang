@@ -28,17 +28,18 @@ public:
     {
         std::string out;
 
-        out += "format ELF executable\n";
+        out += "format ELF64 executable\n";
         out += "entry start\n";
-        out += "section '.data' writable\n";
         out += "    vars: rq " + std::to_string(var_allocer) + "\n";
-        out += "section '.text' writable\n";
+        out += "segment readable executable\n";
         out += "start:\n";
 
         for (const auto& line : emission)
             out += line + "\n";
 
-        out += "ret\n";
+        out += "mov rdi, rax\n";
+        out += "mov rax, 60\n"; //syscall exit
+        out += "syscall\n";
 
         return out;
 
