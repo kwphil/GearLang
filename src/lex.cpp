@@ -55,6 +55,9 @@ Type classify(std::string& content, CharType state)
     static const std::unordered_set<std::string> keywords = {
         "fn", "let", "comptime", "assert", "test"
     };
+    static const std::unordered_set<std::string> operators = {
+        "+", "-", "*", "/",
+    };
 
 
     switch (state)
@@ -77,6 +80,9 @@ Type classify(std::string& content, CharType state)
             return Type::FloatLiteral;
 
         case CharType::Sym:
+            if (operators.find(content) != operators.end())
+                return Type::Operator;
+            
             //TODO implement this
             return Type::Invalid; 
 
@@ -103,13 +109,14 @@ public:
 
 class Stream
 {
+private:
+    uint32_t index = 0;
 public:
     std::vector<Token> content;
-    uint32_t index = 0;
 
     bool has()
     {
-        return index != content.size();
+        return (index != content.size());
     }
 
     Token peek()
