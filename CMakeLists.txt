@@ -12,6 +12,7 @@ set(CMAKE_C_EXTENSIONS OFF)
 
 set(SOURCES
     src/main.cpp
+    src/error.cpp
 )
 
 add_executable(gearlang ${SOURCES})

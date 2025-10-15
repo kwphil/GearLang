@@ -7,6 +7,7 @@ enum Error {
     ERROR_INV_FILE,
 };
 
-void print_error(Error);
+void error(Error);
+void error_cond(bool, Error);
 
 #endif

@@ -12,18 +12,12 @@ std::string read_file(std::string);
 
 int main(int argc, char** argv) {
     // First checking if the argument was provided correctly
-    if(argc != 2) {
-        std::cerr << "Argument not provided correctly.";
-        return ERROR_INV_ARGS;
-    }
+    error_cond(argc != 2, ERROR_INV_ARGS);
     
     // Then we can read the file
     std::string input = read_file(argv[1]);
 
-    if(input.length() == 0) {
-        
-        return ERROR_INV_FILE;
-    }
+    error_cond(input.length() == 0, ERROR_INV_FILE);
 
     std::cout << input << std::endl;
     return EXIT_SUCCESS;
@@ -35,9 +29,7 @@ std::string read_file(std::string input) {
     std::ifstream file(input);
 
     // Early exit if the file doesn't exist
-    if(file.fail()) {
-        exit(ERROR_INV_FILE);
-    }
+    error_cond(file.fail(), ERROR_INV_FILE);
 
     buf << file.rdbuf();
     return buf.str();
