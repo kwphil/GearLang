@@ -6,3 +6,7 @@ CMakeCache.txt
 
 # The executables
 gearlang
+
+# Generated Assembler and Executables
+build.asm
+build

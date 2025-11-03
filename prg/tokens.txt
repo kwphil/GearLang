@@ -1,0 +1,35 @@
+
+
+
+
+
+fn main {
+  greet "bob";
+  exit 0;
+}
+
+fn greet name:string => f"Hello, {name}!";
+
+fn main {
+  let num1, num2 = 4, 6;
+
+  comptime assert num1 > num2; // "Comptime Test Error! Tried num1 (4) > num2 (6)"
+
+  exit 0;
+}
+
+
+fn main {
+  let num1, num2 = 4, 6;
+
+  test my_test num1, num2;
+}
+
+test my_test num1:i32, num2:i32 {
+  assert num1 < num2;
+}
+
+
+"Hello World!"
+
+

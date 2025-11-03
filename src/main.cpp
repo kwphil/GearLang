@@ -1,30 +1,55 @@
+#include <cstdlib>
 #include <string>
-
-// Da streams
-#include <fstream>
 #include <iostream>
-#include <sstream>
 
-std::string read_file(std::string);
+#include "ast.cpp"
+
 
 int main(int argc, char** argv) {
-    // First checking if the argument was provided correctly
-    if(argc != 2) {
+    if(argc < 2) {
         std::cerr << "Argument not provided correctly.";
-        return 1;
+        return EXIT_FAILURE;
     }
+
+    std::string source_path(argv[1]);
+    std::cout << "tokenizing... ";
+    auto tokens = Lexer::tokenize(source_path);
+    std::cout << "done\n";
+
+    std::cout << "parsing... ";
+    auto root = Ast::Program::parse(tokens);
+    std::cout << "done\n";
+
+    std::cout << "--- parsed source listing ---\n";
+    std::cout << root.show();
+    std::cout << '\n';
+
+    Context ctx;
+
+    std::cout << "generating... ";
+    root.generate(ctx);
+    std::cout << "done\n";
     
-    // Then we can read the file
-    std::string input = read_file(argv[1]);
-    std::cout << input << std::endl;
+    std::cout << "rendering... ";
+    std::string output = ctx.render();
+    std::cout << "done\n";
+
+    std::cout << "writing assembler file... ";
+    std::ofstream out_file("build.asm");
+    out_file << output;
+    out_file.close();
+    std::cout << "done\n";
+
+    std::cout << "assembling... ";
+    system("fasm build.asm build");
+    system("chmod +x build");
+    std::cout << "done\n";
+
+    std::cout << "--- running ---\n";
+    system("./build; echo $?");
+
 
     return EXIT_SUCCESS;
 }
 
-std::string read_file(std::string input) {
-    std::stringstream buf;
-    std::ifstream file(input);
-    buf << file.rdbuf();
-    return buf.str();
-}
 

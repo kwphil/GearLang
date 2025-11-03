@@ -1,0 +1,20 @@
+
+//simple assignment
+let a = 3;
+
+//assignment based on other variables
+let b = a + 2;
+
+//reassignment
+let a = 10;
+
+//complex expressions with parenthesis
+let complex = a - (b - 1); // should be 6 = 10 - ((3 + 2) - 1)
+
+//higher order operators
+let higher = (complex / 3) * 2; // should be 4 = (6 / 3) * 2
+
+higher; 
+
+
+
