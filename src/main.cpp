@@ -17,7 +17,7 @@ llvm::Function* create_main(Context& ctx) {
             mainType,
             llvm::Function::ExternalLinkage,
             "main",
-            ctx.module
+            &*(ctx.module)
         );
 
     llvm::BasicBlock* entry =

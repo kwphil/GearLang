@@ -45,7 +45,7 @@ llvm::Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
 
     }
 
-    return nullptr;
+    throw std::runtime_error("Unexpected ExprOp: " + type);
 }
 
 // ExprLitInt ---------------------------------------------
