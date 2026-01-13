@@ -7,7 +7,7 @@
 
 #include "ast.hpp"
 
-llvm::Function* create_main(Context& ctx) {
+std::shared_ptr<llvm::Function*> create_main(Context& ctx) {
     llvm::FunctionType* mainType =
         llvm::FunctionType::get(
             llvm::Type::getInt32Ty(ctx.llvmCtx),
@@ -31,7 +31,7 @@ llvm::Function* create_main(Context& ctx) {
 
     ctx.builder.SetInsertPoint(entry);
 
-    return mainFn;
+    return std::make_shared<llvm::Function*>(mainFn);
 }
 
 int main(int argc, char** argv) {
@@ -55,22 +55,11 @@ int main(int argc, char** argv) {
 
     Context ctx;
 
-    llvm::Function* mainFn = create_main(ctx);
+    ctx.mainFn = create_main(ctx);
     
     std::cout << "generating... ";
     root.generate(ctx);
     std::cout << "done\n";
-
-    ctx.builder.CreateCall(
-        llvm::InlineAsm::get(
-            llvm::FunctionType::get(llvm::Type::getVoidTy(ctx.llvmCtx), false),
-            "mov $$60, %rax\n"
-            "xor %rdi, %rdi\n"
-            "syscall\n",
-            "",
-            true
-        )
-    );
 
     ctx.builder.CreateUnreachable();
 

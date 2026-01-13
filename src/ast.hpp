@@ -94,6 +94,22 @@ namespace Ast::Nodes {
 
         llvm::Value* generate(Context& ctx) override;
     };
+
+    class Return : public NodeBase {
+    private:
+        // std::shared_ptr<llvm::Function*> parent_fn; // TODO
+        std::unique_ptr<Expr> expr;
+    
+    public:
+        Return(std::unique_ptr<Expr> expr)
+        : expr(std::move(expr)) {}
+
+        static std::unique_ptr<Return> parse(Lexer::Stream& s);
+
+        std::string show() override;
+
+        llvm::Value* generate(Context& ctx) override;
+    };
 };
 
 namespace Ast {

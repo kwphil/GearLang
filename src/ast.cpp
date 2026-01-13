@@ -4,6 +4,9 @@
 #include <iostream>
 
 #include <llvm/IR/Value.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/InlineAsm.h>
 
 #include "ast.hpp"
 #include "lex.hpp"
@@ -168,11 +171,55 @@ llvm::Value* Ast::Nodes::Let::generate(Context& ctx) {
 std::unique_ptr<Ast::Nodes::NodeBase> Ast::Nodes::NodeBase::parse(Lexer::Stream& s) {
     std::unique_ptr<NodeBase> out;
 
-    if (s.peek().content == "let") out = Let::parse(s);
-    else                           out = Expr::parse(s);
+    if (s.peek().content == "let")         out = Let::parse(s);
+    else if (s.peek().content == "return") out = Return::parse(s);
+    else                                   out = Expr::parse(s);
     s.expect(";");
 
     return out;
+}
+
+// Return -------------------------------------------------
+
+std::unique_ptr<Ast::Nodes::Return> Ast::Nodes::Return::parse(Lexer::Stream& s) {
+    s.expect("return");
+    std::unique_ptr<Expr> expr = Expr::parse(s);
+
+    return std::make_unique<Return>(Return(std::move(expr)));
+}
+
+std::string Ast::Nodes::Return::show() {
+    return "return " + expr->show() + ";";
+}
+
+llvm::Value* Ast::Nodes::Return::generate(Context& ctx) {
+    llvm::Value* retVal = expr->generate(ctx);
+
+    // Ensure i32
+    if (retVal->getType()->isIntegerTy() &&
+        retVal->getType()->getIntegerBitWidth() < 32) {
+        retVal = ctx.builder.CreateSExt(
+            retVal,
+            llvm::Type::getInt32Ty(ctx.llvmCtx)
+        );
+    }
+
+    auto* asmFn = llvm::InlineAsm::get(
+        llvm::FunctionType::get(
+            llvm::Type::getVoidTy(ctx.llvmCtx),
+            { llvm::Type::getInt64Ty(ctx.llvmCtx) },
+            false
+        ),
+        "mov $0, %edi\n"
+        "mov $$60, %rax\n"
+        "syscall",
+        "r,~{rdi},~{rax},~{rcx},~{r11},~{memory}",
+        true
+    );
+
+    ctx.builder.CreateCall(asmFn, { retVal });
+    ctx.builder.CreateUnreachable();
+    return retVal;
 }
 
 // Program ---------------------------
@@ -181,8 +228,9 @@ Ast::Program Ast::Program::parse(Lexer::Stream& s) {
     Program that = Program();
     while (s.has())
         that.content.push_back(Nodes::NodeBase::parse(s));
+        // std::cout << s.peek().content << std::endl;
 
-    return that;
+    return that; 
 }
 
 void Ast::Program::show(std::ostream& os) {
