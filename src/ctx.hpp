@@ -12,10 +12,11 @@ class Context {
 public:
     llvm::LLVMContext llvmCtx;
     llvm::IRBuilder<> builder;
-    llvm::Module* module;
+    std::unique_ptr<llvm::Module> module;
 
     Context()
-    : builder(llvmCtx) {}
+    : builder(llvmCtx),
+      module(std::make_unique<llvm::Module>("gearlang", llvmCtx)) {}
 
     std::unordered_map<std::string, llvm::Value*> named_values;
 
