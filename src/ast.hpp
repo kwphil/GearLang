@@ -67,7 +67,7 @@ namespace Ast::Nodes {
 
     class ExprVar : public Expr {
     private:
-        const std::string& name;
+        const std::string name;
 
     public:
         ExprVar(const std::string& name)
@@ -81,7 +81,7 @@ namespace Ast::Nodes {
 
     class Let : public NodeBase {
     private:
-        std::string& target;
+        std::string target;
         pExpr expr;
 
     public:
