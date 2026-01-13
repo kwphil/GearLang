@@ -3,6 +3,8 @@
 #include <memory>
 #include <string>
 
+#include <llvm/IR/Value.h>
+
 #include "ctx.hpp"
 #include "lex.hpp"
 
@@ -11,7 +13,7 @@ namespace Ast::Nodes {
     public:
         virtual ~NodeBase() = default;
         virtual std::string show() = 0;
-        virtual void generate(Context& context) = 0;
+        virtual llvm::Value* generate(Context& context) = 0;
         static std::unique_ptr<NodeBase> parse(Lexer::Stream& s);
     };
 
@@ -37,7 +39,7 @@ namespace Ast::Nodes {
 
         std::string show() override;
 
-        void generate(Context& ctx);
+        llvm::Value* generate(Context& ctx) override;
     };
 
     class ExprLitInt : public Expr {
@@ -47,9 +49,9 @@ namespace Ast::Nodes {
     public:
         ExprLitInt(uint64_t x) : val(x) {}
         static std::unique_ptr<ExprLitInt> parse(Lexer::Stream& s);
-        std::string show();
+        std::string show() override;
 
-        virtual void generate(Context& ctx) override;
+        virtual llvm::Value* generate(Context& ctx) override;
     };
 
     class ExprLitFloat : public Expr {
@@ -60,35 +62,37 @@ namespace Ast::Nodes {
         static std::unique_ptr<ExprLitFloat> parse(Lexer::Stream& s);
         std::string show() override;
         
-        void generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
     };
 
     class ExprVar : public Expr {
-        std::unique_ptr<std::string> name;
+    private:
+        const std::string& name;
 
     public:
-        ExprVar(std::unique_ptr<std::string> name)
-        : name(std::move(name)) {};
+        ExprVar(const std::string& name)
+        : name(name) {};
 
         static std::unique_ptr<ExprVar> parse(Lexer::Stream& s);
 
         std::string show() override;
-        void generate(Context& ctx) override ;
+        llvm::Value* generate(Context& ctx) override ;
     };
 
     class Let : public NodeBase {
-        std::unique_ptr<std::string> target;
+    private:
+        std::string& target;
         pExpr expr;
 
     public:
-        Let(std::unique_ptr<std::string> target, pExpr expr) 
-        : target(std::move(target)), expr(std::move(expr)) {}
+        Let(std::string& target, pExpr expr) 
+        : target(target), expr(std::move(expr)) {}
 
         static std::unique_ptr<Let> parse(Lexer::Stream& s);
 
         std::string show() override;
 
-        void generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
     };
 };
 

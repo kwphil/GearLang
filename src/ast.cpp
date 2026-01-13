@@ -1,6 +1,8 @@
-
+#include <stdexcept>
 #include <vector>
 #include <memory>
+
+#include <llvm/IR/Value.h>
 
 #include "ast.hpp"
 #include "lex.hpp"
@@ -23,18 +25,26 @@ std::string Ast::Nodes::ExprOp::show() {
     }
 }
 
-void Ast::Nodes::ExprOp::generate(Context& ctx) { 
-    right->generate(ctx);
-    ctx.emit("push rax");
-    left->generate(ctx);
-    ctx.emit("pop rbx");
-    
-    switch (type) {
-        case Add: ctx.emit("add rax, rbx"); break;
-        case Sub: ctx.emit("sub rax, rbx"); break;
-        case Mul: ctx.emit("imul rbx"); break;
-        case Div: ctx.emit("idiv rbx"); break;
+llvm::Value* Ast::Nodes::ExprOp::generate(Context& ctx) { 
+    llvm::Value* lhs = left->generate(ctx);
+    llvm::Value* rhs = right->generate(ctx);
+
+    switch(type) {
+        case Add:
+            return ctx.builder.CreateAdd(lhs, rhs, "addtmp");
+
+        case Sub:
+            return ctx.builder.CreateSub(lhs, rhs, "subtmp");
+
+        case Mul:
+            return ctx.builder.CreateMul(lhs, rhs, "multmp");
+
+        case Div:
+            return ctx.builder.CreateSDiv(lhs, rhs, "divtmp");
+
     }
+
+    return nullptr;
 }
 
 // ExprLitInt ---------------------------------------------
@@ -45,8 +55,12 @@ std::unique_ptr<Ast::Nodes::ExprLitInt> Ast::Nodes::ExprLitInt::parse(Lexer::Str
 std::string Ast::Nodes::ExprLitInt::show() 
 { return std::to_string(this->val); } 
 
-void Ast::Nodes::ExprLitInt::generate(Context& ctx) {
-    ctx.emit("mov rax, " + std::to_string(val));
+llvm::Value* Ast::Nodes::ExprLitInt::generate(Context& ctx) {
+    return llvm::ConstantInt::get(
+        llvm::Type::getInt32Ty(ctx.llvmCtx),
+        this->val,
+        true
+    );
 }
 
 // ExprLitFloat ------------------------------------------
@@ -56,22 +70,28 @@ std::unique_ptr<Ast::Nodes::ExprLitFloat> Ast::Nodes::ExprLitFloat::parse(Lexer:
 
 std::string Ast::Nodes::ExprLitFloat::show() { return std::to_string(val); }
 
-void Ast::Nodes::ExprLitFloat::generate(Context& ctx) {}; //TODO
+llvm::Value* Ast::Nodes::ExprLitFloat::generate(Context& ctx) {}; //TODO
 
 // ExprVar --------------------------------------------------
 
 std::unique_ptr<Ast::Nodes::ExprVar> Ast::Nodes::ExprVar::parse(Lexer::Stream& s) { 
-    return std::make_unique<ExprVar>(
-        std::make_unique<std::string>(s.pop().content)
-    ); 
+    return ExprVar(s.pop().content);
 }
 
-std::string Ast::Nodes::ExprVar::show() { return *name; }
+std::string Ast::Nodes::ExprVar::show() { return name; }
 
-void Ast::Nodes::ExprVar::generate(Context& ctx) {
-    uint64_t var_addr = ctx.var(*name) * 8;
-    ctx.emit("mov rax, [vars + " + std::to_string(var_addr) + "]");
-};
+llvm::Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
+    llvm::Value* alloca = ctx.named_values[name];
+
+    if(!alloca)
+        throw std::runtime_error("Unknown variable: " + name);
+
+    return ctx.builder.CreateLoad(
+        llvm::Type::getInt32Ty(ctx.llvmCtx),
+        alloca,
+        name
+    );
+}
 
 // Expr ------------------------------------------------
 
@@ -121,18 +141,27 @@ std::unique_ptr<Ast::Nodes::Let> Ast::Nodes::Let::parse(Lexer::Stream& s) {
     s.expect("=");
     std::unique_ptr<Expr> expr = Expr::parse(s);
 
-    return std::make_unique<Let>(std::make_unique<std::string>(target), std::move(expr));
+    return std::make_unique<Let>(target, std::move(expr));
 }
 
 std::string Ast::Nodes::Let::show() {
-    return "let " + *target + " = " + expr->show() + ";";
+    return "let " + target + " = " + expr->show() + ";";
 }
 
-void Ast::Nodes::Let::generate(Context& ctx) {
-    uint64_t var_addr = ctx.var(*target) * 8;
-    
-    expr->generate(ctx);
-    ctx.emit("mov [vars + " + std::to_string(var_addr) + "], rax");
+llvm::Value* Ast::Nodes::Let::generate(Context& ctx) {
+    llvm::Function* fn = ctx.builder.GetInsertBlock()->getParent();
+
+    llvm::Type* ty = llvm::Type::getInt32Ty(ctx.llvmCtx);
+    llvm::AllocaInst* alloca = ctx.create_entry_block(fn, target, ty);
+
+    // TODO: make this an optional parameter
+    if(true) {
+        llvm::Value* initVal = expr->generate(ctx);
+        ctx.builder.CreateStore(initVal, alloca);
+    }
+
+    ctx.named_values[target] = alloca;
+    return alloca;
 }
 
 std::unique_ptr<Ast::Nodes::NodeBase> Ast::Nodes::NodeBase::parse(Lexer::Stream& s) {
