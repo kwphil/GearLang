@@ -1,14 +1,24 @@
-#include <unordered_map>
+#include <llvm/IR/Type.h>
 #include <string>
 #include <vector>
 
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/IRBuilder.h>
+
 #include "ctx.hpp"
 
-uint64_t Context::var(std::string& var_name) {
-    if (var_mapper.find(var_name) == var_mapper.end())
-        var_mapper[var_name] = (var_allocer++);
+llvm::AllocaInst* Context::create_entry_block(
+    llvm::Function* function,
+    const std::string& name,
+    llvm::Type* type
+) {
+    llvm::IRBuilder<> tmpBuilder(
+        &function->getEntryBlock(),
+        function->getEntryBlock().begin()
+    );
 
-    return var_mapper[var_name];
+    return tmpBuilder.CreateAlloca(type, nullptr, name);
 }
 
 void Context::emit(std::string line) {
@@ -18,18 +28,14 @@ void Context::emit(std::string line) {
 std::string Context::render() {
     std::string out;
 
-    out += "format ELF64 executable\n";
-    out += "entry start\n";
-    out += "    vars: rq " + std::to_string(var_allocer) + "\n";
-    out += "segment readable executable\n";
-    out += "start:\n";
+    out += "i32 @main() {\n";
+    out += "entry: \n";
 
     for (const auto& line : emission)
         out += line + "\n";
 
-    out += "mov rdi, rax\n";
-    out += "mov rax, 60\n"; //syscall exit
-    out += "syscall\n";
+    out += "ret i32 0\n";
+    out += "}\n";
 
     return out;
 }

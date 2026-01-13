@@ -10,6 +10,11 @@ set(CMAKE_C_STANDARD 90)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
+find_package(LLVM REQUIRED CONFIG)
+
+include_directories(${LLVM_INCLUDE_DIRS})
+add_definitions(${LLVM_DEFINITIONS})
+
 set(SOURCES
     src/main.cpp
     src/ast.cpp
@@ -19,5 +24,12 @@ set(SOURCES
 
 add_executable(gearlang ${SOURCES})
 
-target_include_directories(gearlang PRIVATE include)
+llvm_map_components_to_libnames(LLVM_LIBS 
+    core
+    support
+    irreader
+)
+
+
+target_include_directories(gearlang PRIVATE ${LLVM_LIBS})
 
