@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <llvm/IR/InlineAsm.h>
+
 #include "ast.hpp"
 
 llvm::Function* create_main(Context& ctx) {
@@ -16,7 +18,7 @@ llvm::Function* create_main(Context& ctx) {
         llvm::Function::Create(
             mainType,
             llvm::Function::ExternalLinkage,
-            "main",
+            "_start",
             &*(ctx.module)
         );
 
@@ -48,7 +50,7 @@ int main(int argc, char** argv) {
     std::cout << "done\n";
 
     std::cout << "--- parsed source listing ---\n";
-    //root.show(std::cout);
+    root.show(std::cout);
     std::cout << '\n';
 
     Context ctx;
@@ -59,20 +61,43 @@ int main(int argc, char** argv) {
     root.generate(ctx);
     std::cout << "done\n";
 
-    ctx.builder.CreateRet(
-        llvm::ConstantInt::get(
-            llvm::Type::getInt32Ty(ctx.llvmCtx),
-            0
+    ctx.builder.CreateCall(
+        llvm::InlineAsm::get(
+            llvm::FunctionType::get(llvm::Type::getVoidTy(ctx.llvmCtx), false),
+            "mov $$60, %rax\n"
+            "xor %rdi, %rdi\n"
+            "syscall\n",
+            "",
+            true
         )
     );
+
+    ctx.builder.CreateUnreachable();
 
     std::cout << "rendering... ";
     std::string output = ctx.render();
 
-    std::cout << "writing assembler file... ";
+    std::cout << "writing llvm file... ";
     std::ofstream out_file("build.llvm");
     out_file << output;
     out_file.close();
+    std::cout << "done\n";
+
+    std::cout << "compiling llvm file... \n";
+    std::string command = "llvm-as build.llvm -o build.bc";
+    std::cout << "> " << command << "\n";
+    std::system(command.c_str());
+    command = "llc build.bc -filetype=obj -o build.o";
+    std::cout << "> " << command << "\n";
+    std::system(command.c_str());
+    command = "ld build.o -o build";
+    std::cout << "> " << command << "\n";
+    std::system(command.c_str());
+    std::cout << "done\n";
+
+    std::cout << "running...";
+    command = "./build";
+    std::system(command.c_str());
     std::cout << "done\n";
 
     return EXIT_SUCCESS;

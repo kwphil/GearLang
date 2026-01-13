@@ -14,5 +14,10 @@ gearlang
 gearlang.exe
 
 # Generated Assembler and Executables
-build.asm
+build.llvm
+build.bc
+build.o
 build
+
+# I use codespaces sometimes
+.vscode/
