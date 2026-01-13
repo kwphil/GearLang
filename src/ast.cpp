@@ -1,6 +1,7 @@
 #include <stdexcept>
 #include <vector>
 #include <memory>
+#include <iostream>
 
 #include <llvm/IR/Value.h>
 
@@ -75,7 +76,7 @@ llvm::Value* Ast::Nodes::ExprLitFloat::generate(Context& ctx) {}; //TODO
 // ExprVar --------------------------------------------------
 
 std::unique_ptr<Ast::Nodes::ExprVar> Ast::Nodes::ExprVar::parse(Lexer::Stream& s) { 
-    return ExprVar(s.pop().content);
+    return std::make_unique<ExprVar>(s.pop().content);
 }
 
 std::string Ast::Nodes::ExprVar::show() { return name; }
@@ -184,13 +185,10 @@ Ast::Program Ast::Program::parse(Lexer::Stream& s) {
     return that;
 }
 
-std::string Ast::Program::show() {
-    std::string out;
-
-    for (auto& node : content)
-        out += (node->show() + "\n");
-
-    return out;
+void Ast::Program::show(std::ostream& os) {
+    for (auto& node : content) {
+        os << node->show() << std::endl;
+    }
 }
 
 void Ast::Program::generate(Context& ctx) {
