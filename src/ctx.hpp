@@ -14,6 +14,8 @@ public:
     llvm::IRBuilder<> builder;
     std::unique_ptr<llvm::Module> module;
 
+    std::shared_ptr<llvm::Function*> mainFn;
+
     Context()
     : builder(llvmCtx),
       module(std::make_unique<llvm::Module>("gearlang", llvmCtx)) {}
