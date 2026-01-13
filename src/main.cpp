@@ -5,6 +5,33 @@
 
 #include "ast.hpp"
 
+llvm::Function* create_main(Context& ctx) {
+    llvm::FunctionType* mainType =
+        llvm::FunctionType::get(
+            llvm::Type::getInt32Ty(ctx.llvmCtx),
+            false
+        );
+
+    llvm::Function* mainFn =
+        llvm::Function::Create(
+            mainType,
+            llvm::Function::ExternalLinkage,
+            "main",
+            ctx.module
+        );
+
+    llvm::BasicBlock* entry =
+        llvm::BasicBlock::Create(
+            ctx.llvmCtx,
+            "entry",
+            mainFn
+        );
+
+    ctx.builder.SetInsertPoint(entry);
+
+    return mainFn;
+}
+
 int main(int argc, char** argv) {
     if(argc < 2) {
         std::cerr << "Argument not provided correctly.";
@@ -21,33 +48,32 @@ int main(int argc, char** argv) {
     std::cout << "done\n";
 
     std::cout << "--- parsed source listing ---\n";
-    std::cout << root.show();
+    //root.show(std::cout);
     std::cout << '\n';
 
     Context ctx;
 
+    llvm::Function* mainFn = create_main(ctx);
+    
     std::cout << "generating... ";
     root.generate(ctx);
     std::cout << "done\n";
-    
+
+    ctx.builder.CreateRet(
+        llvm::ConstantInt::get(
+            llvm::Type::getInt32Ty(ctx.llvmCtx),
+            0
+        )
+    );
+
     std::cout << "rendering... ";
     std::string output = ctx.render();
-    std::cout << "done\n";
 
     std::cout << "writing assembler file... ";
-    std::ofstream out_file("build.asm");
+    std::ofstream out_file("build.llvm");
     out_file << output;
     out_file.close();
     std::cout << "done\n";
-
-    std::cout << "assembling... ";
-    system("fasm build.asm build");
-    system("chmod +x build");
-    std::cout << "done\n";
-
-    std::cout << "--- running ---\n";
-    system("./build; echo $?");
-
 
     return EXIT_SUCCESS;
 }

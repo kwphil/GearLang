@@ -104,7 +104,7 @@ namespace Ast {
     public: 
         static Program parse(Lexer::Stream& s);
 
-        std::string show();
+        void show(std::ostream& os);
 
         void generate(Context& ctx);
     };

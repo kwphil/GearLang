@@ -10,26 +10,25 @@ set(CMAKE_C_STANDARD 90)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
+set(CMAKE_BUILD_TYPE Debug)
+
 find_package(LLVM REQUIRED CONFIG)
 
-include_directories(${LLVM_INCLUDE_DIRS})
-add_definitions(${LLVM_DEFINITIONS})
-
-set(SOURCES
+add_executable(gearlang
     src/main.cpp
     src/ast.cpp
     src/lex.cpp
     src/ctx.cpp
 )
 
-add_executable(gearlang ${SOURCES})
+target_include_directories(gearlang PRIVATE ${LLVM_INCLUDE_DIRS})
+target_compile_definitions(gearlang PRIVATE ${LLVM_DEFINITIONS})
 
-llvm_map_components_to_libnames(LLVM_LIBS 
+llvm_map_components_to_libnames(LLVM_LIBS
     core
     support
     irreader
 )
 
-
-target_include_directories(gearlang PRIVATE ${LLVM_LIBS})
+target_link_libraries(gearlang PRIVATE LLVM)
 
