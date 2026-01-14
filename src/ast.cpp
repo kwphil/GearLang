@@ -1,4 +1,7 @@
+#include <llvm/ADT/APFloat.h>
+#include <llvm/IR/Constants.h>
 #include <stdexcept>
+#include <string>
 #include <vector>
 #include <memory>
 #include <iostream>
@@ -7,6 +10,7 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/InlineAsm.h>
+#include <llvm/IR/BasicBlock.h>
 
 #include "ast.hpp"
 #include "lex.hpp"
@@ -27,6 +31,10 @@ std::string Ast::Nodes::ExprOp::show() {
         case Mul: return "(" + left->show() + " * " + right->show() + ")"; break;
         case Div: return "(" + left->show() + " / " + right->show() + ")"; break;
     }
+
+    std::string error = "Unexpected ExprOp: ";
+    error += type;
+    throw std::runtime_error(error);
 }
 
 llvm::Value* Ast::Nodes::ExprOp::generate(Context& ctx) { 
@@ -48,7 +56,9 @@ llvm::Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
 
     }
 
-    throw std::runtime_error("Unexpected ExprOp: " + type);
+    std::string error = "Unexpected ExprOp: ";
+    error += type;
+    throw std::runtime_error(error);
 }
 
 // ExprLitInt ---------------------------------------------
@@ -90,11 +100,31 @@ llvm::Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
     if(!alloca)
         throw std::runtime_error("Unknown variable: " + name);
 
-    return ctx.builder.CreateLoad(
-        llvm::Type::getInt32Ty(ctx.llvmCtx),
-        alloca,
-        name
-    );
+    return alloca;
+}
+
+// ExprAssign
+
+std::unique_ptr<Ast::Nodes::ExprAssign> Ast::Nodes::ExprAssign::parse(Lexer::Stream& s) {
+    std::string name = s.peek().content;
+
+    s.expect("=");
+    
+    pExpr expr = Expr::parse(s);
+
+    return std::make_unique<Ast::Nodes::ExprAssign>(ExprAssign(name, std::move(expr)));
+}
+
+std::string Ast::Nodes::ExprAssign::show() {
+    return name + " = " + expr->show();
+}
+
+llvm::Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
+    llvm::Value* alloca = ctx.named_values[name];
+
+    if(!alloca)
+        throw std::runtime_error("Unknown variable: " + name);
+
 }
 
 // Expr ------------------------------------------------
@@ -134,7 +164,12 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s) {
         case Lexer::Type::FloatLiteral:   return ExprLitFloat::parse(s); break;
         case Lexer::Type::IntegerLiteral: return ExprLitInt::parse(s);   break;
         case Lexer::Type::Identifier:     return ExprVar::parse(s);      break;
+        default: break;
     }
+
+    std::string error_msg = "Unexpect token: ";
+    error_msg += (int)(lit.type);
+    throw std::runtime_error(error_msg);
 }
 
 // Let -------------------------------------------------
@@ -173,6 +208,7 @@ std::unique_ptr<Ast::Nodes::NodeBase> Ast::Nodes::NodeBase::parse(Lexer::Stream&
 
     if (s.peek().content == "let")         out = Let::parse(s);
     else if (s.peek().content == "return") out = Return::parse(s);
+    else if (s.peek().content == "if")     out = If::parse(s);
     else                                   out = Expr::parse(s);
     s.expect(";");
 
@@ -220,6 +256,60 @@ llvm::Value* Ast::Nodes::Return::generate(Context& ctx) {
     ctx.builder.CreateCall(asmFn, { retVal });
     ctx.builder.CreateUnreachable();
     return retVal;
+}
+
+// If --------------------------------------------
+
+std::unique_ptr<Ast::Nodes::If> Ast::Nodes::If::parse(Lexer::Stream& s) {
+    s.expect("if");
+    pExpr cond = Expr::parse(s);
+    pExpr expr = Expr::parse(s);
+
+    return std::make_unique<If>(If(std::move(expr), std::move(cond)));
+}
+
+std::string Ast::Nodes::If::show() {
+    return "if" + cond->show() + " --- " + expr->show();
+}
+
+llvm::Value* Ast::Nodes::If::generate(Context& ctx) {
+    llvm::BasicBlock* if_block = llvm::BasicBlock::Create(ctx.llvmCtx, "if", *(ctx.mainFn)); // TODO: Add other function support
+    llvm::BasicBlock* then_block = llvm::BasicBlock::Create(ctx.llvmCtx, "then", *(ctx.mainFn)); // TODO: here too
+
+    cond->generate(ctx)->getType()->print(llvm::errs());
+    llvm::errs() << "\n";
+    llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx.llvmCtx), 0, true)->print(llvm::errs());
+    llvm::errs() << "\n";
+
+    llvm::Value *lhs = ctx.builder.CreateLoad(
+        llvm::Type::getInt32Ty(ctx.llvmCtx),
+        cond->generate(ctx),
+        "lhs.load"
+    );
+
+    // Convert condition to a bool by comparing non-equal to 0
+    llvm::Value* condv = ctx.builder.CreateICmpNE(
+        lhs,
+        llvm::ConstantInt::get(
+            llvm::Type::getInt32Ty(ctx.llvmCtx),
+            0, true
+        )
+    );
+
+    //TODO: Add optional code to else block
+
+    ctx.builder.CreateCondBr(condv, if_block, then_block);
+
+    // if(cond) { /* here */ }
+
+    ctx.builder.SetInsertPoint(if_block);
+    expr->generate(ctx);
+    ctx.builder.CreateBr(then_block);
+
+    // if(cond) {} /* here */
+    ctx.builder.SetInsertPoint(then_block);
+
+    return ctx.builder.GetInsertBlock();
 }
 
 // Program ---------------------------
