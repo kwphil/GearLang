@@ -73,7 +73,7 @@ namespace Ast::Nodes {
         ExprVar(const std::string& name)
         : name(name) {};
 
-        static std::unique_ptr<ExprVar> parse(Lexer::Stream& s);
+        static std::unique_ptr<ExprVar> parse(std::string& name);
 
         std::string show() override;
         llvm::Value* generate(Context& ctx) override;
@@ -88,7 +88,7 @@ namespace Ast::Nodes {
         ExprAssign(const std::string& name, pExpr expr)
         : name(name), expr(std::move(expr)) { }
 
-        static std::unique_ptr<ExprAssign> parse(Lexer::Stream& s);
+        static std::unique_ptr<ExprAssign> parse(std::string& name, Lexer::Stream& s);
 
         std::string show() override;
         llvm::Value* generate(Context& ctx) override;

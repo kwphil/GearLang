@@ -1,16 +1,17 @@
-#include <llvm/ADT/APFloat.h>
-#include <llvm/IR/Constants.h>
 #include <stdexcept>
 #include <string>
 #include <vector>
 #include <memory>
 #include <iostream>
+#include <format>
 
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/InlineAsm.h>
 #include <llvm/IR/BasicBlock.h>
+#include <llvm/ADT/APFloat.h>
+#include <llvm/IR/Constants.h>
 
 #include "ast.hpp"
 #include "lex.hpp"
@@ -37,38 +38,18 @@ std::string Ast::Nodes::ExprOp::show() {
     throw std::runtime_error(error);
 }
 
-llvm::Value* Ast::Nodes::ExprOp::generate(Context& ctx) { 
+llvm::Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
     llvm::Value* lhs = left->generate(ctx);
     llvm::Value* rhs = right->generate(ctx);
-    llvm::Value* out = nullptr;
-    llvm::Value* ptr = ctx.builder.CreateAlloca(llvm::Type::getInt32Ty(ctx.llvmCtx));
 
-    switch(type) {
-        case Add:
-            out = ctx.builder.CreateAdd(lhs, rhs);
-
-        break;
-        case Sub:
-            out = ctx.builder.CreateSub(lhs, rhs);
-
-        break;
-        case Mul:
-            out = ctx.builder.CreateMul(lhs, rhs);
-
-        break;
-        case Div:
-            out = ctx.builder.CreateSDiv(lhs, rhs);
-
+    switch (type) {
+        case Add: return ctx.builder.CreateAdd(lhs, rhs, "addtmp");
+        case Sub: return ctx.builder.CreateSub(lhs, rhs, "subtmp");
+        case Mul: return ctx.builder.CreateMul(lhs, rhs, "multmp");
+        case Div: return ctx.builder.CreateSDiv(lhs, rhs, "divtmp");
     }
 
-    if(out != nullptr) {
-        std::string error = "Unexpected ExprOp: ";
-        error += type;
-        throw std::runtime_error(error);
-    }
-
-    ctx.builder.CreateStore(out, ptr);
-    return ctx.builder.CreateLoad(llvm::Type::getInt32Ty(ctx.llvmCtx), ptr);
+    throw std::runtime_error("Invalid ExprOp");
 }
 
 // ExprLitInt ---------------------------------------------
@@ -98,31 +79,32 @@ llvm::Value* Ast::Nodes::ExprLitFloat::generate(Context& ctx) {}; //TODO
 
 // ExprVar --------------------------------------------------
 
-std::unique_ptr<Ast::Nodes::ExprVar> Ast::Nodes::ExprVar::parse(Lexer::Stream& s) { 
-    return std::make_unique<ExprVar>(s.pop().content);
+std::unique_ptr<Ast::Nodes::ExprVar> Ast::Nodes::ExprVar::parse(std::string& name) { 
+    return std::make_unique<ExprVar>(name);
 }
 
 std::string Ast::Nodes::ExprVar::show() { return name; }
 
 llvm::Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
-    llvm::Value* alloca = ctx.named_values[name];
-
-    if(!alloca)
+    auto it = ctx.named_values.find(name);
+    if (it == ctx.named_values.end())
         throw std::runtime_error("Unknown variable: " + name);
 
-    return ctx.builder.CreateLoad(llvm::Type::getInt32Ty(ctx.llvmCtx), alloca);
+    return ctx.builder.CreateLoad(
+        llvm::Type::getInt32Ty(ctx.llvmCtx),
+        it->second,
+        name + ".load"
+    );
 }
 
 // ExprAssign
 
-std::unique_ptr<Ast::Nodes::ExprAssign> Ast::Nodes::ExprAssign::parse(Lexer::Stream& s) {
-    std::string name = s.peek().content;
-
+std::unique_ptr<Ast::Nodes::ExprAssign>
+Ast::Nodes::ExprAssign::parse(std::string& name, Lexer::Stream& s) {
     s.expect("=");
-    
     pExpr expr = Expr::parse(s);
 
-    return std::make_unique<Ast::Nodes::ExprAssign>(ExprAssign(name, std::move(expr)));
+    return std::make_unique<ExprAssign>(name, std::move(expr));
 }
 
 std::string Ast::Nodes::ExprAssign::show() {
@@ -131,10 +113,13 @@ std::string Ast::Nodes::ExprAssign::show() {
 
 llvm::Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
     llvm::Value* alloca = ctx.named_values[name];
-
-    if(!alloca)
+    if (!alloca)
         throw std::runtime_error("Unknown variable: " + name);
 
+    llvm::Value* value = expr->generate(ctx);
+    ctx.builder.CreateStore(value, alloca);
+
+    return value;
 }
 
 // Expr ------------------------------------------------
@@ -173,12 +158,25 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s) {
     switch (lit.type) {
         case Lexer::Type::FloatLiteral:   return ExprLitFloat::parse(s); break;
         case Lexer::Type::IntegerLiteral: return ExprLitInt::parse(s);   break;
-        case Lexer::Type::Identifier:     return ExprVar::parse(s);      break;
         default: break;
     }
 
-    std::string error_msg = "Unexpect token: ";
-    error_msg += (int)(lit.type);
+    s.pop();
+    
+    if(lit.type == Lexer::Type::Identifier) {
+        if(lit.content == "if") {
+            s.back();
+            return If::parse(s);
+        }
+
+        if(s.peek().content == "=") {
+            return ExprAssign::parse(lit.content, s);
+        }
+
+        return ExprVar::parse(lit.content);
+    }
+
+    std::string error_msg = std::format("Unexpect token: {} (type={})", lit.content, (int)lit.type);
     throw std::runtime_error(error_msg);
 }
 
@@ -250,16 +248,18 @@ llvm::Value* Ast::Nodes::Return::generate(Context& ctx) {
         );
     }
 
+    // Linux x86-64: exit(int status)
+    // rdi = status
+    // rax = 60
     auto* asmFn = llvm::InlineAsm::get(
         llvm::FunctionType::get(
             llvm::Type::getVoidTy(ctx.llvmCtx),
-            { llvm::Type::getInt64Ty(ctx.llvmCtx) },
+            { llvm::Type::getInt32Ty(ctx.llvmCtx) },
             false
         ),
-        "mov $0, %edi\n"
         "mov $$60, %rax\n"
         "syscall",
-        "r,~{rdi},~{rax},~{rcx},~{r11},~{memory}",
+        "{rdi},~{rax},~{rcx},~{r11},~{memory}",
         true
     );
 
@@ -283,43 +283,38 @@ std::string Ast::Nodes::If::show() {
 }
 
 llvm::Value* Ast::Nodes::If::generate(Context& ctx) {
-    llvm::BasicBlock* if_block = llvm::BasicBlock::Create(ctx.llvmCtx, "if", *(ctx.mainFn)); // TODO: Add other function support
-    llvm::BasicBlock* then_block = llvm::BasicBlock::Create(ctx.llvmCtx, "then", *(ctx.mainFn)); // TODO: here too
+    llvm::Function* fn = ctx.builder.GetInsertBlock()->getParent();
 
-    cond->generate(ctx)->getType()->print(llvm::errs());
-    llvm::errs() << "\n";
-    llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx.llvmCtx), 0, true)->print(llvm::errs());
-    llvm::errs() << "\n";
+    llvm::BasicBlock* if_block =
+        llvm::BasicBlock::Create(ctx.llvmCtx, "if", fn);
+    llvm::BasicBlock* then_block =
+        llvm::BasicBlock::Create(ctx.llvmCtx, "then", fn);
 
-    llvm::Value *lhs = ctx.builder.CreateLoad(
-        llvm::Type::getInt32Ty(ctx.llvmCtx),
-        cond->generate(ctx),
-        "lhs.load"
-    );
+    // Generate condition ONCE
+    llvm::Value* condVal = cond->generate(ctx);
 
-    // Convert condition to a bool by comparing non-equal to 0
+    // Convert to boolean: cond != 0
     llvm::Value* condv = ctx.builder.CreateICmpNE(
-        lhs,
+        condVal,
         llvm::ConstantInt::get(
             llvm::Type::getInt32Ty(ctx.llvmCtx),
-            0, true
-        )
+            0,
+            true
+        ),
+        "ifcond"
     );
-
-    //TODO: Add optional code to else block
 
     ctx.builder.CreateCondBr(condv, if_block, then_block);
 
-    // if(cond) { /* here */ }
-
+    // if (cond)
     ctx.builder.SetInsertPoint(if_block);
     expr->generate(ctx);
     ctx.builder.CreateBr(then_block);
 
-    // if(cond) {} /* here */
+    // continuation
     ctx.builder.SetInsertPoint(then_block);
 
-    return ctx.builder.GetInsertBlock();
+    return nullptr;
 }
 
 // Program ---------------------------
