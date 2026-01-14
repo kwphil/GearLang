@@ -76,7 +76,37 @@ namespace Ast::Nodes {
         static std::unique_ptr<ExprVar> parse(Lexer::Stream& s);
 
         std::string show() override;
-        llvm::Value* generate(Context& ctx) override ;
+        llvm::Value* generate(Context& ctx) override;
+    };
+
+    class ExprAssign : public Expr {
+    private:
+        const std::string name;
+        pExpr expr;
+
+    public:
+        ExprAssign(const std::string& name, pExpr expr)
+        : name(name), expr(std::move(expr)) { }
+
+        static std::unique_ptr<ExprAssign> parse(Lexer::Stream& s);
+
+        std::string show() override;
+        llvm::Value* generate(Context& ctx) override;
+    };
+
+    class If : public Expr {
+    private:
+        pExpr cond;
+        pExpr expr;
+
+    public:
+        If(pExpr expr, pExpr cond)
+        : expr(std::move(expr)), cond(std::move(cond)) { }
+
+        static std::unique_ptr<If> parse(Lexer::Stream& s);
+
+        std::string show() override;
+        llvm::Value* generate(Context& ctx) override;
     };
 
     class Let : public NodeBase {
@@ -98,7 +128,7 @@ namespace Ast::Nodes {
     class Return : public NodeBase {
     private:
         // std::shared_ptr<llvm::Function*> parent_fn; // TODO
-        std::unique_ptr<Expr> expr;
+        pExpr expr;
     
     public:
         Return(std::unique_ptr<Expr> expr)
