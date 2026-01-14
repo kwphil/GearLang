@@ -40,25 +40,35 @@ std::string Ast::Nodes::ExprOp::show() {
 llvm::Value* Ast::Nodes::ExprOp::generate(Context& ctx) { 
     llvm::Value* lhs = left->generate(ctx);
     llvm::Value* rhs = right->generate(ctx);
+    llvm::Value* out = nullptr;
+    llvm::Value* ptr = ctx.builder.CreateAlloca(llvm::Type::getInt32Ty(ctx.llvmCtx));
 
     switch(type) {
         case Add:
-            return ctx.builder.CreateAdd(lhs, rhs, "addtmp");
+            out = ctx.builder.CreateAdd(lhs, rhs);
 
+        break;
         case Sub:
-            return ctx.builder.CreateSub(lhs, rhs, "subtmp");
+            out = ctx.builder.CreateSub(lhs, rhs);
 
+        break;
         case Mul:
-            return ctx.builder.CreateMul(lhs, rhs, "multmp");
+            out = ctx.builder.CreateMul(lhs, rhs);
 
+        break;
         case Div:
-            return ctx.builder.CreateSDiv(lhs, rhs, "divtmp");
+            out = ctx.builder.CreateSDiv(lhs, rhs);
 
     }
 
-    std::string error = "Unexpected ExprOp: ";
-    error += type;
-    throw std::runtime_error(error);
+    if(out != nullptr) {
+        std::string error = "Unexpected ExprOp: ";
+        error += type;
+        throw std::runtime_error(error);
+    }
+
+    ctx.builder.CreateStore(out, ptr);
+    return ctx.builder.CreateLoad(llvm::Type::getInt32Ty(ctx.llvmCtx), ptr);
 }
 
 // ExprLitInt ---------------------------------------------
@@ -100,7 +110,7 @@ llvm::Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
     if(!alloca)
         throw std::runtime_error("Unknown variable: " + name);
 
-    return alloca;
+    return ctx.builder.CreateLoad(llvm::Type::getInt32Ty(ctx.llvmCtx), alloca);
 }
 
 // ExprAssign
