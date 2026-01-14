@@ -52,6 +52,7 @@ public:
     bool has();
     Token peek();
     Token pop();
+    void back() { index--; }
     void expect(const char* should);
 };
 
