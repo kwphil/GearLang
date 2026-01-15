@@ -21,7 +21,7 @@ Lexer::Type Lexer::classify(std::string& content, CharType state)
     };
 
     static const std::unordered_set<std::string> operators = {
-        "+", "-", "*", "/",
+        "+", "-", "*", "/", "=>"
     };
 
     switch (state) {

@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
 
     Context ctx;
 
-    ctx.mainFn = create_main(ctx);
+    ctx.current_fn = create_main(ctx);
     
     std::cout << "generating... ";
     root.generate(ctx);

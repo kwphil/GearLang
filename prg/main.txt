@@ -14,10 +14,7 @@ let complex = a - (b - 1); // should be 6 = 10 - ((3 + 2) - 1)
 //higher order operators
 let higher = (complex / 3) * 2; // should be 4 = (6 / 3) * 2
 
-if a - 1 {
-    if b - 1
-        higher = 6;
-}
+fn main => higher = 8;
 
 return higher; 
 
