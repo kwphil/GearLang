@@ -217,6 +217,7 @@ std::unique_ptr<Ast::Nodes::NodeBase> Ast::Nodes::NodeBase::parse(Lexer::Stream&
     if (s.peek().content == "let")         out = Let::parse(s);
     else if (s.peek().content == "return") out = Return::parse(s);
     else if (s.peek().content == "if")     out = If::parse(s);
+    else if (s.peek().content == "fn")     out = Function::parse(s);
     else                                   out = Expr::parse(s);
     s.expect(";");
 
@@ -317,7 +318,31 @@ llvm::Value* Ast::Nodes::If::generate(Context& ctx) {
     return nullptr;
 }
 
-// Program ---------------------------
+// Function ----------------------------------------------
+
+std::unique_ptr<Ast::Nodes::Function> Ast::Nodes::Function::parse(Lexer::Stream& s) {
+    s.expect("fn");
+    std::string name = s.pop().content;
+    // TODO: Parse variable list
+    std::unique_ptr<NodeBase> block = NodeBase::parse(s); 
+
+    return std::make_unique<Function>(Function(name, std::move(block)));
+}
+
+std::string Ast::Nodes::Function::show() {
+    return "fn " + name + " { " + block->show() + " }";
+}
+
+llvm::Function* Ast::Nodes::Function::generate(Context& ctx) {
+    llvm::Function* new_fn = llvm::Function::Create(
+        llvm::Type::getInt32Ty(ctx.llvmCtx),
+        llvm::Function::ExternalLinkage,
+        name,
+        ctx.module
+    );
+}
+
+// Program -------------------------------------------------
 
 Ast::Program Ast::Program::parse(Lexer::Stream& s) {
     Program that = Program();

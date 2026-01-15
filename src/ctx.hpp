@@ -14,7 +14,7 @@ public:
     llvm::IRBuilder<> builder;
     std::unique_ptr<llvm::Module> module;
 
-    std::shared_ptr<llvm::Function*> mainFn;
+    std::shared_ptr<llvm::Function*> current_fn;
 
     Context()
     : builder(llvmCtx),

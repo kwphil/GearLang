@@ -94,6 +94,13 @@ namespace Ast::Nodes {
         llvm::Value* generate(Context& ctx) override;
     };
 
+    // Rust-style block (returns a value)
+    class ExprBlock : public Expr {
+    private:
+        std::shared_ptr<llvm::Function*> parent_fn;
+        
+    };
+
     class If : public Expr {
     private:
         pExpr cond;
@@ -135,6 +142,23 @@ namespace Ast::Nodes {
         : expr(std::move(expr)) {}
 
         static std::unique_ptr<Return> parse(Lexer::Stream& s);
+
+        std::string show() override;
+
+        llvm::Value* generate(Context& ctx) override;
+    };
+
+    class Function : public NodeBase {
+    private:
+        std::string name;
+        // TODO: Add args
+        std::unique_ptr<NodeBase> block;
+
+    public:
+        Function(std::string& name, std::unique_ptr<NodeBase> block)
+        : name(name), block(std::move(block)) { } 
+
+        static std::unique_ptr<Function> parse(Lexer::Stream& s);
 
         std::string show() override;
 
