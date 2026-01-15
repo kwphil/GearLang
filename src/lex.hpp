@@ -16,6 +16,7 @@ enum class CharType {
     Sym,
     Format,
     Quote,
+    Brace,
 };
 
 CharType getCharType(char c);
@@ -31,6 +32,8 @@ enum class Type {
     Operator,
     ParenOpen,
     ParenClose,
+    BraceOpen,
+    BraceClose,
 };
 
 Type classify(std::string& content, CharType state);

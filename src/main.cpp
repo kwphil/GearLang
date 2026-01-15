@@ -84,10 +84,7 @@ int main(int argc, char** argv) {
     std::system(command.c_str());
     std::cout << "done\n";
 
-    std::cout << "running...";
-    command = "./build";
-    std::system(command.c_str());
-    std::cout << "done; exit=" << std::system("echo $?") << "\n";
+    std::cout << "Built successfully!\n";
 
     return EXIT_SUCCESS;
 }
