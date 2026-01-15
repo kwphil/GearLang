@@ -8,6 +8,7 @@ Lexer::CharType Lexer::getCharType(char c) {
     if (isalpha(c) || c == '_') return CharType::Alpha;
     if (isdigit(c) || c == '.') return CharType::Num;
     if (c == '(' || c == ')') return CharType::Paren;
+    if (c == '{' || c == '}') return CharType::Brace; 
     if (c == ' ' || c == '\n' || c == '\t') return CharType::Format;
     if (c == '"') return CharType::Quote;
     return CharType::Sym;
@@ -36,6 +37,11 @@ Lexer::Type Lexer::classify(std::string& content, CharType state)
         case CharType::Paren:
             if (content == "(") return Type::ParenOpen;
             if (content == ")") return Type::ParenClose;
+            break;
+
+        case CharType::Brace:
+            if (content == "{") return Type::BraceOpen;
+            if (content == "}") return Type::BraceClose;
             break;
 
         case CharType::Num:
@@ -73,6 +79,8 @@ void Lexer::Stream::expect(const char* should) {
     if (is != should) {
         std::cerr << "Error: Expected '" << should
                   << "', but got '" << is << "'\n";
+
+        exit(EXIT_FAILURE);
     }
 }
 
