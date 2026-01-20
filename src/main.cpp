@@ -19,7 +19,7 @@ std::shared_ptr<llvm::Function*> create_main(Context& ctx) {
             mainType,
             llvm::Function::ExternalLinkage,
             "_start",
-            &*(ctx.module)
+            ctx.module.get()
         );
 
     llvm::BasicBlock* entry =
@@ -30,6 +30,7 @@ std::shared_ptr<llvm::Function*> create_main(Context& ctx) {
         );
 
     ctx.builder.SetInsertPoint(entry);
+    ctx._start_block = std::make_unique<llvm::BasicBlock*>(entry);
 
     return std::make_shared<llvm::Function*>(mainFn);
 }
@@ -55,13 +56,18 @@ int main(int argc, char** argv) {
 
     Context ctx;
 
-    ctx.current_fn = create_main(ctx);
-    
     std::cout << "generating... ";
-    root.generate(ctx);
-    std::cout << "done\n";
 
-    ctx.builder.CreateUnreachable();
+    ctx.current_fn = create_main(ctx);
+    root.generate(ctx);
+
+    // Now call main
+    ctx.builder.CreateCall(ctx.module->getFunction("main"));
+    // And return
+    Ast::Nodes::Return(
+        std::make_unique<Ast::Nodes::ExprLitInt>(Ast::Nodes::ExprLitInt(0))
+    );
+    std::cout << "done\n";
 
     std::cout << "rendering... ";
     std::string output = ctx.render();
