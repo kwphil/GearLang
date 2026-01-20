@@ -14,6 +14,9 @@ public:
     llvm::IRBuilder<> builder;
     std::unique_ptr<llvm::Module> module;
 
+    std::unique_ptr<llvm::BasicBlock*> _start_block; 
+    // Making sure that this is separate for code outside the functions
+
     std::shared_ptr<llvm::Function*> current_fn;
 
     Context()

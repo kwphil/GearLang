@@ -4,6 +4,13 @@
 #include <vector>
 #include <unordered_set>
 #include <cstdint>
+#include <source_location>
+#include <memory>
+
+// stupid circular dependencies
+namespace Ast::Nodes {
+    class NodeBase;
+}
 
 namespace Lexer {
 
@@ -56,7 +63,16 @@ public:
     Token peek();
     Token pop();
     void back() { index--; }
-    void expect(const char* should);
+    void expect(
+        const char* should, 
+        const std::source_location& location = std::source_location::current()
+    );
+
+    void expect(
+        const char* should,
+        std::unique_ptr<Ast::Nodes::NodeBase>& nodes_parsed,
+        const std::source_location& location = std::source_location::current()
+    );
 };
 
 Stream tokenize(std::string& source_path);

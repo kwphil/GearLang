@@ -162,6 +162,7 @@ namespace Ast::Nodes {
 
         std::string show() override;
 
+        // This has no use for generating code, so this always returns nullptr
         llvm::Value* generate(Context& ctx) override;
     };
 };

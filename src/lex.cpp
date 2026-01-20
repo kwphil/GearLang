@@ -1,8 +1,10 @@
 #include "lex.hpp"
+#include "ast.hpp"
 
 #include <cctype>
 #include <iostream>
 #include <fstream>
+#include <source_location>
 
 Lexer::CharType Lexer::getCharType(char c) {
     if (isalpha(c) || c == '_') return CharType::Alpha;
@@ -74,13 +76,35 @@ Lexer::Token Lexer::Stream::pop() {
     return content[index++];
 }
 
-void Lexer::Stream::expect(const char* should) {
+void Lexer::Stream::expect(
+    const char* should,
+    const std::source_location& location
+) {
     auto is = pop().content;
     if (is != should) {
-        std::cerr << "Error: Expected '" << should
-                  << "', but got '" << is << "'\n";
+        std::cerr << 
+            "Parser found an error at: " << location.file_name() << ":"
+            << location.line() << ": " << location.function_name() << "\n"
+            "Error: Expected '" << should << "', but got '" << is << "'\n";
 
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
+    }
+}
+
+void Lexer::Stream::expect(
+    const char* should,
+    std::unique_ptr<Ast::Nodes::NodeBase>& nodes_parsed,
+    const std::source_location& location
+) {
+    auto is = pop().content;
+    if (is != should) {
+        std::cerr << 
+            "Parser found an error at: " << location.file_name() << ":"
+            << location.line() << ": " << location.function_name() << "\n"
+            "Error: Expected '" << should << "', but got '" << is << "'.\n"
+            "Parser managed to grab context here: " << nodes_parsed->show();
+
+        // exit(EXIT_FAILURE);
     }
 }
 

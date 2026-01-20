@@ -216,10 +216,11 @@ std::unique_ptr<Ast::Nodes::NodeBase> Ast::Nodes::NodeBase::parse(Lexer::Stream&
 
     if (s.peek().content == "let")         out = Let::parse(s);
     else if (s.peek().content == "return") out = Return::parse(s);
-    else if (s.peek().content == "if")     out = If::parse(s);
-    else if (s.peek().content == "fn")     out = Function::parse(s);
+    else if (s.peek().content == "if")     out = If::parse(s); 
+    // ; is not expected for a function
+    else if (s.peek().content == "fn")     return Function::parse(s); 
     else                                   out = Expr::parse(s);
-    s.expect(";");
+    s.expect(";", out);
 
     return out;
 }
@@ -247,6 +248,10 @@ llvm::Value* Ast::Nodes::Return::generate(Context& ctx) {
             retVal,
             llvm::Type::getInt32Ty(ctx.llvmCtx)
         );
+    }
+
+    if(!ctx.module->getFunction("main") && !ctx.module->getFunction("_start")) {
+        throw std::runtime_error("Unimplemented return function for non-main function");
     }
 
     // Linux x86-64: exit(int status)
@@ -333,13 +338,34 @@ std::string Ast::Nodes::Function::show() {
     return "fn " + name + " { " + block->show() + " }";
 }
 
-llvm::Function* Ast::Nodes::Function::generate(Context& ctx) {
+llvm::Value* Ast::Nodes::Function::generate(Context& ctx) {
+    //TODO: This is currently hard coded
+    llvm::FunctionType* fn_type = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(ctx.llvmCtx),
+        false
+    );
+
     llvm::Function* new_fn = llvm::Function::Create(
-        llvm::Type::getInt32Ty(ctx.llvmCtx),
+        fn_type,
         llvm::Function::ExternalLinkage,
         name,
-        ctx.module
+        *(ctx.module) // remember ctx.module is a unique_ptr
     );
+
+    ctx.current_fn = std::make_shared<llvm::Function*>(new_fn);
+
+    // Creating the entry block to the function (we will be returning this value)
+    llvm::BasicBlock* entry_block = llvm::BasicBlock::Create(ctx.llvmCtx, "entry", new_fn);
+
+    ctx.builder.SetInsertPoint(entry_block);
+
+    // Now that the block is created, we can add the contents
+    block->generate(ctx);
+
+    // Reset to the _start code once done
+    ctx.builder.SetInsertPoint(*(ctx._start_block));
+    
+    return nullptr;
 }
 
 // Program -------------------------------------------------
