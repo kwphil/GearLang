@@ -61,9 +61,13 @@ int main(int argc, char** argv) {
     ctx.current_fn = create_main(ctx);
     root.generate(ctx);
 
-    // Now call main
-    ctx.builder.CreateCall(ctx.module->getFunction("main"));
-    // And return
+    // Now call main (if it exists)
+    auto main = ctx.module->getFunction("main");
+    if (main) {
+        ctx.builder.CreateCall(ctx.module->getFunction("main"));
+    }
+
+    // And return (currently at _start)
     Ast::Nodes::Return(
         std::make_unique<Ast::Nodes::ExprLitInt>(Ast::Nodes::ExprLitInt(0))
     );
