@@ -6,6 +6,7 @@
 #include <llvm/IR/InlineAsm.h>
 
 #include "ast.hpp"
+#include "syscall.hpp"
 
 std::shared_ptr<llvm::Function*> create_main(Context& ctx) {
     llvm::FunctionType* mainType =
@@ -67,10 +68,17 @@ int main(int argc, char** argv) {
         ctx.builder.CreateCall(ctx.module->getFunction("main"));
     }
 
-    // And return (currently at _start)
-    Ast::Nodes::Return(
-        std::make_unique<Ast::Nodes::ExprLitInt>(Ast::Nodes::ExprLitInt(0))
+    // And return _start
+    auto exit_fn = syscall_exit(ctx.llvmCtx);
+
+    auto retVal = llvm::ConstantInt::get(
+        llvm::Type::getInt32Ty(ctx.llvmCtx),
+        0,
+        true
     );
+    ctx.builder.CreateCall(exit_fn, { retVal });
+    ctx.builder.CreateUnreachable();
+
     std::cout << "done\n";
 
     std::cout << "rendering... ";

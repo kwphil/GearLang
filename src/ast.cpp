@@ -16,6 +16,7 @@
 #include "ast.hpp"
 #include "lex.hpp"
 #include "ctx.hpp"
+#include "syscall.hpp"
 
 // Expr -------------------------------------------------------
 
@@ -55,7 +56,7 @@ llvm::Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
 // ExprLitInt ---------------------------------------------
 
 std::unique_ptr<Ast::Nodes::ExprLitInt> Ast::Nodes::ExprLitInt::parse(Lexer::Stream& s) 
-{ return std::make_unique<ExprLitInt>((uint64_t)std::stoi(s.pop().content)); }
+{ return std::make_unique<ExprLitInt>((uint64_t)std::stoi(s.pop()->content)); }
 
 std::string Ast::Nodes::ExprLitInt::show() 
 { return std::to_string(this->val); } 
@@ -71,7 +72,7 @@ llvm::Value* Ast::Nodes::ExprLitInt::generate(Context& ctx) {
 // ExprLitFloat ------------------------------------------
 
 std::unique_ptr<Ast::Nodes::ExprLitFloat> Ast::Nodes::ExprLitFloat::parse(Lexer::Stream& s) 
-{ return std::make_unique<Ast::Nodes::ExprLitFloat>(std::stod(s.pop().content)); }
+{ return std::make_unique<Ast::Nodes::ExprLitFloat>(std::stod(s.pop()->content)); }
 
 std::string Ast::Nodes::ExprLitFloat::show() { return std::to_string(val); }
 
@@ -86,13 +87,21 @@ std::unique_ptr<Ast::Nodes::ExprVar> Ast::Nodes::ExprVar::parse(std::string& nam
 std::string Ast::Nodes::ExprVar::show() { return name; }
 
 llvm::Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
-    auto it = ctx.named_values.find(name);
-    if (it == ctx.named_values.end())
+    llvm::Value* var = ctx.lookup(name);
+    if (!var)
         throw std::runtime_error("Unknown variable: " + name);
+
+    if (auto* gv = llvm::dyn_cast<llvm::GlobalVariable>(var)) {
+        return ctx.builder.CreateLoad(
+            gv->getValueType(),
+            gv,
+            name + ".load"
+        );
+    }
 
     return ctx.builder.CreateLoad(
         llvm::Type::getInt32Ty(ctx.llvmCtx),
-        it->second,
+        var,
         name + ".load"
     );
 }
@@ -112,7 +121,7 @@ std::string Ast::Nodes::ExprAssign::show() {
 }
 
 llvm::Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
-    llvm::Value* alloca = ctx.named_values[name];
+    llvm::Value* alloca = ctx.lookup(name);
     if (!alloca)
         throw std::runtime_error("Unknown variable: " + name);
 
@@ -128,12 +137,12 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseExpr(Lexer::Stream& s) {
     pExpr left = parseTerm(s);
     
     //no operator
-    if (s.peek().type != Lexer::Type::Operator)
+    if (s.peek()->type != Lexer::Type::Operator)
         return left;
 
     
     ExprOp::Type type;
-    switch(s.pop().content[0])
+    switch(s.pop()->content[0])
     {
         case '+': type = ExprOp::Type::Add; break;
         case '-': type = ExprOp::Type::Sub; break;
@@ -146,14 +155,14 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseExpr(Lexer::Stream& s) {
 }
 
 Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s) {
-    if (s.peek().content == "(") {
+    if (s.peek()->content == "(") {
         s.expect("(");
         auto expr = parseExpr(s);
         s.expect(")");
         return expr;
     }
 
-    Lexer::Token lit = s.peek();
+    Lexer::Token lit = *(s.peek());
 
     switch (lit.type) {
         case Lexer::Type::FloatLiteral:   return ExprLitFloat::parse(s); break;
@@ -169,7 +178,7 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s) {
             return If::parse(s);
         }
 
-        if(s.peek().content == "=") {
+        if(s.peek()->content == "=") {
             return ExprAssign::parse(lit.content, s);
         }
 
@@ -184,7 +193,7 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s) {
 
 std::unique_ptr<Ast::Nodes::Let> Ast::Nodes::Let::parse(Lexer::Stream& s) {
     s.expect("let");
-    std::string target = s.pop().content;
+    std::string target = s.pop()->content;
     s.expect("=");
     std::unique_ptr<Expr> expr = Expr::parse(s);
 
@@ -196,30 +205,106 @@ std::string Ast::Nodes::Let::show() {
 }
 
 llvm::Value* Ast::Nodes::Let::generate(Context& ctx) {
-    llvm::Function* fn = ctx.builder.GetInsertBlock()->getParent();
+    llvm::Value* initVal = expr->generate(ctx);
 
-    llvm::Type* ty = llvm::Type::getInt32Ty(ctx.llvmCtx);
-    llvm::AllocaInst* alloca = ctx.create_entry_block(fn, target, ty);
+    // GLOBAL SCOPE
+    llvm::Function* _fn = *ctx.current_fn;
+    if (_fn->getName() == "_start") {
+        // TODO: Probably update to have this use the correct var type
+        llvm::Type* ty = llvm::Type::getInt32Ty(ctx.llvmCtx);
 
-    // TODO: make this an optional parameter
-    if(true) {
-        llvm::Value* initVal = expr->generate(ctx);
-        ctx.builder.CreateStore(initVal, alloca);
+        // Creating a placeholder and then assigning the value
+        llvm::Constant* placeholder = 
+            llvm::Constant::getNullValue(ty);
+        
+        // Create the variable
+        llvm::GlobalVariable* var = new llvm::GlobalVariable(
+            *(ctx.module),
+            ty,
+            false,
+            llvm::GlobalValue::ExternalLinkage,
+            placeholder,
+            target
+        );
+
+        ctx.bind(target, var);
+
+        // Then call an assignment
+        ExprAssign(target, std::move(expr)).generate(ctx);
+
+        return var;
     }
 
-    ctx.named_values[target] = alloca;
+    // FUNCTION SCOPE
+    llvm::Function* fn = *ctx.current_fn;
+    llvm::AllocaInst* alloca =
+        ctx.create_entry_block(fn, target,
+            llvm::Type::getInt32Ty(ctx.llvmCtx));
+
+    ctx.builder.CreateStore(initVal, alloca);
+    ctx.bind(target, alloca);
     return alloca;
+}
+
+// ExprBlock ------------------------------------------------------
+
+std::unique_ptr<Ast::Nodes::ExprBlock> Ast::Nodes::ExprBlock::parse(Lexer::Stream& s) {
+    std::vector<std::unique_ptr<NodeBase>> nodes;
+
+    s.expect("{");
+    std::unique_ptr<Lexer::Token> t = s.peek();
+    int brace_count = 1;
+    while(s.has()) {
+        // For nested braces
+        if(t->type == Lexer::Type::BraceOpen) brace_count++;
+        if(t->type == Lexer::Type::BraceClose) brace_count--;
+
+        if(brace_count == 0) {
+            break;
+        }
+
+        nodes.push_back(NodeBase::parse(s));
+
+        t = s.peek();
+    }
+
+    s.pop(); // To remove the last }
+
+    return std::make_unique<Ast::Nodes::ExprBlock>(std::move(nodes));
+}
+
+std::string Ast::Nodes::ExprBlock::show() {
+    std::string node_show;
+
+    for(const auto& expr : nodes)
+        node_show += expr->show();
+
+    return "{\n" + node_show + "\n}\n";
+}
+
+llvm::Value* Ast::Nodes::ExprBlock::generate(Context& ctx) {
+    ctx.push_scope();
+    for (auto& expr : nodes)
+        expr->generate(ctx);
+    ctx.pop_scope();
+    return nullptr;
 }
 
 std::unique_ptr<Ast::Nodes::NodeBase> Ast::Nodes::NodeBase::parse(Lexer::Stream& s) {
     std::unique_ptr<NodeBase> out;
+    std::unique_ptr<Lexer::Token> curr = s.peek();
 
-    if (s.peek().content == "let")         out = Let::parse(s);
-    else if (s.peek().content == "return") out = Return::parse(s);
-    else if (s.peek().content == "if")     out = If::parse(s); 
+    if(curr == nullptr) {
+        throw std::runtime_error("Ast::Nodes::NodeBase::parse, unexpected nullptr at s.peek()");
+    }
+
+    if (curr->content == "let")         out = Let::parse(s);
+    else if (curr->content == "return") out = Return::parse(s);
+    else if (curr->content == "if")     out = If::parse(s); 
     // ; is not expected for a function
-    else if (s.peek().content == "fn")     return Function::parse(s); 
-    else                                   out = Expr::parse(s);
+    else if (curr->content == "fn")     return Function::parse(s); 
+    else if (curr->content == "{")      return ExprBlock::parse(s);
+    else                                out = Expr::parse(s);
     s.expect(";", out);
 
     return out;
@@ -254,20 +339,7 @@ llvm::Value* Ast::Nodes::Return::generate(Context& ctx) {
         throw std::runtime_error("Unimplemented return function for non-main function");
     }
 
-    // Linux x86-64: exit(int status)
-    // rdi = status
-    // rax = 60
-    auto* asmFn = llvm::InlineAsm::get(
-        llvm::FunctionType::get(
-            llvm::Type::getVoidTy(ctx.llvmCtx),
-            { llvm::Type::getInt32Ty(ctx.llvmCtx) },
-            false
-        ),
-        "mov $$60, %rax\n"
-        "syscall",
-        "{rdi},~{rax},~{rcx},~{r11},~{memory}",
-        true
-    );
+    auto asmFn = syscall_exit(ctx.llvmCtx);
 
     ctx.builder.CreateCall(asmFn, { retVal });
     ctx.builder.CreateUnreachable();
@@ -327,7 +399,7 @@ llvm::Value* Ast::Nodes::If::generate(Context& ctx) {
 
 std::unique_ptr<Ast::Nodes::Function> Ast::Nodes::Function::parse(Lexer::Stream& s) {
     s.expect("fn");
-    std::string name = s.pop().content;
+    std::string name = s.pop()->content;
     // TODO: Parse variable list
     std::unique_ptr<NodeBase> block = NodeBase::parse(s); 
 
@@ -339,32 +411,33 @@ std::string Ast::Nodes::Function::show() {
 }
 
 llvm::Value* Ast::Nodes::Function::generate(Context& ctx) {
-    //TODO: This is currently hard coded
-    llvm::FunctionType* fn_type = llvm::FunctionType::get(
-        llvm::Type::getVoidTy(ctx.llvmCtx),
-        false
-    );
+    llvm::FunctionType* fn_type =
+        llvm::FunctionType::get(
+            llvm::Type::getVoidTy(ctx.llvmCtx),
+            false
+        );
 
-    llvm::Function* new_fn = llvm::Function::Create(
-        fn_type,
-        llvm::Function::ExternalLinkage,
-        name,
-        *(ctx.module) // remember ctx.module is a unique_ptr
-    );
+    llvm::Function* new_fn =
+        llvm::Function::Create(
+            fn_type,
+            llvm::Function::ExternalLinkage,
+            name,
+            *ctx.module
+        );
 
     ctx.current_fn = std::make_shared<llvm::Function*>(new_fn);
+    ctx.push_scope();
 
-    // Creating the entry block to the function (we will be returning this value)
-    llvm::BasicBlock* entry_block = llvm::BasicBlock::Create(ctx.llvmCtx, "entry", new_fn);
+    llvm::BasicBlock* entry =
+        llvm::BasicBlock::Create(ctx.llvmCtx, "entry", new_fn);
+    ctx.builder.SetInsertPoint(entry);
 
-    ctx.builder.SetInsertPoint(entry_block);
-
-    // Now that the block is created, we can add the contents
     block->generate(ctx);
 
-    // Reset to the _start code once done
+    ctx.pop_scope();
+    ctx.current_fn.reset();
+
     ctx.builder.SetInsertPoint(*(ctx._start_block));
-    
     return nullptr;
 }
 

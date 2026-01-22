@@ -23,3 +23,6 @@ Args = "build"
 
 As for implementation, it will probably create wrappers between the two
 
+building a `.gearlang/cpp/wrappers.gear` and a `${cpp_path}/.gearlang/wrappers.cpp` to create C functions
+
+
