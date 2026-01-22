@@ -20,10 +20,11 @@ public:
     std::shared_ptr<llvm::Function*> current_fn;
 
     Context()
-    : builder(llvmCtx),
-      module(std::make_unique<llvm::Module>("gearlang", llvmCtx)) {}
+    : builder(llvmCtx), module(std::make_unique<llvm::Module>("gearlang", llvmCtx)) {
+        scopes.emplace_back(); // global scope
+    }
 
-    std::unordered_map<std::string, llvm::Value*> named_values;
+    std::vector<std::unordered_map<std::string, llvm::Value*>> scopes;
 
     llvm::AllocaInst* create_entry_block(
         llvm::Function* function,
@@ -34,4 +35,9 @@ public:
     void emit(std::string line);
 
     std::string render();
+
+    void push_scope();
+    void pop_scope();
+    llvm::Value* lookup(const std::string& name);
+    void bind(const std::string& name, llvm::Value* val);
 };

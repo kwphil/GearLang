@@ -28,3 +28,24 @@ std::string Context::render() {
     module->print(os, nullptr);
     return out;
 }
+
+void Context::bind(const std::string& name, llvm::Value* val) {
+    scopes.back()[name] = val;
+}
+
+llvm::Value* Context::lookup(const std::string& name) {
+    for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
+        auto found = it->find(name);
+        if (found != it->end())
+            return found->second;
+    }
+    return nullptr;
+}
+
+void Context::pop_scope() {
+    scopes.pop_back();
+}
+
+void Context::push_scope() {
+    scopes.emplace_back();
+}

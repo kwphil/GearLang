@@ -97,8 +97,18 @@ namespace Ast::Nodes {
     // Rust-style block (returns a value)
     class ExprBlock : public Expr {
     private:
-        std::shared_ptr<llvm::Function*> parent_fn;
-        
+        std::vector<std::unique_ptr<NodeBase>> nodes;
+    
+    public:
+        ExprBlock(std::vector<std::unique_ptr<NodeBase>>&& nodes)
+        : nodes(std::move(nodes)) { }
+
+        static std::unique_ptr<ExprBlock> parse(Lexer::Stream& s);
+
+        std::string show() override;
+        // Will probably return the return variable
+        // Will stay void until I get Function to return non-void
+        llvm::Value* generate(Context& ctx) override;
     };
 
     class If : public Expr {

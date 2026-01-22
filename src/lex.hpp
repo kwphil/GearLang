@@ -60,8 +60,8 @@ public:
     std::vector<Token> content;
 
     bool has();
-    Token peek();
-    Token pop();
+    std::unique_ptr<Token> peek();
+    std::unique_ptr<Token> pop();
     void back() { index--; }
     void expect(
         const char* should, 

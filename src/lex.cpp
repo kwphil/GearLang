@@ -68,19 +68,20 @@ bool Lexer::Stream::has() {
     return index != content.size();
 }
 
-Lexer::Token Lexer::Stream::peek() {
-    return content[index];
+std::unique_ptr<Lexer::Token> Lexer::Stream::peek() {
+    if(index >= content.size()) return nullptr;
+    return std::make_unique<Lexer::Token>(content[index]);
 }
 
-Lexer::Token Lexer::Stream::pop() {
-    return content[index++];
+std::unique_ptr<Lexer::Token> Lexer::Stream::pop() {
+    return std::make_unique<Lexer::Token>(content[index++]);
 }
 
 void Lexer::Stream::expect(
     const char* should,
     const std::source_location& location
 ) {
-    auto is = pop().content;
+    auto is = pop()->content;
     if (is != should) {
         std::cerr << 
             "Parser found an error at: " << location.file_name() << ":"
@@ -96,7 +97,7 @@ void Lexer::Stream::expect(
     std::unique_ptr<Ast::Nodes::NodeBase>& nodes_parsed,
     const std::source_location& location
 ) {
-    auto is = pop().content;
+    auto is = pop()->content;
     if (is != should) {
         std::cerr << 
             "Parser found an error at: " << location.file_name() << ":"
