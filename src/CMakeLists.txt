@@ -35,6 +35,7 @@ add_executable(gearlang
     src/ast.cpp
     src/lex.cpp
     src/ctx.cpp
+    src/generate.cpp
     src/syscall.cpp
 )
 
