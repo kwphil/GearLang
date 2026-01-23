@@ -6,7 +6,7 @@ let a = 3;
 let b = a + 2;
 
 //reassignment
-let a = 10;
+a = 10;
 
 //complex expressions with parenthesis
 let complex = a - (b - 1); // should be 6 = 10 - ((3 + 2) - 1)
@@ -15,7 +15,13 @@ let complex = a - (b - 1); // should be 6 = 10 - ((3 + 2) - 1)
 let higher = (complex / 3) * 2; // should be 4 = (6 / 3) * 2
 
 fn main {
-    return higher;
+    let x = 0;
+
+    if(higher) {
+        x = higher + 1;
+    }
+
+    return x;
 }
 
 
