@@ -37,7 +37,7 @@ llvm::Value* Context::lookup(const std::string& name) {
     for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
         auto found = it->find(name);
         if (found != it->end())
-            return found->second;
+        return found->second;
     }
     return nullptr;
 }

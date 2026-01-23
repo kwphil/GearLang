@@ -51,10 +51,6 @@ int main(int argc, char** argv) {
     auto root = Ast::Program::parse(tokens);
     std::cout << "done\n";
 
-    // std::cout << "--- parsed source listing ---\n";
-    // root.show(std::cout);
-    // std::cout << '\n';
-
     Context ctx;
 
     std::cout << "generating... ";

@@ -103,7 +103,7 @@ void Lexer::Stream::expect(
             "Parser found an error at: " << location.file_name() << ":"
             << location.line() << ": " << location.function_name() << "\n"
             "Error: Expected '" << should << "', but got '" << is << "'.\n"
-            "Parser managed to grab context here: " << nodes_parsed->show();
+            "Parser threw an error on line: " << nodes_parsed->line_number << "\n";
 
         // exit(EXIT_FAILURE);
     }
@@ -160,6 +160,17 @@ Lexer::Stream Lexer::tokenize(std::string& source_path)
 
         tok.content += c;
         state_old = state_new;
+    }
+
+    // flush final token if file didn't end with a transition
+    if (!tok.content.empty() &&
+        state_old != CharType::Format &&
+        state_old != CharType::Invalid &&
+        (!is_comment || is_string))
+    {
+        tok.type = classify(tok.content, state_old);
+        tok.line = line;
+        out.content.push_back(tok);
     }
 
     return out;
