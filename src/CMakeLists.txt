@@ -32,9 +32,9 @@ find_package(LLVM REQUIRED CONFIG)
 
 add_executable(gearlang
     src/main.cpp
-    src/ast.cpp
     src/lex.cpp
     src/ctx.cpp
+    src/parse.cpp
     src/generate.cpp
     src/syscall.cpp
 )

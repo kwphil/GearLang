@@ -2,72 +2,36 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include <iostream>
 #include <format>
 
 #include "ast.hpp"
 #include "lex.hpp"
 #include "ctx.hpp"
 
-// Expr -------------------------------------------------------
-
 std::unique_ptr<Ast::Nodes::Expr> Ast::Nodes::Expr::parse(Lexer::Stream& s) {
     return parseExpr(s);
 }
 
-// ExprOp -----------------------------------------------------
-
-std::string Ast::Nodes::ExprOp::show() {
-    switch (type) {
-        case Add: return "(" + left->show() + " + " + right->show() + ")"; break;
-        case Sub: return "(" + left->show() + " - " + right->show() + ")"; break;
-        case Mul: return "(" + left->show() + " * " + right->show() + ")"; break;
-        case Div: return "(" + left->show() + " / " + right->show() + ")"; break;
-    }
-
-    std::string error = "Unexpected ExprOp: ";
-    error += type;
-    throw std::runtime_error(error);
-}
-
-// ExprLitInt ---------------------------------------------
-
 std::unique_ptr<Ast::Nodes::ExprLitInt> Ast::Nodes::ExprLitInt::parse(Lexer::Stream& s) 
-{ return std::make_unique<ExprLitInt>((uint64_t)std::stoi(s.pop()->content)); }
+{ return std::make_unique<ExprLitInt>((uint64_t)std::stoi(s.pop()->content), s.peek()->line); }
 
-std::string Ast::Nodes::ExprLitInt::show() 
-{ return std::to_string(this->val); } 
+std::unique_ptr<Ast::Nodes::ExprLitFloat> Ast::Nodes::ExprLitFloat::parse(Lexer::Stream& s) { 
+    double val = std::stod(s.pop()->content);
 
-// ExprLitFloat ------------------------------------------
-
-std::unique_ptr<Ast::Nodes::ExprLitFloat> Ast::Nodes::ExprLitFloat::parse(Lexer::Stream& s) 
-{ return std::make_unique<Ast::Nodes::ExprLitFloat>(std::stod(s.pop()->content)); }
-
-std::string Ast::Nodes::ExprLitFloat::show() { return std::to_string(val); }
-
-// ExprVar --------------------------------------------------
-
-std::unique_ptr<Ast::Nodes::ExprVar> Ast::Nodes::ExprVar::parse(std::string& name) { 
-    return std::make_unique<ExprVar>(name);
+    return std::make_unique<Ast::Nodes::ExprLitFloat>(val, s.peek()->line); 
 }
 
-std::string Ast::Nodes::ExprVar::show() { return name; }
-
-// ExprAssign
+std::unique_ptr<Ast::Nodes::ExprVar> Ast::Nodes::ExprVar::parse(const Lexer::Token& token) { 
+    return std::make_unique<ExprVar>(token.content, token.line);
+}
 
 std::unique_ptr<Ast::Nodes::ExprAssign>
-Ast::Nodes::ExprAssign::parse(std::string& name, Lexer::Stream& s) {
+Ast::Nodes::ExprAssign::parse(const Lexer::Token& token, Lexer::Stream& s) {
     s.expect("=");
     pExpr expr = Expr::parse(s);
 
-    return std::make_unique<ExprAssign>(name, std::move(expr));
+    return std::make_unique<ExprAssign>(token.content, std::move(expr), token.line);
 }
-
-std::string Ast::Nodes::ExprAssign::show() {
-    return name + " = " + expr->show();
-}
-
-// Expr ------------------------------------------------
 
 Ast::Nodes::pExpr Ast::Nodes::Expr::parseExpr(Lexer::Stream& s) {
     pExpr left = parseTerm(s);
@@ -87,10 +51,12 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseExpr(Lexer::Stream& s) {
     }
 
     pExpr right = parseTerm(s);
-    return std::make_unique<ExprOp>(type, std::move(left), std::move(right));
+    return std::make_unique<ExprOp>(type, std::move(left), std::move(right), s.peek()->line);
 }
 
-Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s) {
+Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s, llvm::Type* cast = nullptr) {
+    int line_number = s.peek()->line;
+
     if (s.peek()->content == "(") {
         s.expect("(");
         auto expr = parseExpr(s);
@@ -107,25 +73,23 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s) {
     }
 
     s.pop();
-    
+
     if(lit.type == Lexer::Type::Identifier) {
         if(lit.content == "if") {
             s.back();
             return If::parse(s);
         }
-
+        
         if(s.peek()->content == "=") {
-            return ExprAssign::parse(lit.content, s);
+            return ExprAssign::parse(lit, s);
         }
 
-        return ExprVar::parse(lit.content);
+        return ExprVar::parse(lit);
     }
 
     std::string error_msg = std::format("Unexpect token: {} (type={})", lit.content, (int)lit.type);
     throw std::runtime_error(error_msg);
 }
-
-// Let -------------------------------------------------
 
 std::unique_ptr<Ast::Nodes::Let> Ast::Nodes::Let::parse(Lexer::Stream& s) {
     s.expect("let");
@@ -133,16 +97,11 @@ std::unique_ptr<Ast::Nodes::Let> Ast::Nodes::Let::parse(Lexer::Stream& s) {
     s.expect("=");
     std::unique_ptr<Expr> expr = Expr::parse(s);
 
-    return std::make_unique<Let>(target, std::move(expr));
+    return std::make_unique<Let>(target, std::move(expr), s.peek()->line);
 }
-
-std::string Ast::Nodes::Let::show() {
-    return "let " + target + " = " + expr->show() + ";";
-}
-
-// ExprBlock ------------------------------------------------------
 
 std::unique_ptr<Ast::Nodes::ExprBlock> Ast::Nodes::ExprBlock::parse(Lexer::Stream& s) {
+    int line_number = s.peek()->line;
     std::vector<std::unique_ptr<NodeBase>> nodes;
 
     s.expect("{");
@@ -164,26 +123,21 @@ std::unique_ptr<Ast::Nodes::ExprBlock> Ast::Nodes::ExprBlock::parse(Lexer::Strea
 
     s.pop(); // To remove the last }
 
-    return std::make_unique<Ast::Nodes::ExprBlock>(std::move(nodes));
-}
-
-std::string Ast::Nodes::ExprBlock::show() {
-    std::string node_show;
-
-    for(const auto& expr : nodes)
-        node_show += expr->show();
-
-    return "{\n" + node_show + "\n}\n";
+    return std::make_unique<Ast::Nodes::ExprBlock>(std::move(nodes), line_number);
 }
 
 std::unique_ptr<Ast::Nodes::NodeBase> Ast::Nodes::NodeBase::parse(Lexer::Stream& s) {
     std::unique_ptr<NodeBase> out;
     std::unique_ptr<Lexer::Token> curr = s.peek();
 
+    if(!s.has()) {
+        throw std::runtime_error("Ast::Nodes::NodeBase::parse, unexpected end of stream");
+    }
+
     if(curr == nullptr) {
         throw std::runtime_error("Ast::Nodes::NodeBase::parse, unexpected nullptr at s.peek()");
     }
-
+    
     // These do not require semicolons, so early return
     if      (curr->content == "fn")     return Function::parse(s);
     else if (curr->content == "{")      return ExprBlock::parse(s);
@@ -198,61 +152,39 @@ std::unique_ptr<Ast::Nodes::NodeBase> Ast::Nodes::NodeBase::parse(Lexer::Stream&
     return out;
 }
 
-// Return -------------------------------------------------
-
 std::unique_ptr<Ast::Nodes::Return> Ast::Nodes::Return::parse(Lexer::Stream& s) {
     s.expect("return");
     std::unique_ptr<Expr> expr = Expr::parse(s);
 
-    return std::make_unique<Return>(Return(std::move(expr)));
+    return std::make_unique<Return>(Return(std::move(expr), s.peek()->line));
 }
-
-std::string Ast::Nodes::Return::show() {
-    return "return " + expr->show() + ";";
-}
-
-// If --------------------------------------------
 
 std::unique_ptr<Ast::Nodes::If> Ast::Nodes::If::parse(Lexer::Stream& s) {
+    int line_number = s.peek()->line; // Get it here on the line of the if statement itself
     s.expect("if");
     pExpr cond = Expr::parse(s);
     std::unique_ptr<NodeBase> expr = NodeBase::parse(s);
 
-    return std::make_unique<If>(If(std::move(expr), std::move(cond)));
+    return std::make_unique<If>(If(std::move(expr), std::move(cond), line_number));
 }
-
-std::string Ast::Nodes::If::show() {
-    return "if" + cond->show() + " --- " + expr->show();
-}
-
-// Function ----------------------------------------------
 
 std::unique_ptr<Ast::Nodes::Function> Ast::Nodes::Function::parse(Lexer::Stream& s) {
+    int line_number = s.peek()->line; // Get it here on the line of the fn statement itself
     s.expect("fn");
     std::string name = s.pop()->content;
     // TODO: Parse variable list
     std::unique_ptr<NodeBase> block = NodeBase::parse(s); 
 
-    return std::make_unique<Function>(Function(name, std::move(block)));
+    return std::make_unique<Function>(Function(name, std::move(block), line_number));
 }
 
-std::string Ast::Nodes::Function::show() {
-    return "fn " + name + " { " + block->show() + " }";
-}
-
-// Program -------------------------------------------------
+#include <iostream>
 
 Ast::Program Ast::Program::parse(Lexer::Stream& s) {
     Program that = Program();
-    while (s.has())
+    while (s.has()) {
         that.content.push_back(Nodes::NodeBase::parse(s));
-        // std::cout << s.peek().content << std::endl;
-
-    return that; 
-}
-
-void Ast::Program::show(std::ostream& os) {
-    for (auto& node : content) {
-        os << node->show() << std::endl;
     }
+    
+    return that; 
 }

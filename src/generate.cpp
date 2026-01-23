@@ -17,17 +17,27 @@ llvm::Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
     llvm::Value* lhs = left->generate(ctx);
     llvm::Value* rhs = right->generate(ctx);
 
+    if(lhs->getType()->isDoubleTy()) {
+        switch(type) {
+            case Add: return ctx.builder.CreateFAdd(lhs, rhs, "faddtmp");
+            case Sub: return ctx.builder.CreateFSub(lhs, rhs, "fsubtmp");
+            case Mul: return ctx.builder.CreateFMul(lhs, rhs, "fmultmp");
+            case Div: return ctx.builder.CreateFDiv(lhs, rhs, "fdivtmp");
+        }
+    }
+
     switch (type) {
-        case Add: return ctx.builder.CreateAdd(lhs, rhs, "addtmp");
-        case Sub: return ctx.builder.CreateSub(lhs, rhs, "subtmp");
-        case Mul: return ctx.builder.CreateMul(lhs, rhs, "multmp");
-        case Div: return ctx.builder.CreateSDiv(lhs, rhs, "divtmp");
+        case Add: return ctx.builder.CreateAdd(lhs, rhs, "iaddtmp");
+        case Sub: return ctx.builder.CreateSub(lhs, rhs, "isubtmp");
+        case Mul: return ctx.builder.CreateMul(lhs, rhs, "imultmp");
+        case Div: return ctx.builder.CreateSDiv(lhs, rhs, "idivtmp");
     }
 
     throw std::runtime_error("Invalid ExprOp");
 }
 
-// Just generates a constant and returns it
+// Just generates an int constant and returns it
+// TODO: Support different bit widths for optimization 
 llvm::Value* Ast::Nodes::ExprLitInt::generate(Context& ctx) {
     return llvm::ConstantInt::get(
         llvm::Type::getInt32Ty(ctx.llvmCtx),
@@ -37,7 +47,13 @@ llvm::Value* Ast::Nodes::ExprLitInt::generate(Context& ctx) {
 }
 
 // TODO
-llvm::Value* Ast::Nodes::ExprLitFloat::generate(Context& ctx) {}; //TODO
+llvm::Value* Ast::Nodes::ExprLitFloat::generate(Context& ctx) {
+    return llvm::ConstantFP::get(
+        // TODO: Support different float types for optimization
+        llvm::Type::getDoubleTy(ctx.llvmCtx),
+        this->val
+    );
+};
 
 // Looks up the name of the variable
 // If the variable doesn't exist, it throws an error and quits
@@ -57,7 +73,7 @@ llvm::Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
     }
 
     return ctx.builder.CreateLoad(
-        llvm::Type::getInt32Ty(ctx.llvmCtx),
+        var->getType(),
         var,
         name + ".load"
     );
@@ -93,8 +109,7 @@ llvm::Value* Ast::Nodes::Let::generate(Context& ctx) {
     // GLOBAL SCOPE
     llvm::Function* _fn = *ctx.current_fn;
     if (_fn->getName() == "_start") {
-        // TODO: Probably update to have this use the correct var type
-        llvm::Type* ty = llvm::Type::getInt32Ty(ctx.llvmCtx);
+        llvm::Type* ty = initVal->getType();
 
         // Creating a placeholder and then assigning the value
         llvm::Constant* placeholder = 
@@ -113,7 +128,7 @@ llvm::Value* Ast::Nodes::Let::generate(Context& ctx) {
         ctx.bind(target, var);
 
         // Then call an assignment
-        ExprAssign(target, std::move(expr)).generate(ctx);
+        ExprAssign(target, std::move(expr), line_number).generate(ctx);
 
         return var;
     }
@@ -121,8 +136,7 @@ llvm::Value* Ast::Nodes::Let::generate(Context& ctx) {
     // FUNCTION SCOPE
     llvm::Function* fn = *ctx.current_fn;
     llvm::AllocaInst* alloca =
-        ctx.create_entry_block(fn, target,
-            llvm::Type::getInt32Ty(ctx.llvmCtx));
+        ctx.create_entry_block(fn, target, initVal->getType());
 
     ctx.builder.CreateStore(initVal, alloca);
     ctx.bind(target, alloca);
@@ -144,6 +158,10 @@ llvm::Value* Ast::Nodes::ExprBlock::generate(Context& ctx) {
 llvm::Value* Ast::Nodes::Return::generate(Context& ctx) {
     llvm::Value* retVal = expr->generate(ctx);
 
+    if(!ctx.module->getFunction("main") && !ctx.module->getFunction("_start")) {
+        throw std::runtime_error("Unimplemented return function for non-main function");
+    }
+
     // Ensure i32
     if (retVal->getType()->isIntegerTy() &&
         retVal->getType()->getIntegerBitWidth() < 32) {
@@ -151,10 +169,6 @@ llvm::Value* Ast::Nodes::Return::generate(Context& ctx) {
             retVal,
             llvm::Type::getInt32Ty(ctx.llvmCtx)
         );
-    }
-
-    if(!ctx.module->getFunction("main") && !ctx.module->getFunction("_start")) {
-        throw std::runtime_error("Unimplemented return function for non-main function");
     }
 
     auto asmFn = syscall_exit(ctx.llvmCtx);
@@ -179,10 +193,11 @@ llvm::Value* Ast::Nodes::If::generate(Context& ctx) {
     llvm::Value* condVal = cond->generate(ctx);
 
     // Convert to boolean: cond != 0
+    // TODO: Support different types (String would be x != "", etc)
     llvm::Value* condv = ctx.builder.CreateICmpNE(
         condVal,
         llvm::ConstantInt::get(
-            llvm::Type::getInt32Ty(ctx.llvmCtx),
+            condVal->getType(),
             0,
             true
         ),
