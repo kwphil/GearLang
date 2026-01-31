@@ -6,7 +6,6 @@
 
 #include "ast.hpp"
 #include "lex.hpp"
-#include "ctx.hpp"
 
 std::unique_ptr<Ast::Nodes::Expr> Ast::Nodes::Expr::parse(Lexer::Stream& s) {
     return parseExpr(s);
@@ -19,6 +18,17 @@ std::unique_ptr<Ast::Nodes::ExprLitFloat> Ast::Nodes::ExprLitFloat::parse(Lexer:
     double val = std::stod(s.pop()->content);
 
     return std::make_unique<Ast::Nodes::ExprLitFloat>(val, s.peek()->line); 
+}
+
+#include <iostream>
+
+std::unique_ptr<Ast::Nodes::ExprLitString> Ast::Nodes::ExprLitString::parse(Lexer::Stream& s) {
+    std::unique_ptr<Lexer::Token> t = s.pop();
+
+    // the string contains the sorrounding quotes, so let's remove them
+    std::string string = t->content.substr(1, t->content.size() - 2); // - 2 because first and last
+    
+    return std::make_unique<ExprLitString>(string, t->line);
 }
 
 std::unique_ptr<Ast::Nodes::ExprVar> Ast::Nodes::ExprVar::parse(const Lexer::Token& token) { 
@@ -51,10 +61,11 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseExpr(Lexer::Stream& s) {
     }
 
     pExpr right = parseTerm(s);
+
     return std::make_unique<ExprOp>(type, std::move(left), std::move(right), s.peek()->line);
 }
 
-Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s, llvm::Type* cast = nullptr) {
+Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s, llvm::Type* cast) {
     int line_number = s.peek()->line;
 
     if (s.peek()->content == "(") {
@@ -67,8 +78,9 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s, llvm::Type* cast
     Lexer::Token lit = *(s.peek());
 
     switch (lit.type) {
-        case Lexer::Type::FloatLiteral:   return ExprLitFloat::parse(s); break;
-        case Lexer::Type::IntegerLiteral: return ExprLitInt::parse(s);   break;
+        case Lexer::Type::FloatLiteral:   return ExprLitFloat::parse(s);    break;
+        case Lexer::Type::IntegerLiteral: return ExprLitInt::parse(s);      break;
+        case Lexer::Type::StringLiteral:  return ExprLitString::parse(s);   break;
         default: break;
     }
 
@@ -145,7 +157,6 @@ std::unique_ptr<Ast::Nodes::NodeBase> Ast::Nodes::NodeBase::parse(Lexer::Stream&
     // These do
     else if (curr->content == "let")    out = Let::parse(s);
     else if (curr->content == "return") out = Return::parse(s);
-    else if (curr->content == "if")     out = If::parse(s); 
     else                                out = Expr::parse(s);
     s.expect(";", out);
 
@@ -177,8 +188,6 @@ std::unique_ptr<Ast::Nodes::Function> Ast::Nodes::Function::parse(Lexer::Stream&
 
     return std::make_unique<Function>(Function(name, std::move(block), line_number));
 }
-
-#include <iostream>
 
 Ast::Program Ast::Program::parse(Lexer::Stream& s) {
     Program that = Program();

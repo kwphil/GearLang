@@ -1,6 +1,8 @@
 // This also tests a bug of crashing without a newline
 
 let a = 0.1 + 0.2;
-let b = a + 4;
+let b = a + 4.0;
+
+let c = "Hello, World!";
 
 return b;
