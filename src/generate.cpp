@@ -57,28 +57,29 @@ llvm::Value* Ast::Nodes::ExprLitFloat::generate(Context& ctx) {
 
 #include <iostream>
 
-// Creates a global variable of an array of type i8 (char)
-// Creates a ExprVar instance to return
+// Creates a global variable of an array of type i8 (char) and returns it
 llvm::Value* Ast::Nodes::ExprLitString::generate(Context& ctx) {
-    std::cout << string.size() << std::endl;
     std::vector<llvm::Constant*> chars(string.size());
     llvm::Type* i8 = llvm::Type::getInt8Ty(ctx.llvmCtx);
+    llvm::ArrayType* arr_i8 = llvm::ArrayType::get(i8, chars.size());
 
     for(int i = 0; i < string.size(); i++) {
         chars[i] = llvm::ConstantInt::get(i8, string[i]);
     }
 
-    auto init = llvm::ConstantArray::get(
-        llvm::ArrayType::get(i8, chars.size()), 
-        nullptr
+    auto array = llvm::ConstantArray::get(
+        arr_i8, 
+        chars
     );
 
-    auto var = llvm::GlobalVariable(*(ctx.module), init->getType(), true,
-        llvm::GlobalVariable::ExternalLinkage, init,
-        string
+    return new llvm::GlobalVariable(
+        *ctx.module,
+        arr_i8,
+        true,
+        llvm::GlobalValue::ExternalLinkage,
+        array,
+        ".str"
     );
-
-    return ExprVar(var.getName().str(), line_number).generate(ctx);
 }
 
 // Looks up the name of the variable
@@ -153,8 +154,7 @@ llvm::Value* Ast::Nodes::Let::generate(Context& ctx) {
 
         ctx.bind(target, var);
 
-        // Then call an assignment
-        ExprAssign(target, std::move(expr), line_number).generate(ctx);
+        ctx.builder.CreateStore(initVal, var);
 
         return var;
     }
