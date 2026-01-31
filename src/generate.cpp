@@ -41,7 +41,7 @@ llvm::Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
 llvm::Value* Ast::Nodes::ExprLitInt::generate(Context& ctx) {
     return llvm::ConstantInt::get(
         llvm::Type::getInt32Ty(ctx.llvmCtx),
-        this->val,
+        this->value,
         true
     );
 }
@@ -51,9 +51,35 @@ llvm::Value* Ast::Nodes::ExprLitFloat::generate(Context& ctx) {
     return llvm::ConstantFP::get(
         // TODO: Support different float types for optimization
         llvm::Type::getDoubleTy(ctx.llvmCtx),
-        this->val
+        this->value
     );
 };
+
+#include <iostream>
+
+// Creates a global variable of an array of type i8 (char)
+// Creates a ExprVar instance to return
+llvm::Value* Ast::Nodes::ExprLitString::generate(Context& ctx) {
+    std::cout << string.size() << std::endl;
+    std::vector<llvm::Constant*> chars(string.size());
+    llvm::Type* i8 = llvm::Type::getInt8Ty(ctx.llvmCtx);
+
+    for(int i = 0; i < string.size(); i++) {
+        chars[i] = llvm::ConstantInt::get(i8, string[i]);
+    }
+
+    auto init = llvm::ConstantArray::get(
+        llvm::ArrayType::get(i8, chars.size()), 
+        nullptr
+    );
+
+    auto var = llvm::GlobalVariable(*(ctx.module), init->getType(), true,
+        llvm::GlobalVariable::ExternalLinkage, init,
+        string
+    );
+
+    return ExprVar(var.getName().str(), line_number).generate(ctx);
+}
 
 // Looks up the name of the variable
 // If the variable doesn't exist, it throws an error and quits

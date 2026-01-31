@@ -41,7 +41,7 @@ namespace Ast::Nodes {
         /// @brief Parses a term from the lexer stream
         /// @param s The lexer stream to parse from
         /// @return A unique pointer to the parsed term
-        static std::unique_ptr<Expr> parseTerm(Lexer::Stream& s);
+        static std::unique_ptr<Expr> parseTerm(Lexer::Stream& s, llvm::Type* cast = nullptr);
     };
 
     /// @brief Smart pointer type for expressions
@@ -96,6 +96,18 @@ namespace Ast::Nodes {
         ExprLitFloat(double x, int line_number) : Literal(line_number, nullptr), value(x) { }
         static std::unique_ptr<ExprLitFloat> parse(Lexer::Stream& s);
         
+        virtual llvm::Value* generate(Context& ctx) override;
+    };
+
+    /// @brief Expression node for C-strings 
+    class ExprLitString : public Literal {
+    private:
+        std::string string;
+
+    public:
+        ExprLitString(std::string& s, int line_number) : Literal(line_number, nullptr), string(s) { }
+        static std::unique_ptr<ExprLitString> parse(Lexer::Stream& s);
+
         virtual llvm::Value* generate(Context& ctx) override;
     };
 
