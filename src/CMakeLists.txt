@@ -37,6 +37,7 @@ add_executable(gearlang
     src/parse.cpp
     src/generate.cpp
     src/syscall.cpp
+    src/var.cpp
 )
 
 target_include_directories(gearlang PRIVATE ${LLVM_INCLUDE_DIRS})

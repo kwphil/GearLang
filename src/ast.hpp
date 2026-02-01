@@ -7,6 +7,7 @@
 
 #include "ctx.hpp"
 #include "lex.hpp"
+#include "var.hpp"
 
 namespace Ast::Nodes {
     /// @brief Base class for all AST nodes
@@ -213,13 +214,23 @@ namespace Ast::Nodes {
     private:
         /// @brief The function name
         std::string name;
-        // TODO: Add args
+        /// @brief The function return type
+        Ast::Type ty;
+        /// @brief The function arguments
+        std::vector<Ast::Variable> args;
         /// @brief The function body block
         std::unique_ptr<NodeBase> block;
 
     public:
-        Function(std::string& name, std::unique_ptr<NodeBase> block, int line_number)
-        : name(name), block(std::move(block)), NodeBase(line_number) { } 
+        Function(
+            std::string& name, 
+            Ast::Type ty, 
+            std::vector<Ast::Variable> args, 
+            std::unique_ptr<NodeBase> block, 
+            int line_number
+        ) : 
+            name(name), ty(ty), args(args),
+            block(std::move(block)), NodeBase(line_number) { } 
 
         static std::unique_ptr<Function> parse(Lexer::Stream& s);
 

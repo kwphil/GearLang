@@ -2,7 +2,6 @@
 
 #include <string>
 #include <vector>
-#include <unordered_set>
 #include <cstdint>
 #include <source_location>
 #include <memory>
@@ -48,6 +47,8 @@ enum class Type {
     BraceClose,
 };
 
+std::string print_type(Type ty);
+
 /// @brief Classify a token based on its content and ending character type
 /// @param content Content of the token
 /// @param state Ending character type of the token
@@ -80,6 +81,9 @@ public:
     /// @brief Peek at the next token without consuming it
     /// @return Pointer to the next token
     std::unique_ptr<Token> peek();
+    /// @brief Peek at the token after the next token without consuming anything
+    /// @return Pointer to the second next token
+    std::unique_ptr<Token> next();
     /// @brief Pop the next token from the stream
     /// @return Pointer to the popped token
     std::unique_ptr<Token> pop();
@@ -102,6 +106,9 @@ public:
         std::unique_ptr<Ast::Nodes::NodeBase>& nodes_parsed,
         const std::source_location& location = std::source_location::current()
     );
+
+    /// @brief Dumps the remaining unparsed text
+    void dump();
 };
 
 /// @brief Tokenize a source file into a token stream

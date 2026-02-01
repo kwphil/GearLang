@@ -16,12 +16,20 @@ let higher = (complex / 3) * 2; // should be 4 = (6 / 3) * 2
 
 fn main {
     let x = 0;
+    let y = 14;
 
     if(higher) {
         x = higher + 1;
     }
 
-    return x;
+    //return foo(x, y);
+}
+
+fn i32 foo: 
+    _a i32, 
+    _b i32 
+{
+    return _a + _b;
 }
 
 
