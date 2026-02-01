@@ -9,6 +9,7 @@
 #include <llvm/IR/Constants.h>
 
 #include "syscall.hpp"
+#include "var.hpp"
 
 // Generates both sides of the expression, and stores them in temporary values
 // Matches through each operation and stores the output as a temp
@@ -55,9 +56,9 @@ llvm::Value* Ast::Nodes::ExprLitFloat::generate(Context& ctx) {
     );
 };
 
-#include <iostream>
-
-// Creates a global variable of an array of type i8 (char) and returns it
+// Converts a string into an array of constant i8s
+// Creates a constant array using that
+// Returns a pointer to the string
 llvm::Value* Ast::Nodes::ExprLitString::generate(Context& ctx) {
     std::vector<llvm::Constant*> chars(string.size());
     llvm::Type* i8 = llvm::Type::getInt8Ty(ctx.llvmCtx);
@@ -243,20 +244,30 @@ llvm::Value* Ast::Nodes::If::generate(Context& ctx) {
     return nullptr;
 }
 
-// Creates the function type. TODO: Fix this: (void, no args)
+// Creates the function type. 
 // Creates the function and adds it to the module
 // Creates the entry basic block and sets the insert point
 // Generates the function body
 // Pops the scope and resets the current function
 // Sets the insert point back to the start block
 llvm::Value* Ast::Nodes::Function::generate(Context& ctx) {
+    std::vector<llvm::Type*> param_types;
+    param_types.reserve(args.size());
+    for (auto& arg : args) {
+        param_types.push_back(
+            Ast::type_to_llvm_type(arg.ty, ctx)
+        );
+    }
+
+    /* 2. Create function type */
     llvm::FunctionType* fn_type =
         llvm::FunctionType::get(
-            llvm::Type::getVoidTy(ctx.llvmCtx),
+            Ast::type_to_llvm_type(ty, ctx),
+            param_types,
             false
         );
 
-    llvm::Function* new_fn =
+    llvm::Function* fn =
         llvm::Function::Create(
             fn_type,
             llvm::Function::ExternalLinkage,
@@ -264,20 +275,54 @@ llvm::Value* Ast::Nodes::Function::generate(Context& ctx) {
             *ctx.module
         );
 
-    ctx.current_fn = std::make_shared<llvm::Function*>(new_fn);
+    unsigned idx = 0;
+    for (auto& llvm_arg : fn->args()) {
+        llvm_arg.setName(args[idx++].name);
+    }
+
+    ctx.current_fn = std::make_shared<llvm::Function*>(fn);
     ctx.push_scope();
 
     llvm::BasicBlock* entry =
-        llvm::BasicBlock::Create(ctx.llvmCtx, "entry", new_fn);
+        llvm::BasicBlock::Create(ctx.llvmCtx, "entry", fn);
     ctx.builder.SetInsertPoint(entry);
+
+    idx = 0;
+    for (auto& llvm_arg : fn->args()) {
+        auto& ast_arg = args[idx];
+
+        llvm::AllocaInst* alloca =
+            ctx.create_entry_block(
+                fn,
+                ast_arg.name,
+                Ast::type_to_llvm_type(ast_arg.ty, ctx)
+            );
+
+        ctx.builder.CreateStore(&llvm_arg, alloca);
+        ctx.bind(ast_arg.name, alloca);
+
+        idx++;
+    }
 
     block->generate(ctx);
 
+    if (!entry->getTerminator()) {
+        if (ty == Ast::Type::Void) {
+            ctx.builder.CreateRetVoid();
+        } else {
+            ctx.builder.CreateRet(
+                llvm::Constant::getNullValue(
+                    Ast::type_to_llvm_type(ty, ctx)
+                )
+            );
+        }
+    }
+
     ctx.pop_scope();
     ctx.current_fn.reset();
+    ctx.builder.SetInsertPoint(*ctx._start_block);
 
-    ctx.builder.SetInsertPoint(*(ctx._start_block));
-    return nullptr;
+    return fn;
 }
 
 void Ast::Program::generate(Context& ctx) {

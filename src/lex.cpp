@@ -1,10 +1,12 @@
 #include "lex.hpp"
 #include "ast.hpp"
 
+#include <unordered_set>
 #include <cctype>
 #include <iostream>
 #include <fstream>
 #include <source_location>
+#include <format>
 
 Lexer::CharType Lexer::getCharType(char c) {
     if (isalpha(c) || c == '_') return CharType::Alpha;
@@ -19,11 +21,11 @@ Lexer::CharType Lexer::getCharType(char c) {
 Lexer::Type Lexer::classify(std::string& content, CharType state)
 {
     static const std::unordered_set<std::string> keywords = {
-        "fn", "let", "comptime", "assert", "test"
+        "fn", "let", "comptime", "assert", "test", "if", "else"
     };
 
     static const std::unordered_set<std::string> operators = {
-        "+", "-", "*", "/", "=>"
+        "+", "-", "*", "/", "=>", ":", ","
     };
 
     switch (state) {
@@ -47,6 +49,12 @@ Lexer::Type Lexer::classify(std::string& content, CharType state)
             break;
 
         case CharType::Num:
+            if (std::any_of(content.begin(), content.end(),
+                [](char c){ return std::isalpha(static_cast<unsigned char>(c)); }))
+            {
+                return Type::Identifier;
+            }
+
             return content.find('.') == std::string::npos
                 ? Type::IntegerLiteral
                 : Type::FloatLiteral;
@@ -71,6 +79,11 @@ bool Lexer::Stream::has() {
 std::unique_ptr<Lexer::Token> Lexer::Stream::peek() {
     if(index >= content.size()) return nullptr;
     return std::make_unique<Lexer::Token>(content[index]);
+}
+
+std::unique_ptr<Lexer::Token> Lexer::Stream::next() {
+    if(index + 1 >= content.size()) return nullptr;
+    return std::make_unique<Lexer::Token>(content[index+1]);
 }
 
 std::unique_ptr<Lexer::Token> Lexer::Stream::pop() {
@@ -174,4 +187,29 @@ Lexer::Stream Lexer::tokenize(std::string& source_path)
     }
 
     return out;
+}
+
+void Lexer::Stream::dump() {
+    for (size_t i = index; i < content.size(); i++)
+        std::cout << content[i].content << " ";
+    std::cout << "\n";
+}
+
+std::string Lexer::print_type(Lexer::Type ty) {
+    using namespace Lexer; // Just to clean a little
+
+    switch(ty) {
+        case(Type::Invalid): return "Invalid";
+        case(Type::BraceClose): return "BraceClose";
+        case(Type::BraceOpen): return "BraceOpen";
+        case(Type::ParenClose): return "ParenClose";
+        case(Type::ParenOpen): return "ParenOpen";
+        case(Type::FloatLiteral): return "FloatLiteral";
+        case(Type::IntegerLiteral): return "IntegerLiteral";
+        case(Type::StringLiteral): return "StringLiteral";
+        case(Type::Keyword): return "Keyword";
+        case(Type::Identifier): return "Identifier";
+        default: 
+            return std::format("Token type: {} is not printable", (int)ty);
+    }
 }
