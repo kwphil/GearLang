@@ -34,10 +34,13 @@ add_executable(gearlang
     src/main.cpp
     src/lex.cpp
     src/ctx.cpp
-    src/parse.cpp
-    src/generate.cpp
     src/syscall.cpp
     src/var.cpp
+    generate/base.cpp
+    generate/expr.cpp
+    generate/literal.cpp
+    parse/base.cpp
+    parse/expr.cpp
 )
 
 target_include_directories(gearlang PRIVATE ${LLVM_INCLUDE_DIRS})
