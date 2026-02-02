@@ -8,7 +8,7 @@
 #include "ast.hpp"
 #include "syscall.hpp"
 
-std::shared_ptr<llvm::Function*> create_main(Context& ctx) {
+llvm::Function* create_main(Context& ctx) {
     llvm::FunctionType* mainType =
         llvm::FunctionType::get(
             llvm::Type::getInt32Ty(ctx.llvmCtx),
@@ -33,7 +33,7 @@ std::shared_ptr<llvm::Function*> create_main(Context& ctx) {
     ctx.builder.SetInsertPoint(entry);
     ctx._start_block = std::make_unique<llvm::BasicBlock*>(entry);
 
-    return std::make_shared<llvm::Function*>(mainFn);
+    return mainFn;
 }
 
 int main(int argc, char** argv) {
@@ -89,13 +89,13 @@ int main(int argc, char** argv) {
     std::cout << "compiling llvm file... \n";
     std::string command = "llvm-as build.llvm -o build.bc";
     std::cout << "> " << command << "\n";
-    std::system(command.c_str());
+    if(std::system(command.c_str())) exit(2);
     command = "llc build.bc -filetype=obj -o build.o";
     std::cout << "> " << command << "\n";
-    std::system(command.c_str());
-    command = "ld build.o -o build";
+    if(std::system(command.c_str())) exit(3);
+    command = "cc -nostartfiles build.o -o build";
     std::cout << "> " << command << "\n";
-    std::system(command.c_str());
+    if(std::system(command.c_str())) exit(4);
     std::cout << "done\n";
 
     std::cout << "Built successfully!\n";

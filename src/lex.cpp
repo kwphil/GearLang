@@ -21,11 +21,11 @@ Lexer::CharType Lexer::getCharType(char c) {
 Lexer::Type Lexer::classify(std::string& content, CharType state)
 {
     static const std::unordered_set<std::string> keywords = {
-        "fn", "let", "comptime", "assert", "test", "if", "else"
+        "fn", "let", "comptime", "assert", "test", "if", "else", "extern"
     };
 
     static const std::unordered_set<std::string> operators = {
-        "+", "-", "*", "/", "=>", ":", ","
+        "+", "-", "*", "/", "=>", ":"
     };
 
     switch (state) {
@@ -60,6 +60,8 @@ Lexer::Type Lexer::classify(std::string& content, CharType state)
                 : Type::FloatLiteral;
 
         case CharType::Sym:
+            if (content == ",") return Type::Comma;
+            if (content == "&") return Type::Amper;
             if (operators.find(content) != operators.end())
                 return Type::Operator;
             return Type::Invalid;

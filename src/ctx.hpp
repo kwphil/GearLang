@@ -21,7 +21,7 @@ public:
     /// @brief Start block for code outside functions
     std::unique_ptr<llvm::BasicBlock*> _start_block; 
     /// @brief Currently active function being generated
-    std::shared_ptr<llvm::Function*> current_fn;
+    llvm::Function* current_fn;
 
     Context()
     : builder(llvmCtx), module(std::make_unique<llvm::Module>("gearlang", llvmCtx)) {

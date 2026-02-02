@@ -143,6 +143,29 @@ namespace Ast::Nodes {
         llvm::Value* generate(Context& ctx) override;
     };
 
+    class ExprCall : public Expr {
+    private:
+        /// @brief the arguments
+        std::vector<pExpr> args;
+        /// @brief the name of the function to call
+        std::string callee;
+    
+    public:
+        ExprCall(
+            std::string& callee, 
+            std::vector<pExpr>& args, 
+            int line_number
+        ) 
+        : callee(callee), args(std::move(args)), Expr(line_number) { }
+
+        static std::unique_ptr<ExprCall> parse(
+            const Lexer::Token& name,
+            Lexer::Stream& s
+        );
+
+        llvm::Value* generate(Context& ctx) override;
+    };
+
     /// @brief Expression node for conditional statements
     class ExprBlock : public Expr {
     private:
@@ -216,6 +239,8 @@ namespace Ast::Nodes {
         std::string name;
         /// @brief The function return type
         Ast::Type ty;
+        /// @brief In case the return type is not primitive
+        Ast::NonPrimitive npty;
         /// @brief The function arguments
         std::vector<Ast::Variable> args;
         /// @brief The function body block
@@ -225,6 +250,7 @@ namespace Ast::Nodes {
         Function(
             std::string& name, 
             Ast::Type ty, 
+            Ast::NonPrimitive npty,
             std::vector<Ast::Variable> args, 
             std::unique_ptr<NodeBase> block, 
             int line_number
@@ -233,6 +259,33 @@ namespace Ast::Nodes {
             block(std::move(block)), NodeBase(line_number) { } 
 
         static std::unique_ptr<Function> parse(Lexer::Stream& s);
+
+        // This has no use for generating code, so this always returns nullptr
+        llvm::Value* generate(Context& ctx) override;
+    };
+
+    class ExternFn : public NodeBase {
+    private:
+        /// @brief the callee name
+        std::string callee;
+        /// @brief the function return type
+        Ast::Type ty;
+        /// @brief in case the function return nonprimitive
+        Ast::NonPrimitive npty;
+        /// @brief args
+        std::vector<Ast::Variable> args;
+    public:
+        ExternFn(
+            std::string& callee, 
+            Ast::Type ty,
+            Ast::NonPrimitive npty,
+            std::vector<Ast::Variable>& args, 
+            int line_number
+        ) : callee(callee), args(args), 
+            ty(ty), npty(npty),
+            NodeBase(line_number) { }
+
+        static std::unique_ptr<ExternFn> parse(Lexer::Stream& s);
 
         // This has no use for generating code, so this always returns nullptr
         llvm::Value* generate(Context& ctx) override;

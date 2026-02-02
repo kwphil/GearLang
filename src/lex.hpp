@@ -45,6 +45,8 @@ enum class Type {
     ParenClose,
     BraceOpen,
     BraceClose,
+    Comma,
+    Amper,
 };
 
 std::string print_type(Type ty);

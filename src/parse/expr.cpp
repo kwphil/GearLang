@@ -44,7 +44,7 @@ Ast::Nodes::ExprAssign::parse(const Lexer::Token& token, Lexer::Stream& s) {
 Ast::Nodes::pExpr Ast::Nodes::Expr::parseExpr(Lexer::Stream& s) {
     pExpr left = parseTerm(s);
     
-    //no operator
+    //no operator 
     if (s.peek()->type != Lexer::Type::Operator)
         return left;
 
@@ -94,9 +94,37 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s, llvm::Type* cast
             return ExprAssign::parse(lit, s);
         }
 
+        if(s.peek()->type == Lexer::Type::ParenOpen) {
+            return ExprCall::parse(lit, s);
+        }
+
         return ExprVar::parse(lit);
     }
 
     std::string error_msg = std::format("Unexpect token: {} (type={})", lit.content, (int)lit.type);
     throw std::runtime_error(error_msg);
+}
+
+std::unique_ptr<Ast::Nodes::ExprCall> Ast::Nodes::ExprCall::parse(
+    const Lexer::Token& tok,
+    Lexer::Stream& s
+) {
+    int line_number = tok.line;
+    std::string nm = tok.content;
+    std::vector<pExpr> args;
+
+    s.expect("(");
+    
+    while(s.peek()->type != Lexer::Type::ParenClose) {
+        args.push_back(Expr::parse(s));
+
+        // Looking for the ) the loop will end anyway
+        if(s.peek()->type != Lexer::Type::ParenClose) {
+            s.expect(",");
+        }
+    }
+
+    s.expect(")");
+
+    return std::make_unique<ExprCall>(nm, args, line_number);
 }

@@ -1,9 +1,13 @@
+#include <format>
+
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/Type.h>
 
 #include "../ast.hpp"
+
+#include <iostream>
 
 // Generates both sides of the expression, and stores them in temporary values
 // Matches through each operation and stores the output as a temp
@@ -28,7 +32,8 @@ llvm::Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
         case Div: return ctx.builder.CreateSDiv(lhs, rhs, "idivtmp");
     }
 
-    throw std::runtime_error("Invalid ExprOp");
+    int line = line_number; // It doesn't like using the line_number from the class
+    throw std::runtime_error(std::format("Invalid ExprOp on line: {}. Type={}", line, (int)type));
 }
 
 // Looks up the name of the variable
@@ -40,12 +45,20 @@ llvm::Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
     if (!var)
         throw std::runtime_error("Unknown variable: " + name);
 
+    // Global values will stay in memory and not registers
     if (auto* gv = llvm::dyn_cast<llvm::GlobalVariable>(var)) {
         return ctx.builder.CreateLoad(
             gv->getValueType(),
             gv,
             name + ".load"
         );
+    }
+
+    llvm::Type* ty = var->getType();
+
+    // If it's a non-pointer use it directly
+    if(!ty->isPointerTy()) {
+        return var;
     }
 
     return ctx.builder.CreateLoad(
@@ -66,4 +79,22 @@ llvm::Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
     ctx.builder.CreateStore(value, alloca);
 
     return value;
+}
+
+// Gets the function by name, and creates a call for it
+// Parses the expressions for each argument and calls it
+llvm::Value* Ast::Nodes::ExprCall::generate(Context& ctx) {
+    llvm::Function* func = ctx.module->getFunction(callee);
+
+    if(!func) {
+        throw std::runtime_error("Unknown function: " + callee);
+    }
+
+    std::vector<llvm::Value*> arg_values;
+    
+    for(auto& a : args) {
+        arg_values.push_back(a->generate(ctx));
+    }
+
+    return ctx.builder.CreateCall(func, arg_values);
 }
