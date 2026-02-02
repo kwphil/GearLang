@@ -3,10 +3,21 @@ CMakeFiles/
 Makefile
 cmake_install.cmake
 CMakeCache.txt
+# And ninja
+.ninja_deps
+.ninja_log
+build.ninja
 
 # The executables
 gearlang
+# I use msys sometimes
+gearlang.exe
 
 # Generated Assembler and Executables
-build.asm
+build.llvm
+build.bc
+build.o
 build
+
+# I use codespaces sometimes
+.vscode/
