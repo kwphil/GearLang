@@ -1,53 +1,51 @@
-
-#include <unordered_map>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/raw_ostream.h>
 #include <string>
 #include <vector>
 
-class Context
-{
-   
-public:
-    std::unordered_map<std::string, uint64_t> var_mapper;
-    uint64_t var_allocer = 0;
-    std::vector<std::string> emission;
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/IRBuilder.h>
 
-    uint64_t var(std::string& var_name)
-    {
-        if (var_mapper.find(var_name) == var_mapper.end())
-            var_mapper[var_name] = (var_allocer++);
+#include "ctx.hpp"
 
-        return var_mapper[var_name];
+llvm::AllocaInst* Context::create_entry_block(
+    llvm::Function* function,
+    const std::string& name,
+    llvm::Type* type
+) {
+    llvm::IRBuilder<> tmpBuilder(
+        &function->getEntryBlock(),
+        function->getEntryBlock().begin()
+    );
+
+    return tmpBuilder.CreateAlloca(type, nullptr, name);
+}
+
+std::string Context::render() {
+    std::string out;
+    llvm::raw_string_ostream os(out);
+    module->print(os, nullptr);
+    return out;
+}
+
+void Context::bind(const std::string& name, llvm::Value* val) {
+    scopes.back()[name] = val;
+}
+
+llvm::Value* Context::lookup(const std::string& name) {
+    for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
+        auto found = it->find(name);
+        if (found != it->end())
+        return found->second;
     }
+    return nullptr;
+}
 
-    void emit(std::string line)
-    {
-        emission.push_back(line);
-    }
+void Context::pop_scope() {
+    scopes.pop_back();
+}
 
-    std::string render()
-    {
-        std::string out;
-
-        out += "format ELF64 executable\n";
-        out += "entry start\n";
-        out += "    vars: rq " + std::to_string(var_allocer) + "\n";
-        out += "segment readable executable\n";
-        out += "start:\n";
-
-        for (const auto& line : emission)
-            out += line + "\n";
-
-        out += "mov rdi, rax\n";
-        out += "mov rax, 60\n"; //syscall exit
-        out += "syscall\n";
-
-        return out;
-
-    }
-
-
-
-};
-
-
-
+void Context::push_scope() {
+    scopes.emplace_back();
+}

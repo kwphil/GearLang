@@ -1,151 +1,130 @@
+#include "lex.hpp"
+#include "ast.hpp"
 
+#include <unordered_set>
 #include <cctype>
 #include <iostream>
-#include <string>
-#include <unordered_set>
-#include <vector>
 #include <fstream>
-#include <stdint.h>
-#include <iostream>
+#include <source_location>
+#include <format>
 
-namespace Lexer
-{
-
-
-//finite state machine
-enum class CharType
-{
-    Invalid,
-    Alpha,
-    Num,
-    Paren,
-    Sym,
-    Format,
-    Quote,
-};
-
-CharType getCharType(char c)
-{
+Lexer::CharType Lexer::getCharType(char c) {
     if (isalpha(c) || c == '_') return CharType::Alpha;
     if (isdigit(c) || c == '.') return CharType::Num;
-    if (c == '('   || c == ')') return CharType::Paren;
-    if (c == ' '   || c == '\n' || c == '\t') return CharType::Format;
-    if (c == '"'              ) return CharType::Quote;
+    if (c == '(' || c == ')') return CharType::Paren;
+    if (c == '{' || c == '}') return CharType::Brace; 
+    if (c == ' ' || c == '\n' || c == '\t') return CharType::Format;
+    if (c == '"') return CharType::Quote;
     return CharType::Sym;
 }
 
-
-
-enum class Type
-{
-    Invalid,
-
-    Keyword,
-    Identifier,
-    IntegerLiteral,
-    FloatLiteral, 
-    StringLiteral,
-    Operator,
-    ParenOpen,
-    ParenClose,
-};
-
-Type classify(std::string& content, CharType state)
+Lexer::Type Lexer::classify(std::string& content, CharType state)
 {
     static const std::unordered_set<std::string> keywords = {
-        "fn", "let", "comptime", "assert", "test"
+        "fn", "let", "comptime", "assert", "test", "if", "else", "extern"
     };
+
     static const std::unordered_set<std::string> operators = {
-        "+", "-", "*", "/",
+        "+", "-", "*", "/", "=>", ":"
     };
 
+    switch (state) {
+        case CharType::Invalid:
+        case CharType::Format:
+            break; // unreachable
 
-    switch (state)
-    {
-        case CharType::Invalid: [[fallthrough]];
-
-        case CharType::Format: break; //unreachable
         case CharType::Alpha:
-            return 
-                keywords.find(content) == keywords.end()
-                ? Type::Identifier : Type::Keyword;
+            return keywords.find(content) == keywords.end()
+                ? Type::Identifier
+                : Type::Keyword;
 
         case CharType::Paren:
             if (content == "(") return Type::ParenOpen;
             if (content == ")") return Type::ParenClose;
             break;
 
+        case CharType::Brace:
+            if (content == "{") return Type::BraceOpen;
+            if (content == "}") return Type::BraceClose;
+            break;
+
         case CharType::Num:
-            if (content.find('.') == std::string::npos) return Type::IntegerLiteral;
-            return Type::FloatLiteral;
+            if (std::any_of(content.begin(), content.end(),
+                [](char c){ return std::isalpha(static_cast<unsigned char>(c)); }))
+            {
+                return Type::Identifier;
+            }
+
+            return content.find('.') == std::string::npos
+                ? Type::IntegerLiteral
+                : Type::FloatLiteral;
 
         case CharType::Sym:
+            if (content == ",") return Type::Comma;
+            if (content == "&") return Type::Amper;
             if (operators.find(content) != operators.end())
                 return Type::Operator;
-            
-            //TODO implement this
-            return Type::Invalid; 
+            return Type::Invalid;
 
         case CharType::Quote:
             return Type::StringLiteral;
-    }   
+    }
 
-
-    std::cerr << "This should not be reached!!!!" << '\n' << std::flush;
+    std::cerr << "This should not be reached!!!!\n";
     return Type::Invalid;
 }
 
+bool Lexer::Stream::has() {
+    return index != content.size();
+}
 
+std::unique_ptr<Lexer::Token> Lexer::Stream::peek() {
+    if(index >= content.size()) return nullptr;
+    return std::make_unique<Lexer::Token>(content[index]);
+}
 
-class Token
-{
-public:
-    std::string content;
-    uint32_t line;
-    Type type;
+std::unique_ptr<Lexer::Token> Lexer::Stream::next() {
+    if(index + 1 >= content.size()) return nullptr;
+    return std::make_unique<Lexer::Token>(content[index+1]);
+}
 
-};
+std::unique_ptr<Lexer::Token> Lexer::Stream::pop() {
+    return std::make_unique<Lexer::Token>(content[index++]);
+}
 
+void Lexer::Stream::expect(
+    const char* should,
+    const std::source_location& location
+) {
+    auto is = pop()->content;
+    if (is != should) {
+        std::cerr << 
+            "Parser found an error at: " << location.file_name() << ":"
+            << location.line() << ": " << location.function_name() << "\n"
+            "Error: Expected '" << should << "', but got '" << is << "'\n";
 
-class Stream
-{
-private:
-    uint32_t index = 0;
-public:
-    std::vector<Token> content;
-
-    bool has()
-    {
-        return (index != content.size());
+        // exit(EXIT_FAILURE);
     }
+}
 
-    Token peek()
-    {
-        return content[index];
+void Lexer::Stream::expect(
+    const char* should,
+    std::unique_ptr<Ast::Nodes::NodeBase>& nodes_parsed,
+    const std::source_location& location
+) {
+    auto is = pop()->content;
+    if (is != should) {
+        std::cerr << 
+            "Parser found an error at: " << location.file_name() << ":"
+            << location.line() << ": " << location.function_name() << "\n"
+            "Error: Expected '" << should << "', but got '" << is << "'.\n"
+            "Parser threw an error on line: " << nodes_parsed->line_number << "\n";
+
+        // exit(EXIT_FAILURE);
     }
+}
 
-    Token pop()
-    {
-        return content[index++];
-    }
-
-    void expect(const char* should)
-    {
-        auto is = pop().content;
-        if (is != should)
-        {
-            std::cerr << "Error: Expected '" << should << "', but got '" << is << "'\n";
-        }
-    }
-
-
-};
-
-
-
-
-
-Stream tokenize(std::string& source_path)
+Lexer::Stream Lexer::tokenize(std::string& source_path)
 {
     std::ifstream file(source_path);
     Stream out;
@@ -153,46 +132,37 @@ Stream tokenize(std::string& source_path)
     char c;
     uint32_t line = 1;
     CharType state_new, state_old = CharType::Invalid;
-    Token tok = Token();
+    Token tok{};
 
     bool is_string = false;
     bool is_comment = false;
 
-    while (file.get(c))
-    {
+    while (file.get(c)) {
         state_new = getCharType(c);
 
-        //state transition -> token boundary
-        if ((state_new != state_old) && !is_string)
-        {
-            //transition cannot happen from alpha to num,
-            //because of identifiers like 'num1'
-            if (
-                state_new == CharType::Num &&
-                state_old == CharType::Alpha
-            ) goto transition_cancle;
-
-
+        // state transition -> token boundary
+        if ((state_new != state_old) && !is_string) {
+            // allow identifiers like "num1"
+            if (state_new == CharType::Num &&
+                state_old == CharType::Alpha)
+                goto transition_cancel;
 
             if (tok.content == "//") is_comment = true;
 
-            if (
-                state_old != CharType::Invalid &&  
-                state_old != CharType::Format  &&  
-                (!is_comment || is_string)
-            )
+            if (state_old != CharType::Invalid &&
+                state_old != CharType::Format &&
+                (!is_comment || is_string))
             {
                 tok.type = classify(tok.content, state_old);
                 tok.line = line;
-
                 out.content.push_back(tok);
-
-                tok = Token();
-            }
-            else
+                tok = Token{};
+            } else {
                 tok.content.clear();
+            }
         }
-        transition_cancle:
+
+    transition_cancel:
 
         if (state_new == CharType::Quote)
             is_string = !is_string;
@@ -202,22 +172,46 @@ Stream tokenize(std::string& source_path)
             line++;
             is_comment = false;
         }
-        
+
         tok.content += c;
         state_old = state_new;
     }
-    
+
+    // flush final token if file didn't end with a transition
+    if (!tok.content.empty() &&
+        state_old != CharType::Format &&
+        state_old != CharType::Invalid &&
+        (!is_comment || is_string))
+    {
+        tok.type = classify(tok.content, state_old);
+        tok.line = line;
+        out.content.push_back(tok);
+    }
+
     return out;
 }
 
-
-
-
-
+void Lexer::Stream::dump() {
+    for (size_t i = index; i < content.size(); i++)
+        std::cout << content[i].content << " ";
+    std::cout << "\n";
 }
 
+std::string Lexer::print_type(Lexer::Type ty) {
+    using namespace Lexer; // Just to clean a little
 
-
-
-
-
+    switch(ty) {
+        case(Type::Invalid): return "Invalid";
+        case(Type::BraceClose): return "BraceClose";
+        case(Type::BraceOpen): return "BraceOpen";
+        case(Type::ParenClose): return "ParenClose";
+        case(Type::ParenOpen): return "ParenOpen";
+        case(Type::FloatLiteral): return "FloatLiteral";
+        case(Type::IntegerLiteral): return "IntegerLiteral";
+        case(Type::StringLiteral): return "StringLiteral";
+        case(Type::Keyword): return "Keyword";
+        case(Type::Identifier): return "Identifier";
+        default: 
+            return std::format("Token type: {} is not printable", (int)ty);
+    }
+}
