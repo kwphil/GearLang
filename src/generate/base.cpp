@@ -24,7 +24,7 @@ llvm::Value* Ast::Nodes::Let::generate(Context& ctx) {
     }
 
     // GLOBAL SCOPE
-    llvm::Function* _fn = *ctx.current_fn;
+    llvm::Function* _fn = ctx.current_fn;
     if (_fn->getName() == "_start") {
         llvm::Type* ty = initVal->getType();
 
@@ -50,7 +50,7 @@ llvm::Value* Ast::Nodes::Let::generate(Context& ctx) {
     }
 
     // FUNCTION SCOPE
-    llvm::Function* fn = *ctx.current_fn;
+    llvm::Function* fn = ctx.current_fn;
     llvm::AllocaInst* alloca =
         ctx.create_entry_block(fn, target, initVal->getType());
 
@@ -74,8 +74,12 @@ llvm::Value* Ast::Nodes::ExprBlock::generate(Context& ctx) {
 llvm::Value* Ast::Nodes::Return::generate(Context& ctx) {
     llvm::Value* retVal = expr->generate(ctx);
 
-    if(!ctx.module->getFunction("main") && !ctx.module->getFunction("_start")) {
-        throw std::runtime_error("Unimplemented return function for non-main function");
+    if(
+        ctx.module->getFunction("main") != ctx.current_fn 
+        && ctx.module->getFunction("_start") != ctx.current_fn
+    ) {
+        ctx.builder.CreateRet(retVal);
+        return retVal;
     }
 
     // Ensure i32
@@ -133,6 +137,8 @@ llvm::Value* Ast::Nodes::If::generate(Context& ctx) {
     return nullptr;
 }
 
+#include <iostream>
+
 // Creates the function type. 
 // Creates the function and adds it to the module
 // Creates the entry basic block and sets the insert point
@@ -144,14 +150,18 @@ llvm::Value* Ast::Nodes::Function::generate(Context& ctx) {
     param_types.reserve(args.size());
     for (auto& arg : args) {
         param_types.push_back(
-            Ast::type_to_llvm_type(arg.ty, ctx)
+            arg.ty == Ast::Type::NonPrimitive
+            ? Ast::type_to_llvm_type(arg.npty, ctx)
+            : Ast::type_to_llvm_type(arg.ty, ctx)
         );
     }
 
-    /* 2. Create function type */
+    // Creating the function type
     llvm::FunctionType* fn_type =
         llvm::FunctionType::get(
-            Ast::type_to_llvm_type(ty, ctx),
+            ty == Ast::Type::NonPrimitive
+            ? Ast::type_to_llvm_type(npty, ctx)
+            : Ast::type_to_llvm_type(ty, ctx),
             param_types,
             false
         );
@@ -169,7 +179,7 @@ llvm::Value* Ast::Nodes::Function::generate(Context& ctx) {
         llvm_arg.setName(args[idx++].name);
     }
 
-    ctx.current_fn = std::make_shared<llvm::Function*>(fn);
+    ctx.current_fn = fn;
     ctx.push_scope();
 
     llvm::BasicBlock* entry =
@@ -177,19 +187,9 @@ llvm::Value* Ast::Nodes::Function::generate(Context& ctx) {
     ctx.builder.SetInsertPoint(entry);
 
     idx = 0;
-    for (auto& llvm_arg : fn->args()) {
+    for(auto& arg : fn->args()) {
         auto& ast_arg = args[idx];
-
-        llvm::AllocaInst* alloca =
-            ctx.create_entry_block(
-                fn,
-                ast_arg.name,
-                Ast::type_to_llvm_type(ast_arg.ty, ctx)
-            );
-
-        ctx.builder.CreateStore(&llvm_arg, alloca);
-        ctx.bind(ast_arg.name, alloca);
-
+        ctx.bind(ast_arg.name, &arg);
         idx++;
     }
 
@@ -201,17 +201,46 @@ llvm::Value* Ast::Nodes::Function::generate(Context& ctx) {
         } else {
             ctx.builder.CreateRet(
                 llvm::Constant::getNullValue(
-                    Ast::type_to_llvm_type(ty, ctx)
+                    ty != Ast::Type::NonPrimitive 
+                    ? Ast::type_to_llvm_type(ty, ctx)
+                    : Ast::type_to_llvm_type(npty, ctx)
                 )
             );
         }
     }
 
     ctx.pop_scope();
-    ctx.current_fn.reset();
+    ctx.current_fn = ctx.module->getFunction("_start");
     ctx.builder.SetInsertPoint(*ctx._start_block);
 
     return fn;
+}
+
+llvm::Value* Ast::Nodes::ExternFn::generate(Context& ctx) {
+    std::vector<llvm::Type*> param_types;
+    param_types.reserve(args.size());
+    for (auto& arg : args) {
+        param_types.push_back(
+            arg.ty == Ast::Type::NonPrimitive
+            ? Ast::type_to_llvm_type(arg.npty, ctx)
+            : Ast::type_to_llvm_type(arg.ty, ctx)
+        );
+    }
+    
+    llvm::FunctionType* fn_type = llvm::FunctionType::get(
+        ty == Ast::Type::NonPrimitive
+            ? Ast::type_to_llvm_type(npty, ctx)
+            : Ast::type_to_llvm_type(ty, ctx),
+        param_types,
+        false
+    );
+
+    return llvm::Function::Create(
+        fn_type,
+        llvm::Function::ExternalLinkage,
+        callee,
+        *ctx.module
+    );
 }
 
 void Ast::Program::generate(Context& ctx) {

@@ -8,23 +8,6 @@
 #include "../lex.hpp"
 #include "../var.hpp"
 
-// PRIVATE FUNCTIONS
-
-Ast::Type parse_type(std::string& s) {
-    using namespace Ast;
-
-    if(s == "void") return Type::Void;
-    if(s == "i32") return Type::I32;
-    if(s == "f32") return Type::F32;
-    
-    // Base case
-    return Type::Invalid;
-}
-
-// PUBLIC FUNCTIONS
-
-
-
 std::unique_ptr<Ast::Nodes::Let> Ast::Nodes::Let::parse(Lexer::Stream& s) {
     s.expect("let");
     std::string target = s.pop()->content;
@@ -79,6 +62,7 @@ std::unique_ptr<Ast::Nodes::NodeBase> Ast::Nodes::NodeBase::parse(Lexer::Stream&
     // These do
     else if (curr->content == "let")    out = Let::parse(s);
     else if (curr->content == "return") out = Return::parse(s);
+    else if (curr->content == "extern") out = ExternFn::parse(s);
     else                                out = Expr::parse(s);
     s.expect(";", out);
 
@@ -101,6 +85,7 @@ std::unique_ptr<Ast::Nodes::If> Ast::Nodes::If::parse(Lexer::Stream& s) {
     return std::make_unique<If>(std::move(expr), std::move(cond), line_number);
 }
 
+        #include <iostream>
 std::unique_ptr<Ast::Nodes::Function>
 Ast::Nodes::Function::parse(Lexer::Stream& s) {
     int line_number = s.peek()->line;
@@ -108,12 +93,19 @@ Ast::Nodes::Function::parse(Lexer::Stream& s) {
     s.expect("fn");
 
     Ast::Type ty = Ast::Type::Void;
+    Ast::NonPrimitive npty;
 
     if (s.peek()->type == Lexer::Type::Identifier) {
         auto first = s.pop();
 
         if (s.peek()->type == Lexer::Type::Identifier) {
-            ty = parse_type(first->content);
+            s.back();
+            ty = parse_type(s);
+            
+            if(ty == Ast::Type::NonPrimitive) {
+                npty = parse_nonprim(s);
+            }
+
             if (ty == Ast::Type::Invalid) {
                 throw std::runtime_error("Unknown type: " + first->content);
             }
@@ -143,22 +135,102 @@ Ast::Nodes::Function::parse(Lexer::Stream& s) {
 
         std::string arg_name = s.pop()->content;
 
-        auto arg_type_tok = s.pop();
-        Ast::Type arg_type = parse_type(arg_type_tok->content);
+        Ast::Type arg_type = parse_type(s);
+        Ast::NonPrimitive arg_npty;        
+
 
         if (arg_type == Ast::Type::Invalid) {
-            throw std::runtime_error("Unknown type: " + arg_type_tok->content);
+            s.back(); // Going back to what was parsed
+            throw std::runtime_error("Unknown type: " + s.pop()->content);
         }
-
-        args.push_back({ arg_name, arg_type });
+ 
+        if(arg_type == Ast::Type::NonPrimitive) {
+            args.push_back({ arg_name, arg_type, parse_nonprim(s)});
+        } else {
+            args.push_back({ arg_name, arg_type, Ast::NonPrimitive({0}) });
+        }
 
         if (s.peek()->content == "{") break;
         s.expect(",");
     }
 
+    
 fn_parse_end:
     auto block = NodeBase::parse(s);
-    return std::make_unique<Function>(name, ty, args, std::move(block), line_number);
+    return std::make_unique<Function>(name, ty, npty, args, std::move(block), line_number);
+}
+
+std::unique_ptr<Ast::Nodes::ExternFn> Ast::Nodes::ExternFn::parse(Lexer::Stream& s) {
+    s.expect("extern");
+    s.expect("fn");
+
+    int line_number = s.peek()->line;
+
+
+    Ast::Type ty = Ast::Type::Void;
+    Ast::NonPrimitive npty;
+
+    if (s.peek()->type == Lexer::Type::Identifier) {
+        auto first = s.pop();
+
+        if (s.peek()->type == Lexer::Type::Identifier) {
+            s.back();
+            ty = parse_type(s);
+            
+            if(ty == Ast::Type::NonPrimitive) {
+                npty = parse_nonprim(s);
+            }
+
+            if (ty == Ast::Type::Invalid) {
+                throw std::runtime_error("Unknown type: " + first->content);
+            }
+        } else {
+            // not a return type, rewind
+            s.back();
+        }
+    }
+
+    std::string name = s.pop()->content;
+    std::vector<Ast::Variable> args;
+
+    // No arguments
+    if (s.peek()->content != ":") {
+        goto fn_parse_end;
+    }
+
+    // Consume ':'
+    s.pop();
+
+    while (true) {
+        if (!s.has()) {
+            throw std::runtime_error(
+                "Program ended early parsing args for function: " + name
+            );
+        }
+
+        std::string arg_name = s.pop()->content;
+
+        Ast::Type arg_type = parse_type(s);
+        Ast::NonPrimitive arg_npty;        
+
+
+        if (arg_type == Ast::Type::Invalid) {
+            s.back(); // Going back to what was parsed
+            throw std::runtime_error("Unknown type: " + s.pop()->content);
+        }
+ 
+        if(arg_type == Ast::Type::NonPrimitive) {
+            args.push_back({ arg_name, arg_type, parse_nonprim(s)});
+        } else {
+            args.push_back({ arg_name, arg_type, Ast::NonPrimitive({0}) });
+        }
+
+        if (s.peek()->content == ";") break;
+        s.expect(",");
+    }
+    
+fn_parse_end:
+    return std::make_unique<ExternFn>(name, ty, npty, args, line_number);
 }
 
 Ast::Program Ast::Program::parse(Lexer::Stream& s) {

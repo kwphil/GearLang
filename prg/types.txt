@@ -7,4 +7,8 @@ let b = a + 4.0;
 // Strings
 let c = "Hello, World!";
 
-return b;
+fn f64 float: d f64, e char& {
+    return d + 1.0;
+}
+
+return float(b, c);

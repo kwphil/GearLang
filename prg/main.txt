@@ -1,3 +1,5 @@
+// External function
+extern fn puts: s char& ;
 
 //simple assignment
 let a = 3;
@@ -14,6 +16,15 @@ let complex = a - (b - 1); // should be 6 = 10 - ((3 + 2) - 1)
 //higher order operators
 let higher = (complex / 3) * 2; // should be 4 = (6 / 3) * 2
 
+fn i32 foo: 
+    _a i32, 
+    _b i32 
+{
+    return _a + _b;
+}
+
+higher = higher + 1;
+
 fn main {
     let x = 0;
     let y = 14;
@@ -22,14 +33,8 @@ fn main {
         x = higher + 1;
     }
 
-    //return foo(x, y);
-}
-
-fn i32 foo: 
-    _a i32, 
-    _b i32 
-{
-    return _a + _b;
+    puts("Hello, World!");
+    return foo(x, y);
 }
 
 
