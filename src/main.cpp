@@ -7,6 +7,7 @@
 
 #include "ast.hpp"
 #include "syscall.hpp"
+#include "error.hpp"
 
 llvm::Function* create_main(Context& ctx) {
     llvm::FunctionType* mainType =
@@ -42,6 +43,7 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
+    Error::setup_error_manager(argv[1]);
     std::string source_path(argv[1]);
     std::cout << "tokenizing... ";
     auto tokens = Lexer::tokenize(source_path);

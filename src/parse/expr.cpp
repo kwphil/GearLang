@@ -1,11 +1,11 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <stdexcept>
 #include <format>
 
 #include "../ast.hpp"
 #include "../lex.hpp"
+#include "../error.hpp"
 
 std::unique_ptr<Ast::Nodes::Expr> Ast::Nodes::Expr::parse(Lexer::Stream& s) {
     return parseExpr(s);
@@ -35,10 +35,12 @@ std::unique_ptr<Ast::Nodes::ExprVar> Ast::Nodes::ExprVar::parse(const Lexer::Tok
 
 std::unique_ptr<Ast::Nodes::ExprAssign>
 Ast::Nodes::ExprAssign::parse(const Lexer::Token& token, Lexer::Stream& s) {
-    s.expect("=");
+    int line_number = token.line;
+
+    s.expect("=", line_number);
     pExpr expr = Expr::parse(s);
 
-    return std::make_unique<ExprAssign>(token.content, std::move(expr), token.line);
+    return std::make_unique<ExprAssign>(token.content, std::move(expr), line_number);
 }
 
 Ast::Nodes::pExpr Ast::Nodes::Expr::parseExpr(Lexer::Stream& s) {
@@ -67,9 +69,9 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s, llvm::Type* cast
     int line_number = s.peek()->line;
 
     if (s.peek()->content == "(") {
-        s.expect("(");
+        s.expect("(", line_number);
         auto expr = parseExpr(s);
-        s.expect(")");
+        s.expect(")", line_number);
         return expr;
     }
 
@@ -102,7 +104,13 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s, llvm::Type* cast
     }
 
     std::string error_msg = std::format("Unexpect token: {} (type={})", lit.content, (int)lit.type);
-    throw std::runtime_error(error_msg);
+    
+    Error::throw_error(
+        line_number,
+        lit.content.c_str(),
+        "Unexpected token.",
+        Error::ErrorCodes::UNEXPECTED_TOKEN
+    );
 }
 
 std::unique_ptr<Ast::Nodes::ExprCall> Ast::Nodes::ExprCall::parse(
@@ -113,18 +121,18 @@ std::unique_ptr<Ast::Nodes::ExprCall> Ast::Nodes::ExprCall::parse(
     std::string nm = tok.content;
     std::vector<pExpr> args;
 
-    s.expect("(");
+    s.expect("(", line_number);
     
     while(s.peek()->type != Lexer::Type::ParenClose) {
         args.push_back(Expr::parse(s));
 
         // Looking for the ) the loop will end anyway
         if(s.peek()->type != Lexer::Type::ParenClose) {
-            s.expect(",");
+            s.expect(",", line_number);
         }
     }
 
-    s.expect(")");
+    s.expect(")", line_number);
 
     return std::make_unique<ExprCall>(nm, args, line_number);
 }

@@ -1,10 +1,9 @@
-#include <stdexcept>
 #include <llvm/IR/Type.h>
+
 #include "var.hpp"
 #include "ctx.hpp"
 #include "lex.hpp"
-
-#include <iostream>
+#include "error.hpp"
 
 Ast::Type Ast::parse_type(std::string& s) {
     if(s == "void") return Type::Void;

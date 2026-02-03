@@ -1,5 +1,6 @@
 #include "lex.hpp"
 #include "ast.hpp"
+#include "error.hpp"
 
 #include <unordered_set>
 #include <cctype>
@@ -70,7 +71,10 @@ Lexer::Type Lexer::classify(std::string& content, CharType state)
             return Type::StringLiteral;
     }
 
-    std::cerr << "This should not be reached!!!!\n";
+    throw std::runtime_error(std::format(
+        "This should not be reached!!!! Unknown state: {}", 
+        (int)state
+    ));
     return Type::Invalid;
 }
 
@@ -92,35 +96,23 @@ std::unique_ptr<Lexer::Token> Lexer::Stream::pop() {
     return std::make_unique<Lexer::Token>(content[index++]);
 }
 
-void Lexer::Stream::expect(
-    const char* should,
-    const std::source_location& location
-) {
-    auto is = pop()->content;
-    if (is != should) {
-        std::cerr << 
-            "Parser found an error at: " << location.file_name() << ":"
-            << location.line() << ": " << location.function_name() << "\n"
-            "Error: Expected '" << should << "', but got '" << is << "'\n";
-
-        // exit(EXIT_FAILURE);
-    }
-}
+#include <format>
 
 void Lexer::Stream::expect(
     const char* should,
-    std::unique_ptr<Ast::Nodes::NodeBase>& nodes_parsed,
-    const std::source_location& location
+    int line_number
 ) {
     auto is = pop()->content;
     if (is != should) {
-        std::cerr << 
-            "Parser found an error at: " << location.file_name() << ":"
-            << location.line() << ": " << location.function_name() << "\n"
-            "Error: Expected '" << should << "', but got '" << is << "'.\n"
-            "Parser threw an error on line: " << nodes_parsed->line_number << "\n";
-
-        // exit(EXIT_FAILURE);
+        Error::throw_error(
+            line_number,
+            is.c_str(),
+            std::format(
+                "Parser found an error. Expected `{}` but received `{}`",
+                should, is
+            ).c_str(),
+            Error::ErrorCodes::EXPECT_VALUE
+        );
     }
 }
 
