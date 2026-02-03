@@ -5,6 +5,8 @@
 #include "lex.hpp"
 #include "error.hpp"
 
+#include <iostream>
+
 Ast::Type Ast::parse_type(std::string& s) {
     if(s == "void") return Type::Void;
     if(s == "char") return Type::Char;
@@ -28,12 +30,13 @@ Ast::NonPrimitive Ast::parse_nonprim(Lexer::Stream& s) {
     const auto& curr = s.pop();
     auto ty = curr->content;
     
-    if(s.peek()->type == Lexer::Type::Amper) { 
-        s.pop(); 
-        return NonPrimitive{ .type= { // Pointer
+    if(s.peek()->type == Lexer::Type::Amper) {
+        s.pop();
+
+        return NonPrimitive({ // Pointer
             0,
             (int)parse_type(ty)
-        }};
+        });
     }
 
     throw std::runtime_error("Unknown NonPrimitive Type: " + curr->content);

@@ -67,7 +67,6 @@ std::unique_ptr<Ast::Nodes::ExternFn> Ast::Nodes::ExternFn::parse(Lexer::Stream&
 
 // PRIVATE FUNCTIONS
 
-#include <iostream>
 
 std::tuple<Ast::Type, Ast::NonPrimitive, std::string> 
 parse_function_header(Lexer::Stream& s, int line_number) {
@@ -141,7 +140,8 @@ std::vector<Ast::Variable> parse_function_args(
         }
  
         if(arg_type == Ast::Type::NonPrimitive) {
-            args.push_back({ arg_name, arg_type, Ast::parse_nonprim(s)});
+            Ast::NonPrimitive npty = Ast::parse_nonprim(s);
+            args.push_back({ arg_name, arg_type, npty});
         } else {
             args.push_back({ arg_name, arg_type, Ast::NonPrimitive({0}) });
         }
