@@ -9,6 +9,11 @@
 #include <source_location>
 #include <format>
 
+static inline bool is_single_char_token(Lexer::CharType t) {
+    return t == Lexer::CharType::Paren ||
+           t == Lexer::CharType::Brace;
+}
+
 Lexer::CharType Lexer::getCharType(char c) {
     if (isalpha(c) || c == '_') return CharType::Alpha;
     if (isdigit(c) || c == '.') return CharType::Num;
@@ -133,7 +138,12 @@ Lexer::Stream Lexer::tokenize(std::string& source_path)
         state_new = getCharType(c);
 
         // state transition -> token boundary
-        if ((state_new != state_old) && !is_string) {
+        // Forces a single char token to stay that way
+        if ((!is_string) &&
+            (state_new != state_old ||
+             is_single_char_token(state_new) ||
+             is_single_char_token(state_old)))
+        {
             // allow identifiers like "num1"
             if (state_new == CharType::Num &&
                 state_old == CharType::Alpha)
