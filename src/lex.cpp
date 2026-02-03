@@ -10,8 +10,16 @@
 #include <format>
 
 static inline bool is_single_char_token(Lexer::CharType t) {
-    return t == Lexer::CharType::Paren ||
-           t == Lexer::CharType::Brace;
+    using Lexer::CharType;
+    
+    switch(t) {
+    case(CharType::Paren):
+    case(CharType::Brace):
+    case(CharType::Amp):
+    case(CharType::Semi):
+        return true;
+    default: return false;
+    }
 }
 
 Lexer::CharType Lexer::getCharType(char c) {
@@ -21,6 +29,8 @@ Lexer::CharType Lexer::getCharType(char c) {
     if (c == '{' || c == '}') return CharType::Brace; 
     if (c == ' ' || c == '\n' || c == '\t') return CharType::Format;
     if (c == '"') return CharType::Quote;
+    if (c == '&') return CharType::Amp;
+    if (c == ';') return CharType::Semi;
     return CharType::Sym;
 }
 
@@ -67,13 +77,18 @@ Lexer::Type Lexer::classify(std::string& content, CharType state)
 
         case CharType::Sym:
             if (content == ",") return Type::Comma;
-            if (content == "&") return Type::Amper;
             if (operators.find(content) != operators.end())
                 return Type::Operator;
             return Type::Invalid;
 
         case CharType::Quote:
             return Type::StringLiteral;
+        
+        case CharType::Amp:
+            return Type::Amper;
+
+        case CharType::Semi:
+            return Type::Semi;
     }
 
     throw std::runtime_error(std::format(
