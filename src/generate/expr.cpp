@@ -6,8 +6,7 @@
 #include <llvm/IR/Type.h>
 
 #include "../ast.hpp"
-
-#include <iostream>
+#include "../error.hpp"
 
 // Generates both sides of the expression, and stores them in temporary values
 // Matches through each operation and stores the output as a temp
@@ -33,7 +32,13 @@ llvm::Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
     }
 
     int line = line_number; // It doesn't like using the line_number from the class
-    throw std::runtime_error(std::format("Invalid ExprOp on line: {}. Type={}", line, (int)type));
+    
+    Error::throw_error(
+        line,
+        "",
+        "Invalid ExprOp",
+        Error::ErrorCodes::INVALID_AST
+    );
 }
 
 // Looks up the name of the variable
@@ -43,7 +48,12 @@ llvm::Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
 llvm::Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
     llvm::Value* var = ctx.lookup(name);
     if (!var)
-        throw std::runtime_error("Unknown variable: " + name);
+        Error::throw_error(
+            line_number,
+            name.c_str(),
+            "Unknown variable",
+            Error::ErrorCodes::VARIABLE_NOT_DEFINED
+        );
 
     // Global values will stay in memory and not registers
     if (auto* gv = llvm::dyn_cast<llvm::GlobalVariable>(var)) {
@@ -73,7 +83,12 @@ llvm::Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
 llvm::Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
     llvm::Value* alloca = ctx.lookup(name);
     if (!alloca)
-        throw std::runtime_error("Unknown variable: " + name);
+        Error::throw_error(
+            line_number,
+            name.c_str(),
+            "Tried to assign a variable that wasn't defined",
+            Error::ErrorCodes::VARIABLE_NOT_DEFINED
+        );
 
     llvm::Value* value = expr->generate(ctx);
     ctx.builder.CreateStore(value, alloca);
@@ -87,7 +102,12 @@ llvm::Value* Ast::Nodes::ExprCall::generate(Context& ctx) {
     llvm::Function* func = ctx.module->getFunction(callee);
 
     if(!func) {
-        throw std::runtime_error("Unknown function: " + callee);
+        Error::throw_error(
+            line_number,
+            callee.c_str(),
+            "Unknown function",
+            Error::ErrorCodes::FUNCTION_NOT_DEFINED
+        );
     }
 
     std::vector<llvm::Value*> arg_values;

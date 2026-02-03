@@ -1,4 +1,4 @@
-// This also tests a bug of crashing without a newline
+extern fn puts: s char& ;
 
 // Floats
 let a = 0.1 + 0.2;
@@ -10,5 +10,13 @@ let c = "Hello, World!";
 fn f64 float: d f64, e char& {
     return d + 1.0;
 }
+
+// Returning pointers
+fn char& str {
+    return "Hello, World!";
+}
+
+// Nested function calls
+puts( str( ) );
 
 return float(b, c);
