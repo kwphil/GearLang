@@ -17,6 +17,6 @@ fn char& str {
 }
 
 // Nested function calls
-puts( str( ) );
+puts(str());
 
 return float(b, c);
