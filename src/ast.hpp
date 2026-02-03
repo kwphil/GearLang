@@ -255,7 +255,7 @@ namespace Ast::Nodes {
             std::unique_ptr<NodeBase> block, 
             int line_number
         ) : 
-            name(name), ty(ty), args(args),
+            name(name), ty(ty), npty(npty), args(args),
             block(std::move(block)), NodeBase(line_number) { } 
 
         static std::unique_ptr<Function> parse(Lexer::Stream& s);
