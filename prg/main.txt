@@ -1,5 +1,5 @@
 // External function
-extern fn puts: s char& ;
+extern fn puts: s char&;
 
 //simple assignment
 let a = 3;
