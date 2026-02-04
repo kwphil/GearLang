@@ -1,4 +1,5 @@
-extern fn puts: s char& ;
+// Variadic args
+extern fn i32 printf: s char&, ... ;
 
 // Floats
 let a = 0.1 + 0.2;
@@ -13,10 +14,10 @@ fn f64 float: d f64, e char& {
 
 // Returning pointers
 fn char& str {
-    return "Hello, World!";
+    return "Hello, World! %f";
 }
 
 // Nested function calls
-puts(str());
+printf(str(), float(b, c));
 
-return float(b, c);
+return 0;

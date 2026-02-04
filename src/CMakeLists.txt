@@ -38,6 +38,7 @@ add_executable(gearlang
     var.cpp
     error.cpp
     fsm.cpp
+    func.cpp
     generate/base.cpp
     generate/expr.cpp
     generate/literal.cpp

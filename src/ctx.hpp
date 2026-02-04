@@ -19,7 +19,7 @@ public:
     std::unique_ptr<llvm::Module> module;
 
     /// @brief Start block for code outside functions
-    std::unique_ptr<llvm::BasicBlock*> _start_block; 
+    std::unique_ptr<llvm::BasicBlock*> global_entry; 
     /// @brief Currently active function being generated
     llvm::Function* current_fn;
 

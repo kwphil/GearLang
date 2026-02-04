@@ -47,6 +47,7 @@ enum class Type {
     ParenClose,
     BraceOpen,
     BraceClose,
+    Ellipsis,
     Comma,
     Semi,
     Amper

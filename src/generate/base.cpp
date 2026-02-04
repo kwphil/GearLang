@@ -9,6 +9,7 @@
 #include "../ast.hpp"
 #include "../syscall.hpp"
 #include "../error.hpp"
+#include "../func.hpp"
 
 // Checks if the variable already exists
 // If it does, it throws an error and quits
@@ -31,7 +32,7 @@ llvm::Value* Ast::Nodes::Let::generate(Context& ctx) {
 
     // GLOBAL SCOPE
     llvm::Function* _fn = ctx.current_fn;
-    if (_fn->getName() == "_start") {
+    if (_fn->getName() == ".global_fn") {
         llvm::Type* ty = initVal->getType();
 
         // Creating a placeholder and then assigning the value
@@ -80,25 +81,20 @@ llvm::Value* Ast::Nodes::Return::generate(Context& ctx) {
     llvm::Value* retVal = expr->generate(ctx);
 
     if(
-        ctx.module->getFunction("main") != ctx.current_fn 
-        && ctx.module->getFunction("_start") != ctx.current_fn
+        ctx.module->getFunction(".global_fn") != ctx.current_fn
+        && ctx.module->getFunction("main") != ctx.current_fn
     ) {
         ctx.builder.CreateRet(retVal);
         return retVal;
     }
-
-    // Ensure i32
-    if (retVal->getType()->isIntegerTy() &&
-        retVal->getType()->getIntegerBitWidth() < 32) {
-        retVal = ctx.builder.CreateSExt(
-            retVal,
-            llvm::Type::getInt32Ty(ctx.llvmCtx)
-        );
-    }
-
-    auto asmFn = syscall_exit(ctx.llvmCtx);
-
-    ctx.builder.CreateCall(asmFn, { retVal });
+    
+    llvm::Function* exit = declare_func(
+        llvm::Type::getVoidTy(ctx.llvmCtx),
+        { llvm::Type::getInt32Ty(ctx.llvmCtx) },
+        "exit", ctx, false
+    );
+    
+    ctx.builder.CreateCall(exit, { retVal });
     ctx.builder.CreateUnreachable();
     return retVal;
 }
@@ -185,7 +181,10 @@ llvm::Value* Ast::Nodes::Else::generate(Context& ctx) {
     return nullptr; 
 }
 
+#include <iostream>
+
 void Ast::Program::generate(Context& ctx) {
-    for (const auto& expr : content)
+    for (const auto& expr : content) {
         expr->generate(ctx);
+    }
 }

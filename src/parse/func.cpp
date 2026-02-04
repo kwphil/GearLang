@@ -17,12 +17,14 @@ parse_function_header(Lexer::Stream& s, int line_number);
 std::vector<Ast::Variable> parse_function_args(
     Lexer::Stream& s, 
     int line_number,
-    bool requires_names
+    bool requires_names,
+    bool& is_variadic
 );
 
 std::unique_ptr<Ast::Nodes::Function>
 Ast::Nodes::Function::parse(Lexer::Stream& s) {
     int line_number = s.peek()->line;
+    bool is_variadic;
 
     s.expect("fn", line_number);
 
@@ -35,14 +37,15 @@ Ast::Nodes::Function::parse(Lexer::Stream& s) {
     ty = std::get<0>(header);
     name = std::get<1>(header);
 
-    args = parse_function_args(s, line_number, true);
+    args = parse_function_args(s, line_number, true, is_variadic);
 
     auto block = NodeBase::parse(s);
-    return std::make_unique<Function>(name, ty, args, std::move(block), line_number);
+    return std::make_unique<Function>(name, ty, args, std::move(block), is_variadic, line_number);
 }
 
 std::unique_ptr<Ast::Nodes::ExternFn> Ast::Nodes::ExternFn::parse(Lexer::Stream& s) {
     int line_number = s.peek()->line;
+    bool is_variadic;
     
     s.expect("extern", line_number);
     s.expect("fn", line_number);
@@ -56,9 +59,9 @@ std::unique_ptr<Ast::Nodes::ExternFn> Ast::Nodes::ExternFn::parse(Lexer::Stream&
     ty = std::get<0>(header);
     name = std::get<1>(header);
 
-    args = parse_function_args(s, line_number, false);
+    args = parse_function_args(s, line_number, false, is_variadic);
 
-    return std::make_unique<ExternFn>(name, ty, args, line_number);
+    return std::make_unique<ExternFn>(name, ty, args, is_variadic, line_number);
 }
 
 // PRIVATE FUNCTIONS
@@ -83,8 +86,11 @@ parse_function_header(Lexer::Stream& s, int line_number) {
 std::vector<Ast::Variable> parse_function_args(
     Lexer::Stream& s, 
     int line_number,
-    bool requires_names
+    bool requires_names, // TODO: Implement this
+    bool& is_variadic
 ) {
+    is_variadic = false;
+
     // No arguments
     if (s.peek()->content != ":") {
         return { };
@@ -105,12 +111,18 @@ std::vector<Ast::Variable> parse_function_args(
             );
         }
 
+        if (s.peek()->type == Lexer::Type::Ellipsis) {
+            s.pop(); // Get rid of the ellipsis
+            is_variadic = true;
+            break; // Will be the last parameter
+        }
+        
         std::string arg_name = s.pop()->content;
 
         Ast::Type arg_type(s);  
 
         args.push_back({ arg_name, arg_type });
-
+        
         if (s.peek()->content == "{" || s.peek()->content == ";") break;
         s.expect(",", line_number);
     }
