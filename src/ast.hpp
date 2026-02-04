@@ -266,6 +266,8 @@ namespace Ast::Nodes {
         std::vector<Ast::Variable> args;
         /// @brief The function body block
         std::unique_ptr<NodeBase> block;
+        /// @brief If the function is variadic
+        bool is_variadic;
 
     public:
         Function(
@@ -273,9 +275,10 @@ namespace Ast::Nodes {
             Ast::Type ty, 
             std::vector<Ast::Variable> args, 
             std::unique_ptr<NodeBase> block, 
+            bool is_variadic,
             int line_number
         ) : 
-            name(name), ty(ty), args(args),
+            name(name), ty(ty), args(args), is_variadic(is_variadic),
             block(std::move(block)), NodeBase(line_number) { } 
 
         static std::unique_ptr<Function> parse(Lexer::Stream& s);
@@ -292,14 +295,18 @@ namespace Ast::Nodes {
         Ast::Type ty;
         /// @brief args
         std::vector<Ast::Variable> args;
+        /// @brief is_variadic
+        bool is_variadic;
+
     public:
         ExternFn(
             std::string& callee, 
             Ast::Type ty,
             std::vector<Ast::Variable>& args, 
+            bool is_variadic,
             int line_number
         ) : callee(callee), args(args), ty(ty), 
-            NodeBase(line_number) { }
+            is_variadic(is_variadic), NodeBase(line_number) { }
 
         static std::unique_ptr<ExternFn> parse(Lexer::Stream& s);
 

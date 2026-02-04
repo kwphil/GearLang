@@ -112,6 +112,9 @@ Lexer::Type Lexer::classify(std::string& content, CharType state)
             break;
 
         case CharType::Num:
+            // looking for ellipses specifically
+            if (content == "...") return Type::Ellipsis;
+
             if (std::any_of(content.begin(), content.end(),
                 [](char c){ return std::isalpha(static_cast<unsigned char>(c)); }))
             {

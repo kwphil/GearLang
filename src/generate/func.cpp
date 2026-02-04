@@ -4,6 +4,8 @@
 #include "../ctx.hpp"
 #include "../ast.hpp"
 
+#include <iostream>
+
 // Creates the function type. 
 // Creates the function and adds it to the module
 // Creates the entry basic block and sets the insert point
@@ -22,7 +24,7 @@ llvm::Value* Ast::Nodes::Function::generate(Context& ctx) {
         llvm::FunctionType::get(
             ty.generate(ctx),
             param_types,
-            false
+            is_variadic
         );
 
     llvm::Function* fn =
@@ -63,8 +65,9 @@ llvm::Value* Ast::Nodes::Function::generate(Context& ctx) {
     }
 
     ctx.pop_scope();
-    ctx.current_fn = ctx.module->getFunction("_start");
-    ctx.builder.SetInsertPoint(*ctx._start_block);
+    ctx.current_fn = ctx.module->getFunction(".global_fn");
+
+    ctx.builder.SetInsertPoint(*ctx.global_entry);
 
     return fn;
 }
@@ -81,7 +84,7 @@ llvm::Value* Ast::Nodes::ExternFn::generate(Context& ctx) {
     llvm::FunctionType* fn_type = llvm::FunctionType::get(
         ty.generate(ctx),
         param_types,
-        false
+        is_variadic
     );
 
     return llvm::Function::Create(

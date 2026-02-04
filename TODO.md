@@ -26,7 +26,7 @@
     * [ ] Implicit matching
   * [ ] Compatibility
     * [ ] Basic C Functions
-      * [ ] Basic data
+      * [X] Basic data
       * [X] C Strings
       * [ ] Variadic Args
 * [ ] Optimizer
