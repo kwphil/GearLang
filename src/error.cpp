@@ -21,8 +21,6 @@ void throw_error_no_highlight(
     // Flush cerr
     std::cerr << std::endl;
 
-    // Exit if called to exit
-    if(code == Error::ErrorCodes::NO_EXIT) return;
     exit((int)code);
 }
 
@@ -36,7 +34,7 @@ void Error::throw_error (
     std::string search_for = _search_for;
     // if nothing to highlight
     if(search_for == "") {
-        return throw_error_no_highlight(line_number, err, code);
+        throw_error_no_highlight(line_number, err, code);
     }
 
     std::string current_line;
@@ -55,7 +53,7 @@ void Error::throw_error (
     if(loc == std::string::npos) {
         std::cerr << "COMPILER WARNING: compiler could not find a match "
         "to string: " << search_for << "\n";
-        return throw_error_no_highlight(
+        throw_error_no_highlight(
             line_number,
             err,
             code
@@ -80,9 +78,6 @@ void Error::throw_error (
 
     // flush cerr
     std::cerr << std::endl;
-
-    // Don't exit if said so
-    if(code == ErrorCodes::NO_EXIT) return;
 
     exit((int)code);
 }

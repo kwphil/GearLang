@@ -184,8 +184,8 @@ namespace Ast::Nodes {
     };
 
     /// @brief Node for if statements
-    class If : public Expr {
-    private:
+    class If : public NodeBase {
+    protected:
         /// @brief The condition expression
         pExpr cond;
         /// @brief The expression to execute if the condition is true
@@ -193,11 +193,34 @@ namespace Ast::Nodes {
 
     public:
         If(std::unique_ptr<NodeBase> expr, pExpr cond, int line_number)
-        : expr(std::move(expr)), cond(std::move(cond)), Expr(line_number) { }
+        : expr(std::move(expr)), cond(std::move(cond)), NodeBase(line_number) { }
+
+        If(If&&) = default;
+        If& operator=(If&&) = default;
+        If(const If&) = delete;
 
         static std::unique_ptr<If> parse(Lexer::Stream& s);
 
         llvm::Value* generate(Context& ctx) override;
+    };
+
+    /// @brief If/Else
+    class Else : public If {
+    private:
+        /// @brief The condition expression for false if
+        std::unique_ptr<NodeBase> else_expr;
+
+    public:
+        Else(
+            std::unique_ptr<NodeBase> expr,
+            If&& if_expr
+        ) : else_expr(std::move(expr)), If(std::move(if_expr)) { }
+
+        static std::unique_ptr<Else> parse(
+            std::unique_ptr<If>,
+            Lexer::Stream& s
+        );
+        llvm::Value* generate(Context& ctx);
     };
 
     /// @brief Node for variable declarations
@@ -239,8 +262,6 @@ namespace Ast::Nodes {
         std::string name;
         /// @brief The function return type
         Ast::Type ty;
-        /// @brief In case the return type is not primitive
-        Ast::NonPrimitive npty;
         /// @brief The function arguments
         std::vector<Ast::Variable> args;
         /// @brief The function body block
@@ -250,12 +271,11 @@ namespace Ast::Nodes {
         Function(
             std::string& name, 
             Ast::Type ty, 
-            Ast::NonPrimitive npty,
             std::vector<Ast::Variable> args, 
             std::unique_ptr<NodeBase> block, 
             int line_number
         ) : 
-            name(name), ty(ty), npty(npty), args(args),
+            name(name), ty(ty), args(args),
             block(std::move(block)), NodeBase(line_number) { } 
 
         static std::unique_ptr<Function> parse(Lexer::Stream& s);
@@ -270,19 +290,15 @@ namespace Ast::Nodes {
         std::string callee;
         /// @brief the function return type
         Ast::Type ty;
-        /// @brief in case the function return nonprimitive
-        Ast::NonPrimitive npty;
         /// @brief args
         std::vector<Ast::Variable> args;
     public:
         ExternFn(
             std::string& callee, 
             Ast::Type ty,
-            Ast::NonPrimitive npty,
             std::vector<Ast::Variable>& args, 
             int line_number
-        ) : callee(callee), args(args), 
-            ty(ty), npty(npty),
+        ) : callee(callee), args(args), ty(ty), 
             NodeBase(line_number) { }
 
         static std::unique_ptr<ExternFn> parse(Lexer::Stream& s);

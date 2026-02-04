@@ -31,6 +31,8 @@ fn main {
 
     if(higher) {
         x = higher + 1;
+    } else {
+        higher = 14;
     }
 
     puts("Hello, World!");

@@ -14,19 +14,13 @@ llvm::Value* Ast::Nodes::Function::generate(Context& ctx) {
     std::vector<llvm::Type*> param_types;
     param_types.reserve(args.size());
     for (auto& arg : args) {
-        param_types.push_back(
-            arg.ty == Ast::Type::NonPrimitive
-            ? Ast::type_to_llvm_type(arg.npty, ctx)
-            : Ast::type_to_llvm_type(arg.ty, ctx)
-        );
+        param_types.push_back(arg.ty.generate(ctx));
     }
 
     // Creating the function type
     llvm::FunctionType* fn_type =
         llvm::FunctionType::get(
-            ty == Ast::Type::NonPrimitive
-            ? Ast::type_to_llvm_type(npty, ctx)
-            : Ast::type_to_llvm_type(ty, ctx),
+            ty.generate(ctx),
             param_types,
             false
         );
@@ -61,17 +55,11 @@ llvm::Value* Ast::Nodes::Function::generate(Context& ctx) {
     block->generate(ctx);
 
     if (!entry->getTerminator()) {
-        if (ty == Ast::Type::Void) {
-            ctx.builder.CreateRetVoid();
-        } else {
-            ctx.builder.CreateRet(
-                llvm::Constant::getNullValue(
-                    ty != Ast::Type::NonPrimitive 
-                    ? Ast::type_to_llvm_type(ty, ctx)
-                    : Ast::type_to_llvm_type(npty, ctx)
-                )
-            );
-        }
+        ctx.builder.CreateRet(
+            llvm::Constant::getNullValue(
+                ty.generate(ctx)
+            )
+        );
     }
 
     ctx.pop_scope();
@@ -86,16 +74,12 @@ llvm::Value* Ast::Nodes::ExternFn::generate(Context& ctx) {
     param_types.reserve(args.size());
     for (auto& arg : args) {
         param_types.push_back(
-            arg.ty == Ast::Type::NonPrimitive
-            ? Ast::type_to_llvm_type(arg.npty, ctx)
-            : Ast::type_to_llvm_type(arg.ty, ctx)
+            arg.ty.generate(ctx)
         );
     }
     
     llvm::FunctionType* fn_type = llvm::FunctionType::get(
-        ty == Ast::Type::NonPrimitive
-            ? Ast::type_to_llvm_type(npty, ctx)
-            : Ast::type_to_llvm_type(ty, ctx),
+        ty.generate(ctx),
         param_types,
         false
     );

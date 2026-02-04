@@ -6,7 +6,6 @@
 
 namespace Error {
     enum class ErrorCodes {
-        NO_EXIT,
         EXPECT_VALUE,
         UNEXPECTED_TOKEN,
         UNEXPECTED_EOF,
@@ -17,17 +16,17 @@ namespace Error {
         INVALID_AST
     };
 
-    /// @brief throws an error at a line
+    /// @brief throws an error at a line. noreturn just to suppress warning about no func return.
     /// @param line_number the line to throw an error
     /// @param search_for will highlight a specific section of text. If it fails, it will search `leniency` lines down for it. If it still doesn't work, it will just not highlight anything. Pass "" to disable the feature
     /// @param err a specific message to throw
     /// @param leniency the number of lines to search through in case search_for fails
-    /// @param code the error code to throw. Will exit the program on call unless NO_EXIT is passed.
-    void throw_error (
+    /// @param code the error code to throw. .
+    [[noreturn]] void throw_error (
         int line_number, 
         const char* search_for, 
         const char* err,
-        ErrorCodes code = ErrorCodes::NO_EXIT,
+        ErrorCodes code,
         int leniency = 5
     );
 
