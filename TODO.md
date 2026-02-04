@@ -1,29 +1,32 @@
 * [ ] Build docs
-  * [ ] README
+  * [X] README
   * [ ] Usage
   * [ ] Examples
   * [ ] System
 * [ ] Frontend
   * [ ] Compiler options
-  * [ ] Graceful Error Handling
+  * [X] Graceful Error Handling
 * [ ] Lexer
   * [X] Basic functionality
   * [X] Error handling
-    * [ ] Graceful
-* [ ] AST Generator
+    * [X] Graceful
+* [ ] Code Generation
   * [X] Simple Expressions
   * [ ] Branching
     * [X] If statements
     * [ ] If/Else
     * [ ] Match/Case
-  * [ ] Functions
+  * [X] Functions
     * [X] Main function 
-    * [ ] Calling functions
-    * [ ] Parameters
-    * [ ] Non-exit return
+    * [X] Calling functions
+    * [X] Parameters
+    * [X] Non-exit return
   * [ ] Variables
-    * [ ] Variable variable types
+    * [X] Variable variable types
     * [ ] Implicit matching
-* [ ] Compiler
-  * [ ] Separate compiler and AST code
+  * [ ] Compatibility
+    * [ ] Basic C Functions
+      * [ ] Basic data
+      * [X] C Strings
+      * [ ] Variadic Args
 * [ ] Optimizer

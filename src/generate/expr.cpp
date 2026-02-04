@@ -55,7 +55,6 @@ llvm::Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
             Error::ErrorCodes::VARIABLE_NOT_DEFINED
         );
 
-    // Global values will stay in memory and not registers
     if (auto* gv = llvm::dyn_cast<llvm::GlobalVariable>(var)) {
         return ctx.builder.CreateLoad(
             gv->getValueType(),
@@ -64,18 +63,7 @@ llvm::Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
         );
     }
 
-    llvm::Type* ty = var->getType();
-
-    // If it's a non-pointer use it directly
-    if(!ty->isPointerTy()) {
-        return var;
-    }
-
-    return ctx.builder.CreateLoad(
-        var->getType(),
-        var,
-        name + ".load"
-    );
+    return var;
 }
 
 // Assigns a value to a variable, and stores the value in the variable's alloca

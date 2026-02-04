@@ -62,7 +62,15 @@ std::unique_ptr<Ast::Nodes::NodeBase> Ast::Nodes::NodeBase::parse(Lexer::Stream&
     // These do not require semicolons, so early return
     if      (curr->content == "fn")     return Function::parse(s);
     else if (curr->content == "{")      return ExprBlock::parse(s);
-    else if (curr->content == "if")     return If::parse(s);
+    else if (curr->content == "if") {
+        auto if_expr = If::parse(s);
+        
+        if(s.peek()->content == "else") {
+            return Else::parse(std::move(if_expr), s);
+        } 
+
+        return if_expr;
+    }
     // These do
     else if (curr->content == "let")    out = Let::parse(s);
     else if (curr->content == "return") out = Return::parse(s);
@@ -89,6 +97,17 @@ std::unique_ptr<Ast::Nodes::If> Ast::Nodes::If::parse(Lexer::Stream& s) {
     std::unique_ptr<NodeBase> expr = NodeBase::parse(s);
 
     return std::make_unique<If>(std::move(expr), std::move(cond), line_number);
+}
+
+std::unique_ptr<Ast::Nodes::Else> Ast::Nodes::Else::parse(
+    std::unique_ptr<If> if_expr,
+    Lexer::Stream& s
+) {
+    int line_number = s.peek()->line;
+    s.expect("else", line_number);
+    std::unique_ptr<NodeBase> expr = NodeBase::parse(s);
+
+    return std::make_unique<Else>(std::move(expr), std::move(*if_expr));
 }
 
 Ast::Program Ast::Program::parse(Lexer::Stream& s) {

@@ -37,6 +37,7 @@ add_executable(gearlang
     syscall.cpp
     var.cpp
     error.cpp
+    fsm.cpp
     generate/base.cpp
     generate/expr.cpp
     generate/literal.cpp

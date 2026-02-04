@@ -60,7 +60,6 @@ llvm::Value* Ast::Nodes::Let::generate(Context& ctx) {
     llvm::AllocaInst* alloca =
         ctx.create_entry_block(fn, target, initVal->getType());
 
-    ctx.builder.CreateStore(initVal, alloca);
     ctx.bind(target, alloca);
     return alloca;
 }
@@ -141,6 +140,49 @@ llvm::Value* Ast::Nodes::If::generate(Context& ctx) {
     ctx.builder.SetInsertPoint(then_block);
 
     return nullptr;
+}
+
+llvm::Value* Ast::Nodes::Else::generate(Context& ctx) {
+    llvm::Function* fn = ctx.builder.GetInsertBlock()->getParent();
+
+    llvm::BasicBlock* if_block =
+        llvm::BasicBlock::Create(ctx.llvmCtx, "if.true", fn);
+    llvm::BasicBlock* else_block =
+        llvm::BasicBlock::Create(ctx.llvmCtx, "if.else", fn);
+    llvm::BasicBlock* then_block =
+        llvm::BasicBlock::Create(ctx.llvmCtx, "if.end", fn);
+
+    // Generate condition ONCE
+    llvm::Value* condVal = cond->generate(ctx);
+
+    // Convert to boolean: cond != 0
+    // TODO: Support different types (String would be x != "", etc)
+    llvm::Value* condv = ctx.builder.CreateICmpNE(
+        condVal,
+        llvm::ConstantInt::get(
+            condVal->getType(),
+            0,
+            true
+        ),
+        "ifcond"
+    );
+
+    ctx.builder.CreateCondBr(condv, if_block, else_block);
+
+    // if (cond)
+    ctx.builder.SetInsertPoint(if_block);
+    expr->generate(ctx);
+    ctx.builder.CreateBr(then_block);
+
+    // else
+    ctx.builder.SetInsertPoint(else_block);
+    else_expr->generate(ctx);
+    ctx.builder.CreateBr(then_block);
+
+    // end
+    ctx.builder.SetInsertPoint(then_block);
+
+    return nullptr; 
 }
 
 void Ast::Program::generate(Context& ctx) {

@@ -87,11 +87,6 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s, llvm::Type* cast
     s.pop();
 
     if(lit.type == Lexer::Type::Identifier) {
-        if(lit.content == "if") {
-            s.back();
-            return If::parse(s);
-        }
-        
         if(s.peek()->content == "=") {
             return ExprAssign::parse(lit, s);
         }
