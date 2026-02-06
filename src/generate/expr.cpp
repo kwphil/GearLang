@@ -63,7 +63,13 @@ llvm::Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
         );
     }
 
-    return var;
+    llvm::AllocaInst* alloca = llvm::dyn_cast<llvm::AllocaInst>(var);
+
+    return ctx.builder.CreateLoad(
+        alloca->getAllocatedType(),
+        var,
+        name + ".load"
+    );
 }
 
 // Assigns a value to a variable, and stores the value in the variable's alloca
@@ -105,4 +111,108 @@ llvm::Value* Ast::Nodes::ExprCall::generate(Context& ctx) {
     }
 
     return ctx.builder.CreateCall(func, arg_values);
+}
+
+#include <iostream>
+
+llvm::Value* Ast::Nodes::ExprAddress::generate(Context& ctx) {
+    llvm::Value* var = ctx.lookup(name);
+
+    if(!var) {
+        Error::throw_error(
+            line_number,
+            name.c_str(),
+            "Tried to reference a variable that wasn't declared",
+            Error::ErrorCodes::VARIABLE_NOT_DEFINED
+        );
+    }
+
+    // Just return the value because everything is allocated
+    // TODO: Later I might optimize this to locate which variables
+    // have to alloca and optimize ones that don't out
+    return var;
+}
+
+llvm::Value* deref(
+    Context& ctx, llvm::Value* ptr, std::string& name, int line_number) {
+    // First try if it is a global
+    if(auto* gptr = llvm::dyn_cast<llvm::GlobalVariable>(ptr)) {
+        return ctx.builder.CreateLoad(
+            gptr->getValueType(),
+            gptr,
+            name
+        );
+    }
+
+    // Parse as an alloca otherwise
+    llvm::AllocaInst* alloca_ptr;
+    if(!(alloca_ptr = llvm::dyn_cast<llvm::AllocaInst>(var))) {
+        Error::throw_error(
+            line_number,
+            name.c_str(),
+            "Tried to dereference a variable that wasn't declared",
+            Error::ErrorCodes::VARIABLE_NOT_DEFINED
+        );
+    }
+
+    return ctx.builder.CreateLoad(
+        
+    )
+}
+
+llvm::Value* Ast::Nodes::ExprDeref::generate(Context& ctx) {
+    llvm::Value* var = ctx.lookup(name);
+
+    if(!var) {
+        Error::throw_error(
+            line_number,
+            name.c_str(),
+            "Tried to dereference a variable that wasn't declared",
+            Error::ErrorCodes::VARIABLE_NOT_DEFINED
+        );
+    }
+
+    // Load the variable twice and return
+    // Once to get the pointer
+    // Twice to get the dereferenced data
+
+    // First globals
+    if(auto* gptr = llvm::dyn_cast<llvm::GlobalVariable>(var)) {
+        llvm::Value* ptr = ctx.builder.CreateLoad(
+            gptr->getValueType(),
+            gptr,
+            var->getName() + ".load"
+        );
+
+        // Do it again
+
+        if(gptr = llvm::dyn_cast<llvm::GlobalVariable>(ptr)) {
+            
+        }
+    }
+
+    llvm::AllocaInst* alloca_ptr;
+    if(!(alloca_ptr = llvm::dyn_cast<llvm::AllocaInst>(var))) {
+        throw std::runtime_error("You shouldn't be here! deref");
+    }
+
+    llvm::Value* ptr = ctx.builder.CreateLoad(
+        alloca_ptr->getAllocatedType(),
+        var, var->getName() + ".load"
+    );
+
+    llvm::AllocaInst* alloca_val;
+    if(!(alloca_val = llvm::dyn_cast<llvm::AllocaInst>(ptr))) {
+        Error::throw_error(
+            line_number,
+            name.c_str(),
+            "Tried to dereference a non-pointer",
+            Error::ErrorCodes::BAD_TYPE
+        );
+    }
+    
+    return ctx.builder.CreateLoad(
+        alloca_val->getAllocatedType(),
+        ptr, var->getName() + ".deref"
+    );
 }

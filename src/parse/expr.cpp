@@ -81,6 +81,9 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s, llvm::Type* cast
         case Lexer::Type::FloatLiteral:   return ExprLitFloat::parse(s);    break;
         case Lexer::Type::IntegerLiteral: return ExprLitInt::parse(s);      break;
         case Lexer::Type::StringLiteral:  return ExprLitString::parse(s);   break;
+
+        case Lexer::Type::At:   return ExprDeref::parse(s); break;
+        case Lexer::Type::Hash: return ExprAddress::parse(s); break;
         default: break;
     }
 
@@ -130,4 +133,14 @@ std::unique_ptr<Ast::Nodes::ExprCall> Ast::Nodes::ExprCall::parse(
     s.expect(")", line_number);
 
     return std::make_unique<ExprCall>(nm, args, line_number);
+}
+
+std::unique_ptr<Ast::Nodes::ExprAddress> Ast::Nodes::ExprAddress::parse(Lexer::Stream& s) {
+    s.expect("#", s.peek()->line);
+    return std::make_unique<ExprAddress>(s.pop()->content, s.peek()->line);
+}
+
+std::unique_ptr<Ast::Nodes::ExprDeref> Ast::Nodes::ExprDeref::parse(Lexer::Stream& s) {
+    s.expect("@", s.peek()->line);
+    return std::make_unique<ExprDeref>(s.pop()->content, s.peek()->line);
 }

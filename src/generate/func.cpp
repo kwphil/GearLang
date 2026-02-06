@@ -50,7 +50,17 @@ llvm::Value* Ast::Nodes::Function::generate(Context& ctx) {
     idx = 0;
     for(auto& arg : fn->args()) {
         auto& ast_arg = args[idx];
-        ctx.bind(ast_arg.name, &arg);
+
+        // Alloca
+        llvm::AllocaInst* alloca = ctx.create_entry_block(
+            fn,
+            ast_arg.name,
+            ast_arg.ty.generate(ctx)
+        );
+
+        ctx.builder.CreateStore(&arg, alloca);
+
+        ctx.bind(ast_arg.name, alloca);
         idx++;
     }
 

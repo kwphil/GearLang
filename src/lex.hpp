@@ -25,7 +25,9 @@ enum class CharType {
     Quote,
     Brace,
     Amp,
-    Semi
+    Semi,
+    Hash,
+    At
 };
 
 /// @brief Get the character type of a given character
@@ -50,7 +52,9 @@ enum class Type {
     Ellipsis,
     Comma,
     Semi,
-    Amper
+    Amper,
+    Hash,
+    At
 };
 
 std::string print_type(Type ty);
