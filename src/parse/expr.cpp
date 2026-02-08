@@ -3,7 +3,7 @@
 #include <vector>
 #include <format>
 
-#include "../ast.hpp"
+#include "../ast/expr.hpp"
 #include "../lex.hpp"
 #include "../error.hpp"
 

@@ -3,7 +3,9 @@
 #include <memory>
 #include <format>
 
-#include "../ast.hpp"
+#include "../ast/stmt.hpp"
+#include "../ast/expr.hpp"
+
 #include "../lex.hpp"
 #include "../var.hpp"
 #include "../error.hpp"

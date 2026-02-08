@@ -6,8 +6,10 @@
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/Type.h>
 
-#include "../ast.hpp"
-#include "../syscall.hpp"
+#include <stdexcept>
+
+#include "../ast/stmt.hpp"
+#include "../ast/expr.hpp"
 #include "../error.hpp"
 #include "../func.hpp"
 
@@ -184,7 +186,14 @@ llvm::Value* Ast::Nodes::Else::generate(Context& ctx) {
 #include <iostream>
 
 void Ast::Program::generate(Context& ctx) {
-    for (const auto& expr : content) {
-        expr->generate(ctx);
+    for (const auto& node : content) {
+        if (auto* stmt = dynamic_cast<Stmt*>(node.get())) {
+            stmt->generate(ctx);
+        } else if (auto* expr = dynamic_cast<Expr*>(node.get())) {
+            // Top-level expressions: generate for side effects, discard value
+            expr->generate(ctx);
+        } else {
+            throw std::runtime_error("invalid node");
+        }
     }
 }

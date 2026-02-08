@@ -94,3 +94,4 @@ llvm::Type* Ast::Type::generate(Context& ctx) {
     ? type_to_llvm_type_np(ctx)
     : type_to_llvm_type(ctx);
 }
+

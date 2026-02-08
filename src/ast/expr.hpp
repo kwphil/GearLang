@@ -1,28 +1,31 @@
 #pragma once
 
 #include <memory>
-#include <string>
 
-#include <llvm/IR/Value.h>
-
-#include "ctx.hpp"
-#include "lex.hpp"
-#include "var.hpp"
+#include "../lex.hpp"
+#include "../ctx.hpp"
+#include "../var.hpp"
 
 namespace Ast::Nodes {
-#ifndef _node_base
-#define _node_base
-    class NodeBase { // Defining to not have to define it later
-    protected:
-        int line_number;
-
+#ifndef NODE_BASE
+#define NODE_BASE
+    /// @brief Base class for all AST nodes
+    class NodeBase {
     public:
-        NodeBase(int line_number) : line_number(line_number) { }
-        static std::unique_ptr<NodeBase> parse(Lexer::Stream&);
-        virtual llvm::Value* generate(Context&) = 0;
+        /// @brief The line number in the source code where the node appears
+        const int line_number;
+
+        NodeBase(int line_number) : line_number(line_number) {}
+        virtual ~NodeBase() = default;
+        /// @brief Parses a node from the lexer stream
+        /// @param s The lexer stream to parse from
+        /// @return A unique pointer to the parsed node
+        static std::unique_ptr<NodeBase> parse(Lexer::Stream& s);
     };
 #endif
-
+#ifndef EXPR_BASE
+#define EXPR_BASE
+    /// @brief Base class for all nodes that return a value
     class Expr : public NodeBase {
     public:
         Expr(int line_number) : NodeBase(line_number) {}
@@ -37,8 +40,11 @@ namespace Ast::Nodes {
         /// @brief Parses a term from the lexer stream
         /// @param s The lexer stream to parse from
         /// @return A unique pointer to the parsed term
-        static std::unique_ptr<Expr> parseTerm(Lexer::Stream& s, llvm::Type* cast = nullptr);
+        static std::unique_ptr<Expr> parseTerm(Lexer::Stream& s);
+        /// @brief Generates the llvm code
+        virtual Value* generate(Context& ctx) = 0;
     };
+#endif
 
     /// @brief Smart pointer type for expressions
     using pExpr = std::unique_ptr<Expr>;
@@ -54,7 +60,7 @@ namespace Ast::Nodes {
         ExprOp(Type type, pExpr left, pExpr right, int line_number)
         : type(type), left(std::move(left)), right(std::move(right)), Expr(line_number) {};
 
-        llvm::Value* generate(Context& ctx) override;
+        Value* generate(Context& ctx) override;
     };
 
     /// @brief Template base class for literal expressions
@@ -80,7 +86,7 @@ namespace Ast::Nodes {
         ExprLitInt(uint64_t x, int line_number) : Literal(line_number, nullptr), value(x) {}
         static std::unique_ptr<ExprLitInt> parse(Lexer::Stream& s);
 
-        virtual llvm::Value* generate(Context& ctx) override;
+        virtual Value* generate(Context& ctx) override;
     };
 
     /// @brief Expression node for floating-point literals
@@ -92,7 +98,7 @@ namespace Ast::Nodes {
         ExprLitFloat(double x, int line_number) : Literal(line_number, nullptr), value(x) { }
         static std::unique_ptr<ExprLitFloat> parse(Lexer::Stream& s);
         
-        virtual llvm::Value* generate(Context& ctx) override;
+        virtual Value* generate(Context& ctx) override;
     };
 
     /// @brief Expression node for C-strings 
@@ -104,7 +110,7 @@ namespace Ast::Nodes {
         ExprLitString(std::string& s, int line_number) : Literal(line_number, nullptr), string(s) { }
         static std::unique_ptr<ExprLitString> parse(Lexer::Stream& s);
 
-        virtual llvm::Value* generate(Context& ctx) override;
+        virtual Value* generate(Context& ctx) override;
     };
 
     /// @brief Expression node for variable references
@@ -118,7 +124,7 @@ namespace Ast::Nodes {
         : name(name), Expr(line_number) {};
 
         static std::unique_ptr<ExprVar> parse(const Lexer::Token& name);
-        llvm::Value* generate(Context& ctx) override;
+        Value* generate(Context& ctx) override;
     };
 
     /// @brief Expression node for variable assignments
@@ -135,7 +141,7 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<ExprAssign> parse(const Lexer::Token& name, Lexer::Stream& s);
 
-        llvm::Value* generate(Context& ctx) override;
+        Value* generate(Context& ctx) override;
     };
 
     class ExprCall : public Expr {
@@ -158,7 +164,7 @@ namespace Ast::Nodes {
             Lexer::Stream& s
         );
 
-        llvm::Value* generate(Context& ctx) override;
+        Value* generate(Context& ctx) override;
     };
 
     /// @brief Expression node for referencing variables
@@ -173,7 +179,7 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<ExprAddress> parse(Lexer::Stream& s);
 
-        llvm::Value* generate(Context& ctx) override;
+        Value* generate(Context& ctx) override;
     };
 
     /// @brief Expression node for the variable to dereference
@@ -188,7 +194,7 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<ExprDeref> parse(Lexer::Stream& s);
 
-        llvm::Value* generate(Context& ctx) override;
+        Value* generate(Context& ctx) override;
     };
 
     /// @brief Expression node for blocks of nodes
@@ -205,6 +211,6 @@ namespace Ast::Nodes {
 
         // Will probably return the return variable
         // Will stay void until I get Function to return non-void
-        llvm::Value* generate(Context& ctx) override;
+        Value* generate(Context& ctx) override;
     };
 }

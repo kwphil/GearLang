@@ -3,20 +3,31 @@
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/Type.h>
 
-#include "../ast.hpp"
+#include "../ast/expr.hpp"
+#include "../var.hpp"
 
 // Just generates an int constant and returns it
 // TODO: Support different bit widths for optimization 
-llvm::Value* Ast::Nodes::ExprLitInt::generate(Context& ctx) {
-    return llvm::ConstantInt::get(
-        llvm::Type::getInt32Ty(ctx.llvmCtx),
-        this->value,
-        true
-    );
+Ast::Value* Ast::Nodes::ExprLitInt::generate(Context& ctx) {
+    return new Value{
+        .ir=llvm::ConstantInt::get(
+            llvm::Type::getInt32Ty(ctx.llvmCtx),
+            this->value,
+            true
+        ),
+        .ty=llvm::Type::getInt32Ty(ctx.llvmCtx),
+        .is_address=false
+    };
 }
 
 // TODO
 llvm::Value* Ast::Nodes::ExprLitFloat::generate(Context& ctx) {
+    return new Value{
+        .ir=llvm::ConstantFP::get(
+            llvm::Type::getDoubleTy(ctx.llvmCtx),
+            this->value
+        ),
+        .ty
     return llvm::ConstantFP::get(
         // TODO: Support different float types for optimization
         llvm::Type::getDoubleTy(ctx.llvmCtx),
