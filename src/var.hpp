@@ -59,4 +59,10 @@ namespace Ast {
         std::string name;
         Type ty;
     };
+
+    typedef struct {
+        llvm::Value* ir;
+        llvm::Type* ty;
+        bool is_address;
+    } Value;
 }

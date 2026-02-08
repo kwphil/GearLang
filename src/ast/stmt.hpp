@@ -1,16 +1,11 @@
 #include <memory>
-#include <string>
 
-#include <llvm/IR/Value.h>
-
-#include "ctx.hpp"
-#include "lex.hpp"
-#include "var.hpp"
-#include "ast_expr.hpp"
+#include "../ctx.hpp"
+#include "../lex.hpp"
 
 namespace Ast::Nodes {
-#ifndef _node_base
-#define _node_base
+#ifndef NODE_BASE
+#define NODE_BASE
     /// @brief Base class for all AST nodes
     class NodeBase {
     public:
@@ -19,16 +14,26 @@ namespace Ast::Nodes {
 
         NodeBase(int line_number) : line_number(line_number) {}
         virtual ~NodeBase() = default;
-        /// @brief Generates LLVM IR for the node
-        /// @param context The context to generate the IR in
-        /// @return The generated LLVM value
-        virtual llvm::Value* generate(Context& context) = 0;
         /// @brief Parses a node from the lexer stream
         /// @param s The lexer stream to parse from
         /// @return A unique pointer to the parsed node
         static std::unique_ptr<NodeBase> parse(Lexer::Stream& s);
     };
+}
 #endif
+#ifndef EXPR_BASE
+
+#include "expr.hpp"
+
+#endif
+namespace Ast::Nodes {
+    /// @brief Base class for statements (i.e. functions, ifs and others)
+    class Stmt {
+    public:
+        /// @brief generate function that doesn't return anything
+        /// @param ctx the context
+        virtual void generate(Context& ctx) = 0;
+    };
 
     /// @brief Node for if statements
     class If : public NodeBase {
@@ -48,7 +53,7 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<If> parse(Lexer::Stream& s);
 
-        llvm::Value* generate(Context& ctx) override;
+        void generate(Context& ctx) override;
     };
 
     /// @brief If/Else
@@ -67,7 +72,7 @@ namespace Ast::Nodes {
             std::unique_ptr<If>,
             Lexer::Stream& s
         );
-        llvm::Value* generate(Context& ctx);
+        void generate(Context& ctx);
     };
 
     /// @brief Node for variable declarations
@@ -84,7 +89,7 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<Let> parse(Lexer::Stream& s);
 
-        llvm::Value* generate(Context& ctx) override;
+        void generate(Context& ctx) override;
     };
 
     /// @brief Node for return statements
@@ -99,7 +104,7 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<Return> parse(Lexer::Stream& s);
 
-        llvm::Value* generate(Context& ctx) override;
+        void generate(Context& ctx) override;
     };
 
     /// @brief Node for function definitions
@@ -131,7 +136,7 @@ namespace Ast::Nodes {
         static std::unique_ptr<Function> parse(Lexer::Stream& s);
 
         // This has no use for generating code, so this always returns nullptr
-        llvm::Value* generate(Context& ctx) override;
+        void generate(Context& ctx) override;
     };
 
     class ExternFn : public NodeBase {
@@ -158,20 +163,6 @@ namespace Ast::Nodes {
         static std::unique_ptr<ExternFn> parse(Lexer::Stream& s);
 
         // This has no use for generating code, so this always returns nullptr
-        llvm::Value* generate(Context& ctx) override;
+        void generate(Context& ctx) override;
     };
-};
-
-namespace Ast {
-    /// @brief The root AST node representing the entire program
-    class Program {
-    private:
-        /// @brief The list of nodes in the program
-        std::vector<std::unique_ptr<Nodes::NodeBase>> content;
-       
-    public: 
-        static Program parse(Lexer::Stream& s);
-
-        void generate(Context& ctx);
-    };
-};
+}

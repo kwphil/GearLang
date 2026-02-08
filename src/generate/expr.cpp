@@ -5,7 +5,7 @@
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/Type.h>
 
-#include "../ast.hpp"
+#include "../ast/expr.hpp"
 #include "../error.hpp"
 
 // Generates both sides of the expression, and stores them in temporary values
