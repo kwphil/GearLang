@@ -9,6 +9,16 @@
 
 static inline bool is_single_char_token(Lexer::CharType t);
 
+char get_escape(char c) {
+    switch(c) {
+    case('n'):
+        return '\n';
+    case('t'):
+        return '\t';
+    default: return c;
+    }
+}
+
 Lexer::Stream Lexer::tokenize(std::string& source_path)
 {
     std::ifstream file(source_path);
@@ -23,8 +33,13 @@ Lexer::Stream Lexer::tokenize(std::string& source_path)
     bool is_comment = false;
 
     while (file.get(c)) {
+        if(c == '\\') {
+            file.get(c);
+            tok.content.push_back(get_escape(c));
+            file.get(c);
+        } 
+        
         state_new = getCharType(c);
-
         // state transition -> token boundary
         // Forces a single char token to stay that way
         if ((!is_string) &&

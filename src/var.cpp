@@ -95,3 +95,18 @@ llvm::Type* Ast::Type::generate(Context& ctx) {
     : type_to_llvm_type(ctx);
 }
 
+bool Ast::Type::is_pointer_ty() {
+    if(prim_type == PrimType::NonPrimitive) {
+        if(non_prim->type[0] == 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+llvm::Type* Ast::Type::get_underlying_type(Context& ctx) {
+    if(!is_pointer_ty()) return nullptr;
+
+    return type_to_llvm_type((PrimType)non_prim->type[1], ctx);
+}

@@ -1,11 +1,10 @@
-#include <llvm/IR/Type.h>
-#include <llvm/Support/raw_ostream.h>
 #include <string>
 #include <vector>
 
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Type.h>
 
 #include "ctx.hpp"
 
@@ -29,11 +28,11 @@ std::string Context::render() {
     return out;
 }
 
-void Context::bind(const std::string& name, llvm::Value* val) {
+void Context::bind(const std::string& name, Ast::Value* val) {
     scopes.back()[name] = val;
 }
 
-llvm::Value* Context::lookup(const std::string& name) {
+Ast::Value* Context::lookup(const std::string& name) {
     for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
         auto found = it->find(name);
         if (found != it->end())

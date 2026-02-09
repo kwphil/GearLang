@@ -14,7 +14,7 @@ namespace Error {
         VARIABLE_NOT_DEFINED,
         FUNCTION_NOT_DEFINED,
         INVALID_AST,
-        BAD_TYPE
+        BAD_TYPE,
     };
 
     /// @brief throws an error at a line. noreturn just to suppress warning about no func return.

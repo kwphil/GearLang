@@ -11,30 +11,46 @@
 // Generates both sides of the expression, and stores them in temporary values
 // Matches through each operation and stores the output as a temp
 // Returns the temporary variable
-llvm::Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
-    llvm::Value* lhs = left->generate(ctx);
-    llvm::Value* rhs = right->generate(ctx);
+Ast::Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
+    Ast::Value* lhs = left->generate(ctx);
+    Ast::Value* rhs = right->generate(ctx);
+    llvm::Value* out;
 
-    if(lhs->getType()->isDoubleTy()) {
+    if(lhs->ir->getType() != rhs->ir->getType()) {
+        Error::throw_error(
+            line_number,
+            "",
+            "Mismatched types",
+            Error::ErrorCodes::BAD_TYPE
+        );
+    }
+
+    if(lhs->ir->getType()->isDoubleTy()) {
         switch(type) {
-            case Add: return ctx.builder.CreateFAdd(lhs, rhs, "faddtmp");
-            case Sub: return ctx.builder.CreateFSub(lhs, rhs, "fsubtmp");
-            case Mul: return ctx.builder.CreateFMul(lhs, rhs, "fmultmp");
-            case Div: return ctx.builder.CreateFDiv(lhs, rhs, "fdivtmp");
+            case Add: out = ctx.builder.CreateFAdd(lhs->ir, rhs->ir, "faddtmp");
+            case Sub: out = ctx.builder.CreateFSub(lhs->ir, rhs->ir, "fsubtmp");
+            case Mul: out = ctx.builder.CreateFMul(lhs->ir, rhs->ir, "fmultmp");
+            case Div: out = ctx.builder.CreateFDiv(lhs->ir, rhs->ir, "fdivtmp");
         }
     }
 
     switch (type) {
-        case Add: return ctx.builder.CreateAdd(lhs, rhs, "iaddtmp");
-        case Sub: return ctx.builder.CreateSub(lhs, rhs, "isubtmp");
-        case Mul: return ctx.builder.CreateMul(lhs, rhs, "imultmp");
-        case Div: return ctx.builder.CreateSDiv(lhs, rhs, "idivtmp");
+        case Add: out = ctx.builder.CreateAdd(lhs->ir, rhs->ir, "iaddtmp");
+        case Sub: out = ctx.builder.CreateSub(lhs->ir, rhs->ir, "isubtmp");
+        case Mul: out = ctx.builder.CreateMul(lhs->ir, rhs->ir, "imultmp");
+        case Div: out = ctx.builder.CreateSDiv(lhs->ir, rhs->ir, "idivtmp");
     }
 
-    int line = line_number; // It doesn't like using the line_number from the class
-    
+    if(out) {
+        return new Ast::Value {
+            .ir=out,
+            .ty=lhs->ir->getType(),
+            .is_address = lhs->is_address
+        };
+    }
+
     Error::throw_error(
-        line,
+        line_number,
         "",
         "Invalid ExprOp",
         Error::ErrorCodes::INVALID_AST
@@ -45,8 +61,8 @@ llvm::Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
 // If the variable doesn't exist, it throws an error and quits
 // Otherwise:
 // Checks if it is a global and returns it
-llvm::Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
-    llvm::Value* var = ctx.lookup(name);
+Ast::Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
+    Ast::Value* var = ctx.lookup(name);
     if (!var)
         Error::throw_error(
             line_number,
@@ -55,27 +71,39 @@ llvm::Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
             Error::ErrorCodes::VARIABLE_NOT_DEFINED
         );
 
-    if (auto* gv = llvm::dyn_cast<llvm::GlobalVariable>(var)) {
-        return ctx.builder.CreateLoad(
+    if (auto* gv = llvm::dyn_cast<llvm::GlobalVariable>(var->ir)) {
+        llvm::Value* ir = ctx.builder.CreateLoad(
             gv->getValueType(),
             gv,
             name + ".load"
         );
+
+        return new Value {
+            .ir=ir,
+            .ty=var->ty,
+            .is_address=var->is_address
+        };
     }
 
-    llvm::AllocaInst* alloca = llvm::dyn_cast<llvm::AllocaInst>(var);
+    llvm::AllocaInst* alloca = llvm::dyn_cast<llvm::AllocaInst>(var->ir);
 
-    return ctx.builder.CreateLoad(
+    llvm::Value* ir = ctx.builder.CreateLoad(
         alloca->getAllocatedType(),
-        var,
+        var->ir,
         name + ".load"
     );
+
+    return new Value {
+        .ir=ir,
+        .ty=var->ty,
+        .is_address=var->is_address
+    };
 }
 
 // Assigns a value to a variable, and stores the value in the variable's alloca
 // If the variable doesn't exist, it throws an error and quits
-llvm::Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
-    llvm::Value* alloca = ctx.lookup(name);
+Ast::Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
+    Ast::Value* alloca = ctx.lookup(name);
     if (!alloca)
         Error::throw_error(
             line_number,
@@ -84,15 +112,39 @@ llvm::Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
             Error::ErrorCodes::VARIABLE_NOT_DEFINED
         );
 
-    llvm::Value* value = expr->generate(ctx);
-    ctx.builder.CreateStore(value, alloca);
+    Expr* expr2 = dynamic_cast<Expr*>(expr.get());
+    
+    if(!expr2) {
+        Error::throw_error(
+            line_number,
+            "",
+            "Expected rvalue",
+            Error::ErrorCodes::INVALID_AST
+        );
+    }
+    
+    Ast::Value* value = expr2->generate(ctx);
+
+    // type checking
+    if(value->is_address != alloca->is_address
+       || value->ty != value->ty
+    ) {
+        Error::throw_error(
+            line_number,
+            "=",
+            "Mismatched types",
+            Error::ErrorCodes::BAD_TYPE
+        );
+    }
+
+    ctx.builder.CreateStore(value->ir, alloca->ir);
 
     return value;
 }
 
 // Gets the function by name, and creates a call for it
 // Parses the expressions for each argument and calls it
-llvm::Value* Ast::Nodes::ExprCall::generate(Context& ctx) {
+Ast::Value* Ast::Nodes::ExprCall::generate(Context& ctx) {
     llvm::Function* func = ctx.module->getFunction(callee);
 
     if(!func) {
@@ -107,16 +159,20 @@ llvm::Value* Ast::Nodes::ExprCall::generate(Context& ctx) {
     std::vector<llvm::Value*> arg_values;
     
     for(auto& a : args) {
-        arg_values.push_back(a->generate(ctx));
+        arg_values.push_back(a->generate(ctx)->ir);
     }
 
-    return ctx.builder.CreateCall(func, arg_values);
+    llvm::Value* val = ctx.builder.CreateCall(func, arg_values);
+
+    return new Value {
+        .ir=val,
+        .ty=val->getType(),
+        .is_address=false
+    };
 }
 
-#include <iostream>
-
-llvm::Value* Ast::Nodes::ExprAddress::generate(Context& ctx) {
-    llvm::Value* var = ctx.lookup(name);
+Ast::Value* Ast::Nodes::ExprAddress::generate(Context& ctx) {
+    Ast::Value* var = ctx.lookup(name);
 
     if(!var) {
         Error::throw_error(
@@ -134,7 +190,13 @@ llvm::Value* Ast::Nodes::ExprAddress::generate(Context& ctx) {
 }
 
 llvm::Value* deref(
-    Context& ctx, llvm::Value* ptr, std::string& name, int line_number) {
+    Context& ctx, 
+    llvm::Value* ptr, 
+    llvm::Type* type,
+    std::string&& name,
+    const char* suffix, 
+    int line_number
+) {
     // First try if it is a global
     if(auto* gptr = llvm::dyn_cast<llvm::GlobalVariable>(ptr)) {
         return ctx.builder.CreateLoad(
@@ -145,8 +207,8 @@ llvm::Value* deref(
     }
 
     // Parse as an alloca otherwise
-    llvm::AllocaInst* alloca_ptr;
-    if(!(alloca_ptr = llvm::dyn_cast<llvm::AllocaInst>(var))) {
+    llvm::AllocaInst* alloca_ptr = llvm::dyn_cast<llvm::AllocaInst>(ptr);
+    if(!alloca_ptr) {
         Error::throw_error(
             line_number,
             name.c_str(),
@@ -156,12 +218,14 @@ llvm::Value* deref(
     }
 
     return ctx.builder.CreateLoad(
-        
-    )
+        type,
+        ptr,
+        name + ".load"
+    );
 }
 
-llvm::Value* Ast::Nodes::ExprDeref::generate(Context& ctx) {
-    llvm::Value* var = ctx.lookup(name);
+Ast::Value* Ast::Nodes::ExprDeref::generate(Context& ctx) {
+    Ast::Value* var = ctx.lookup(name);
 
     if(!var) {
         Error::throw_error(
@@ -176,43 +240,36 @@ llvm::Value* Ast::Nodes::ExprDeref::generate(Context& ctx) {
     // Once to get the pointer
     // Twice to get the dereferenced data
 
-    // First globals
-    if(auto* gptr = llvm::dyn_cast<llvm::GlobalVariable>(var)) {
-        llvm::Value* ptr = ctx.builder.CreateLoad(
-            gptr->getValueType(),
-            gptr,
-            var->getName() + ".load"
-        );
-
-        // Do it again
-
-        if(gptr = llvm::dyn_cast<llvm::GlobalVariable>(ptr)) {
-            
-        }
-    }
-
-    llvm::AllocaInst* alloca_ptr;
-    if(!(alloca_ptr = llvm::dyn_cast<llvm::AllocaInst>(var))) {
-        throw std::runtime_error("You shouldn't be here! deref");
-    }
-
-    llvm::Value* ptr = ctx.builder.CreateLoad(
-        alloca_ptr->getAllocatedType(),
-        var, var->getName() + ".load"
-    );
-
-    llvm::AllocaInst* alloca_val;
-    if(!(alloca_val = llvm::dyn_cast<llvm::AllocaInst>(ptr))) {
+    if(!var->is_address) {
         Error::throw_error(
             line_number,
-            name.c_str(),
-            "Tried to dereference a non-pointer",
+            var->ir->getName().str().c_str(),
+            "Expected a pointer type",
             Error::ErrorCodes::BAD_TYPE
         );
     }
-    
-    return ctx.builder.CreateLoad(
-        alloca_val->getAllocatedType(),
-        ptr, var->getName() + ".deref"
+
+    llvm::Value* load = deref(
+        ctx,
+        var->ir,
+        var->ir->getType(),
+        var->ir->getName().str(),
+        ".load",
+        line_number
     );
+
+    llvm::Value* deref_var = deref(
+        ctx,
+        load,
+        var->ty,
+        var->ir->getName().str(),
+        ".deref",
+        line_number
+    );
+
+    return new Value {
+        .ir=deref_var,
+        .ty=var->ty,
+        .is_address=false
+    };
 }

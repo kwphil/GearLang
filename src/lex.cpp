@@ -1,5 +1,4 @@
 #include "lex.hpp"
-#include "ast.hpp"
 #include "error.hpp"
 
 #include <iostream>

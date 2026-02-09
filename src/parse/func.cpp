@@ -1,6 +1,7 @@
 #include <memory>
 #include <tuple>
 
+#include "../ast/stmt.hpp"
 #include "../ast/expr.hpp"
 #include "../var.hpp"
 #include "../lex.hpp"

@@ -1,6 +1,7 @@
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Function.h>
 
+#include "../ast/base.hpp"
 #include "../ast/stmt.hpp"
 #include "../ctx.hpp"
 
@@ -12,7 +13,7 @@
 // Generates the function body
 // Pops the scope and resets the current function
 // Sets the insert point back to the start block
-llvm::Value* Ast::Nodes::Function::generate(Context& ctx) {
+void Ast::Nodes::Function::generate(Context& ctx) {
     std::vector<llvm::Type*> param_types;
     param_types.reserve(args.size());
     for (auto& arg : args) {
@@ -52,19 +53,37 @@ llvm::Value* Ast::Nodes::Function::generate(Context& ctx) {
         auto& ast_arg = args[idx];
 
         // Alloca
+        llvm::Type* arg_ty = ast_arg.ty.generate(ctx);
         llvm::AllocaInst* alloca = ctx.create_entry_block(
             fn,
             ast_arg.name,
-            ast_arg.ty.generate(ctx)
+            arg_ty
         );
 
         ctx.builder.CreateStore(&arg, alloca);
 
-        ctx.bind(ast_arg.name, alloca);
+        if(ast_arg.ty.is_pointer_ty()) {
+            Value* val = new Value {
+                .ir=alloca,
+                .ty=ast_arg.ty.get_underlying_type(ctx),
+                .is_address=true
+            };
+
+            ctx.bind(ast_arg.name, val);
+        }
+
+        Value* val = new Value {
+            .ir=alloca,
+            .ty=arg_ty,
+            .is_address=false
+        };
+
+        ctx.bind(ast_arg.name, val);
+
         idx++;
     }
 
-    block->generate(ctx);
+    generate_node(&*block, ctx);
 
     if (!entry->getTerminator()) {
         ctx.builder.CreateRet(
@@ -78,11 +97,9 @@ llvm::Value* Ast::Nodes::Function::generate(Context& ctx) {
     ctx.current_fn = ctx.module->getFunction(".global_fn");
 
     ctx.builder.SetInsertPoint(*ctx.global_entry);
-
-    return fn;
 }
 
-llvm::Value* Ast::Nodes::ExternFn::generate(Context& ctx) {
+void Ast::Nodes::ExternFn::generate(Context& ctx) {
     std::vector<llvm::Type*> param_types;
     param_types.reserve(args.size());
     for (auto& arg : args) {
@@ -97,7 +114,7 @@ llvm::Value* Ast::Nodes::ExternFn::generate(Context& ctx) {
         is_variadic
     );
 
-    return llvm::Function::Create(
+    llvm::Function::Create(
         fn_type,
         llvm::Function::ExternalLinkage,
         callee,
