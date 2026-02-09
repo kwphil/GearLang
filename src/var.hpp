@@ -53,6 +53,10 @@ namespace Ast {
 
         /// @brief the llvm generator
         llvm::Type* generate(Context& ctx);
+
+        bool is_pointer_ty();
+        /// @brief Gets the underlying type if the type is a pointer
+        llvm::Type* get_underlying_type(Context& ctx);
     };
 
     struct Variable {
@@ -60,9 +64,4 @@ namespace Ast {
         Type ty;
     };
 
-    typedef struct {
-        llvm::Value* ir;
-        llvm::Type* ty;
-        bool is_address;
-    } Value;
 }

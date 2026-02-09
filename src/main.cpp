@@ -5,7 +5,8 @@
 
 #include <llvm/IR/InlineAsm.h>
 
-#include "ast.hpp"
+#include "ast/base.hpp"
+#include "lex.hpp"
 #include "syscall.hpp"
 #include "error.hpp"
 #include "func.hpp"

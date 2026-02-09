@@ -1,42 +1,24 @@
+#pragma once
 #include <memory>
 
 #include "../ctx.hpp"
 #include "../lex.hpp"
 
-namespace Ast::Nodes {
-#ifndef NODE_BASE
-#define NODE_BASE
-    /// @brief Base class for all AST nodes
-    class NodeBase {
-    public:
-        /// @brief The line number in the source code where the node appears
-        const int line_number;
-
-        NodeBase(int line_number) : line_number(line_number) {}
-        virtual ~NodeBase() = default;
-        /// @brief Parses a node from the lexer stream
-        /// @param s The lexer stream to parse from
-        /// @return A unique pointer to the parsed node
-        static std::unique_ptr<NodeBase> parse(Lexer::Stream& s);
-    };
-}
-#endif
-#ifndef EXPR_BASE
-
+#include "base.hpp"
 #include "expr.hpp"
 
-#endif
 namespace Ast::Nodes {
     /// @brief Base class for statements (i.e. functions, ifs and others)
-    class Stmt {
+    class Stmt : public NodeBase {
     public:
+        Stmt(int line_number) : NodeBase(line_number) { }
         /// @brief generate function that doesn't return anything
         /// @param ctx the context
         virtual void generate(Context& ctx) = 0;
     };
 
     /// @brief Node for if statements
-    class If : public NodeBase {
+    class If : public Stmt {
     protected:
         /// @brief The condition expression
         pExpr cond;
@@ -45,7 +27,7 @@ namespace Ast::Nodes {
 
     public:
         If(std::unique_ptr<NodeBase> expr, pExpr cond, int line_number)
-        : expr(std::move(expr)), cond(std::move(cond)), NodeBase(line_number) { }
+        : expr(std::move(expr)), cond(std::move(cond)), Stmt(line_number) { }
 
         If(If&&) = default;
         If& operator=(If&&) = default;
@@ -76,7 +58,7 @@ namespace Ast::Nodes {
     };
 
     /// @brief Node for variable declarations
-    class Let : public NodeBase {
+    class Let : public Stmt {
     private:
         /// @brief The target variable name
         std::string target;
@@ -85,7 +67,7 @@ namespace Ast::Nodes {
 
     public:
         Let(std::string& target, pExpr expr, int line_number)
-        : target(target), expr(std::move(expr)), NodeBase(line_number) {}
+        : target(target), expr(std::move(expr)), Stmt(line_number) {}
 
         static std::unique_ptr<Let> parse(Lexer::Stream& s);
 
@@ -93,14 +75,14 @@ namespace Ast::Nodes {
     };
 
     /// @brief Node for return statements
-    class Return : public NodeBase {
+    class Return : public Stmt {
     private:
         /// @brief The expression to return
         pExpr expr;
     
     public:
         Return(std::unique_ptr<Expr> expr, int line_number)
-        : expr(std::move(expr)), NodeBase(line_number) {}
+        : expr(std::move(expr)), Stmt(line_number) {}
 
         static std::unique_ptr<Return> parse(Lexer::Stream& s);
 
@@ -108,7 +90,7 @@ namespace Ast::Nodes {
     };
 
     /// @brief Node for function definitions
-    class Function : public NodeBase {
+    class Function : public Stmt {
     private:
         /// @brief The function name
         std::string name;
@@ -131,7 +113,7 @@ namespace Ast::Nodes {
             int line_number
         ) : 
             name(name), ty(ty), args(args), is_variadic(is_variadic),
-            block(std::move(block)), NodeBase(line_number) { } 
+            block(std::move(block)), Stmt(line_number) { } 
 
         static std::unique_ptr<Function> parse(Lexer::Stream& s);
 
@@ -139,7 +121,7 @@ namespace Ast::Nodes {
         void generate(Context& ctx) override;
     };
 
-    class ExternFn : public NodeBase {
+    class ExternFn : public Stmt {
     private:
         /// @brief the callee name
         std::string callee;
@@ -158,7 +140,7 @@ namespace Ast::Nodes {
             bool is_variadic,
             int line_number
         ) : callee(callee), args(args), ty(ty), 
-            is_variadic(is_variadic), NodeBase(line_number) { }
+            is_variadic(is_variadic), Stmt(line_number) { }
 
         static std::unique_ptr<ExternFn> parse(Lexer::Stream& s);
 

@@ -8,6 +8,8 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/IRBuilder.h>
 
+#include "value.hpp"
+
 /// @brief Code generation context
 class Context {
 public:
@@ -29,7 +31,7 @@ public:
     }
 
     /// @brief Stack of variable scopes
-    std::vector<std::unordered_map<std::string, llvm::Value*>> scopes;
+    std::vector<std::unordered_map<std::string, Ast::Value*>> scopes;
 
     /// @brief Create an alloca instruction in the entry block of a function
     /// @param function Function in which to create the alloca
@@ -52,9 +54,9 @@ public:
     /// @brief Lookup a variable by name in the current scopes
     /// @param name Name of the variable to lookup
     /// @return Pointer to the LLVM value of the variable, or nullptr if not found
-    llvm::Value* lookup(const std::string& name);
+    Ast::Value* lookup(const std::string& name);
     /// @brief Bind a variable name to an LLVM value in the current scope
     /// @param name Name of the variable
     /// @param val Pointer to the LLVM value to bind
-    void bind(const std::string& name, llvm::Value* val);
+    void bind(const std::string& name, Ast::Value* val);
 };

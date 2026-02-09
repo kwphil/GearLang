@@ -65,7 +65,7 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseExpr(Lexer::Stream& s) {
     return std::make_unique<ExprOp>(type, std::move(left), std::move(right), s.peek()->line);
 }
 
-Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s, llvm::Type* cast) {
+Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s) {
     int line_number = s.peek()->line;
 
     if (s.peek()->content == "(") {

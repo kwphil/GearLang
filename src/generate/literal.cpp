@@ -21,24 +21,21 @@ Ast::Value* Ast::Nodes::ExprLitInt::generate(Context& ctx) {
 }
 
 // TODO
-llvm::Value* Ast::Nodes::ExprLitFloat::generate(Context& ctx) {
+Ast::Value* Ast::Nodes::ExprLitFloat::generate(Context& ctx) {
     return new Value{
         .ir=llvm::ConstantFP::get(
             llvm::Type::getDoubleTy(ctx.llvmCtx),
             this->value
         ),
-        .ty
-    return llvm::ConstantFP::get(
-        // TODO: Support different float types for optimization
-        llvm::Type::getDoubleTy(ctx.llvmCtx),
-        this->value
-    );
+        .ty=llvm::Type::getDoubleTy(ctx.llvmCtx),
+        .is_address=false
+    };
 };
 
 // Converts a string into an array of constant i8s
 // Creates a constant array using that
 // Returns a pointer to the string
-llvm::Value* Ast::Nodes::ExprLitString::generate(Context& ctx) {
+Ast::Value* Ast::Nodes::ExprLitString::generate(Context& ctx) {
     std::vector<llvm::Constant*> chars(string.size());
     llvm::Type* i8 = llvm::Type::getInt8Ty(ctx.llvmCtx);
     llvm::ArrayType* arr_i8 = llvm::ArrayType::get(i8, chars.size());
@@ -52,7 +49,7 @@ llvm::Value* Ast::Nodes::ExprLitString::generate(Context& ctx) {
         chars
     );
 
-    return new llvm::GlobalVariable(
+    llvm::Value* val = new llvm::GlobalVariable(
         *ctx.module,
         arr_i8,
         true,
@@ -60,4 +57,10 @@ llvm::Value* Ast::Nodes::ExprLitString::generate(Context& ctx) {
         array,
         ".str"
     );
+
+    return new Value {
+        .ir=val,
+        .ty=arr_i8,
+        .is_address=false
+    };
 }

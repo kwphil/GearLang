@@ -6,25 +6,9 @@
 #include "../ctx.hpp"
 #include "../var.hpp"
 
-namespace Ast::Nodes {
-#ifndef NODE_BASE
-#define NODE_BASE
-    /// @brief Base class for all AST nodes
-    class NodeBase {
-    public:
-        /// @brief The line number in the source code where the node appears
-        const int line_number;
+#include "base.hpp"
 
-        NodeBase(int line_number) : line_number(line_number) {}
-        virtual ~NodeBase() = default;
-        /// @brief Parses a node from the lexer stream
-        /// @param s The lexer stream to parse from
-        /// @return A unique pointer to the parsed node
-        static std::unique_ptr<NodeBase> parse(Lexer::Stream& s);
-    };
-#endif
-#ifndef EXPR_BASE
-#define EXPR_BASE
+namespace Ast::Nodes {
     /// @brief Base class for all nodes that return a value
     class Expr : public NodeBase {
     public:
@@ -44,7 +28,6 @@ namespace Ast::Nodes {
         /// @brief Generates the llvm code
         virtual Value* generate(Context& ctx) = 0;
     };
-#endif
 
     /// @brief Smart pointer type for expressions
     using pExpr = std::unique_ptr<Expr>;
