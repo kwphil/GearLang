@@ -3,10 +3,8 @@
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Type.h>
 
-namespace Ast {
-    typedef struct {
-        llvm::Value* ir;
-        llvm::Type* ty;
-        bool is_address;
-    } Value;
-}
+typedef struct {
+    llvm::Value* ir;
+    llvm::Type* ty;
+    bool is_address;
+} Value;

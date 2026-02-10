@@ -3,19 +3,19 @@
 
 #include "../ast/stmt.hpp"
 #include "../ast/expr.hpp"
-#include "../var.hpp"
+#include "../sem.hpp"
 #include "../lex.hpp"
 #include "../error.hpp"
 
 // Helper function for parsing function headers
 // Returns the type (returns Ast::Type::NonPrimitive, ... if non-primitive)
 // Returns the name of the function
-std::tuple<Ast::Type, std::string> 
+std::tuple<Sem::Type, std::string> 
 parse_function_header(Lexer::Stream& s, int line_number);
 
 // Helper function
 // Parses the arguments for a function
-std::vector<Ast::Variable> parse_function_args(
+std::vector<Sem::Variable> parse_function_args(
     Lexer::Stream& s, 
     int line_number,
     bool requires_names,
@@ -29,9 +29,9 @@ Ast::Nodes::Function::parse(Lexer::Stream& s) {
 
     s.expect("fn", line_number);
 
-    Ast::Type ty;
+    Sem::Type ty;
     std::string name;
-    std::vector<Ast::Variable> args;
+    std::vector<Sem::Variable> args;
 
     auto header = parse_function_header(s, line_number);
 
@@ -51,9 +51,9 @@ std::unique_ptr<Ast::Nodes::ExternFn> Ast::Nodes::ExternFn::parse(Lexer::Stream&
     s.expect("extern", line_number);
     s.expect("fn", line_number);
 
-    Ast::Type ty;
+    Sem::Type ty;
     std::string name;
-    std::vector<Ast::Variable> args;
+    std::vector<Sem::Variable> args;
 
     auto header = parse_function_header(s, line_number);
 
@@ -68,15 +68,15 @@ std::unique_ptr<Ast::Nodes::ExternFn> Ast::Nodes::ExternFn::parse(Lexer::Stream&
 // PRIVATE FUNCTIONS
 
 
-std::tuple<Ast::Type, std::string> 
+std::tuple<Sem::Type, std::string> 
 parse_function_header(Lexer::Stream& s, int line_number) {
     // Skipping over the current token, is there a parameter list or a block? 
     // If there is not, then there is a type included
-    Ast::Type ty;
+    Sem::Type ty;
     
     auto t = s.peek();
     if(s.next()->content != ":" && s.next()->type != Lexer::Type::BraceOpen) {
-        ty = Ast::Type(s);
+        ty = Sem::Type(s);
     }
 
     std::string name = s.pop()->content;
@@ -84,7 +84,7 @@ parse_function_header(Lexer::Stream& s, int line_number) {
     return { ty, name };
 }
 
-std::vector<Ast::Variable> parse_function_args(
+std::vector<Sem::Variable> parse_function_args(
     Lexer::Stream& s, 
     int line_number,
     bool requires_names, // TODO: Implement this
@@ -100,7 +100,7 @@ std::vector<Ast::Variable> parse_function_args(
     // Consume ':'
     s.pop();
 
-    std::vector<Ast::Variable> args;
+    std::vector<Sem::Variable> args;
 
     while (true) {
         if (!s.has()) {
@@ -120,7 +120,7 @@ std::vector<Ast::Variable> parse_function_args(
         
         std::string arg_name = s.pop()->content;
 
-        Ast::Type arg_type(s);  
+        Sem::Type arg_type(s);  
 
         args.push_back({ arg_name, arg_type });
         

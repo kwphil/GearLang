@@ -9,9 +9,9 @@
 // Generates both sides of the expression, and stores them in temporary values
 // Matches through each operation and stores the output as a temp
 // Returns the temporary variable
-Ast::Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
-    Ast::Value* lhs = left->generate(ctx);
-    Ast::Value* rhs = right->generate(ctx);
+Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
+    Value* lhs = left->generate(ctx);
+    Value* rhs = right->generate(ctx);
     llvm::Value* out;
 
     if(lhs->ir->getType() != rhs->ir->getType()) {
@@ -40,7 +40,7 @@ Ast::Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
     }
 
     if(out) {
-        return new Ast::Value {
+        return new Value {
             .ir=out,
             .ty=lhs->ir->getType(),
             .is_address = lhs->is_address
@@ -59,8 +59,8 @@ Ast::Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
 // If the variable doesn't exist, it throws an error and quits
 // Otherwise:
 // Checks if it is a global and returns it
-Ast::Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
-    Ast::Value* var = ctx.lookup(name);
+Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
+    Value* var = ctx.lookup(name);
     if (!var)
         Error::throw_error(
             line_number,
@@ -100,8 +100,8 @@ Ast::Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
 
 // Assigns a value to a variable, and stores the value in the variable's alloca
 // If the variable doesn't exist, it throws an error and quits
-Ast::Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
-    Ast::Value* alloca = ctx.lookup(name);
+Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
+    Value* alloca = ctx.lookup(name);
     if (!alloca)
         Error::throw_error(
             line_number,
@@ -121,7 +121,7 @@ Ast::Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
         );
     }
     
-    Ast::Value* value = expr2->generate(ctx);
+    Value* value = expr2->generate(ctx);
 
     // type checking
     if(value->is_address != alloca->is_address
@@ -142,7 +142,7 @@ Ast::Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
 
 // Gets the function by name, and creates a call for it
 // Parses the expressions for each argument and calls it
-Ast::Value* Ast::Nodes::ExprCall::generate(Context& ctx) {
+Value* Ast::Nodes::ExprCall::generate(Context& ctx) {
     llvm::Function* func = ctx.module->getFunction(callee);
 
     if(!func) {
@@ -169,8 +169,8 @@ Ast::Value* Ast::Nodes::ExprCall::generate(Context& ctx) {
     };
 }
 
-Ast::Value* Ast::Nodes::ExprAddress::generate(Context& ctx) {
-    Ast::Value* var = ctx.lookup(name);
+Value* Ast::Nodes::ExprAddress::generate(Context& ctx) {
+    Value* var = ctx.lookup(name);
 
     if(!var) {
         Error::throw_error(
@@ -215,8 +215,8 @@ llvm::Value* deref(
     );
 }
 
-Ast::Value* Ast::Nodes::ExprDeref::generate(Context& ctx) {
-    Ast::Value* var = ctx.lookup(name);
+Value* Ast::Nodes::ExprDeref::generate(Context& ctx) {
+    Value* var = ctx.lookup(name);
 
     if(!var) {
         Error::throw_error(

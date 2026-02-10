@@ -17,13 +17,13 @@ void Ast::Nodes::Function::generate(Context& ctx) {
     std::vector<llvm::Type*> param_types;
     param_types.reserve(args.size());
     for (auto& arg : args) {
-        param_types.push_back(arg.ty.generate(ctx));
+        param_types.push_back(arg.type.to_llvm(ctx));
     }
 
     // Creating the function type
     llvm::FunctionType* fn_type =
         llvm::FunctionType::get(
-            ty.generate(ctx),
+            ty.to_llvm(ctx),
             param_types,
             is_variadic
         );
@@ -53,7 +53,7 @@ void Ast::Nodes::Function::generate(Context& ctx) {
         auto& ast_arg = args[idx];
 
         // Alloca
-        llvm::Type* arg_ty = ast_arg.ty.generate(ctx);
+        llvm::Type* arg_ty = ast_arg.type.to_llvm(ctx);
         llvm::AllocaInst* alloca = ctx.create_entry_block(
             fn,
             ast_arg.name,
@@ -62,10 +62,10 @@ void Ast::Nodes::Function::generate(Context& ctx) {
 
         ctx.builder.CreateStore(&arg, alloca);
 
-        if(ast_arg.ty.is_pointer_ty()) {
+        if(ast_arg.type.is_pointer_ty()) {
             Value* val = new Value {
                 .ir=alloca,
-                .ty=ast_arg.ty.get_underlying_type(ctx),
+                .ty=ast_arg.type.get_underlying_type(ctx),
                 .is_address=true
             };
 
@@ -88,7 +88,7 @@ void Ast::Nodes::Function::generate(Context& ctx) {
     if (!entry->getTerminator()) {
         ctx.builder.CreateRet(
             llvm::Constant::getNullValue(
-                ty.generate(ctx)
+                ty.to_llvm(ctx)
             )
         );
     }
@@ -104,12 +104,12 @@ void Ast::Nodes::ExternFn::generate(Context& ctx) {
     param_types.reserve(args.size());
     for (auto& arg : args) {
         param_types.push_back(
-            arg.ty.generate(ctx)
+            arg.type.to_llvm(ctx)
         );
     }
     
     llvm::FunctionType* fn_type = llvm::FunctionType::get(
-        ty.generate(ctx),
+        ty.to_llvm(ctx),
         param_types,
         is_variadic
     );

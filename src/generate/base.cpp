@@ -14,7 +14,7 @@
 #include "../ast/expr.hpp"
 #include "../error.hpp"
 #include "../func.hpp"
-#include "../var.hpp"
+#include "../sem.hpp"
 
 #include <iostream>
 
@@ -34,7 +34,7 @@ void Ast::Nodes::Let::generate(Context& ctx) {
         );
     }
     
-    Ast::Value* initVal = rvalue->generate(ctx);
+    Value* initVal = rvalue->generate(ctx);
 
     // Making sure that the variable doesn't exist
     auto _var = ctx.lookup(target);
@@ -89,7 +89,7 @@ void Ast::Nodes::Let::generate(Context& ctx) {
 
 // Creates a new scope, generates all the expressions inside the block,
 // then pops the scope
-Ast::Value* Ast::Nodes::ExprBlock::generate(Context& ctx) {
+Value* Ast::Nodes::ExprBlock::generate(Context& ctx) {
     ctx.push_scope();
     for (auto& expr : nodes)
         generate_node(expr.get(), ctx);
@@ -101,7 +101,7 @@ Ast::Value* Ast::Nodes::ExprBlock::generate(Context& ctx) {
 // Then creates a syscall to exit with that return value
 void Ast::Nodes::Return::generate(Context& ctx) {
     Expr* exp = dynamic_cast<Expr*>(expr.get());
-    Ast::Value* retVal = exp->generate(ctx);
+    Value* retVal = exp->generate(ctx);
 
     // If in global scope or main, we call exit()
     if(
@@ -143,7 +143,7 @@ void Ast::Nodes::If::generate(Context& ctx) {
             Error::ErrorCodes::INVALID_AST
         );
     }
-    Ast::Value* condVal = cond_expr->generate(ctx);
+    Value* condVal = cond_expr->generate(ctx);
 
     // Convert to boolean: cond != 0
     // TODO: Support different types (String would be x != "", etc)
@@ -190,7 +190,7 @@ void Ast::Nodes::Else::generate(Context& ctx) {
             Error::ErrorCodes::INVALID_AST
         );
     }
-    Ast::Value* condVal = cond_expr->generate(ctx);
+    Value* condVal = cond_expr->generate(ctx);
 
     // Convert to boolean: cond != 0
     // TODO: Support different types (String would be x != "", etc)

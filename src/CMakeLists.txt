@@ -35,7 +35,7 @@ add_executable(gearlang
     lex.cpp
     ctx.cpp
     syscall.cpp
-    var.cpp
+    sem.cpp
     error.cpp
     fsm.cpp
     func.cpp

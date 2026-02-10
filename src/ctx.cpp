@@ -28,11 +28,11 @@ std::string Context::render() {
     return out;
 }
 
-void Context::bind(const std::string& name, Ast::Value* val) {
+void Context::bind(const std::string& name, Value* val) {
     scopes.back()[name] = val;
 }
 
-Ast::Value* Context::lookup(const std::string& name) {
+Value* Context::lookup(const std::string& name) {
     for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
         auto found = it->find(name);
         if (found != it->end())

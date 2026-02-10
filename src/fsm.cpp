@@ -36,7 +36,7 @@ Lexer::Stream Lexer::tokenize(std::string& source_path)
         if(c == '\\') {
             file.get(c);
             tok.content.push_back(get_escape(c));
-            file.get(c);
+            continue;
         } 
         
         state_new = getCharType(c);
@@ -69,8 +69,10 @@ Lexer::Stream Lexer::tokenize(std::string& source_path)
 
     transition_cancel:
 
-        if (state_new == CharType::Quote)
+        if (state_new == CharType::Quote) {
+            if(is_string) tok.content += '\0'; // NULL terminated
             is_string = !is_string;
+        }
 
         if (c == '\n')
         {

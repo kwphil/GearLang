@@ -15,3 +15,5 @@ llvm::Function* declare_func(
     const char* name, Context& ctx,
     bool variadic
 );
+
+void call_exit(Context& ctx, Value* retVal);

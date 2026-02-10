@@ -1,5 +1,6 @@
 #include "func.hpp"
 #include "ctx.hpp"
+#include "value.hpp"
 
 llvm::Function* declare_func(
     llvm::Type* ret_type,
@@ -18,4 +19,15 @@ llvm::Function* declare_func(
         llvm::GlobalValue::ExternalLinkage,
         name, *ctx.module
     );
+}
+
+void call_exit(Context& ctx, Value* retVal) {
+    llvm::Function* exit = declare_func(
+        llvm::Type::getVoidTy(ctx.llvmCtx),
+        { llvm::Type::getInt32Ty(ctx.llvmCtx) },
+        "exit", ctx, false
+    );
+
+    ctx.builder.CreateCall(exit, { retVal->ir });
+    ctx.builder.CreateUnreachable();
 }

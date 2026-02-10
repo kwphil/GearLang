@@ -22,6 +22,6 @@ fn char& str {
 }
 
 // Checking the deref
-printf("%d", @ptr);
+printf("%d\n", @ptr);
 
 return 0;
