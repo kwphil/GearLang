@@ -9,11 +9,12 @@
 #include "lex.hpp"
 #include "syscall.hpp"
 #include "error.hpp"
-#include "func.hpp"
+
+#define VERSION "0.1.0"
 
 llvm::Function* build_runtime(Context& ctx);
 
-void run_command(const char* cmd);
+void run_command(const char* cmd, bool verbose);
 
 int main(int argc, char** argv) {
     if(argc < 2) {
@@ -21,19 +22,45 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
+    const char* file_input;
+    bool verbose = false;
+
+    for(int i = 1; i < argc; i++) {
+        const char* curr_tok = argv[i];
+
+        if(curr_tok[0] != '-') { // no - indicates no flags or options (aka file)
+            file_input = curr_tok;
+        }
+
+        if(strcmp(curr_tok, "--verbose") == 0) {
+            verbose = true;
+        }
+
+        if(strcmp(curr_tok, "--version") == 0) {
+            std::cout << VERSION << "\n";
+
+            exit(EXIT_SUCCESS);
+        }
+    } 
+
+    if(!file_input) {
+        std::cerr << "No input file provided\n";
+        exit(-1);
+    }
+
     Error::setup_error_manager(argv[1]);
     std::string source_path(argv[1]);
-    std::cout << "tokenizing... ";
+    if(verbose) std::cout << "tokenizing... ";
     auto tokens = Lexer::tokenize(source_path);
-    std::cout << "done\n";
+    if(verbose) std::cout << "done\n";
 
-    std::cout << "parsing... ";
+    if(verbose) std::cout << "parsing... ";
     auto root = Ast::Program::parse(tokens);
-    std::cout << "done\n";
+    if(verbose) std::cout << "done\n";
 
     Context ctx;
 
-    std::cout << "generating... ";
+    if(verbose) std::cout << "generating... ";
 
     ctx.current_fn = build_runtime(ctx);
     root.generate(ctx);
@@ -55,31 +82,31 @@ int main(int argc, char** argv) {
     ctx.builder.CreateCall(exit_fn, { retVal });
     ctx.builder.CreateUnreachable();
 
-    std::cout << "done\n";
+    if(verbose) std::cout << "done\n";
 
-    std::cout << "rendering...";
+    if(verbose) std::cout << "rendering...";
     std::string output = ctx.render();
-    std::cout << "done\n";
+    if(verbose) std::cout << "done\n";
 
-    std::cout << "writing llvm file...\n";
-    run_command("mkdir -p build");
+    if(verbose) std::cout << "writing llvm file...\n";
+    run_command("mkdir -p build", verbose);
     std::ofstream out_file("build/build.llvm");
     out_file << output;
     out_file.close();
-    std::cout << "done\n";
+    if(verbose) std::cout << "done\n";
 
-    std::cout << "building... \n";
-    run_command("llvm-as build/build.llvm -o build/build.bc");
-    run_command("nasm asm/_start_stub.asm -f elf64 -o build/_start_stub.o");
-    run_command("llc build/build.bc -filetype=obj -o build/build.o");
-    run_command("cc -nostartfiles build/build.o build/_start_stub.o -o build/build");
+    if(verbose) std::cout << "building... \n";
+    run_command("llvm-as build/build.llvm -o build/build.bc", verbose);
+    run_command("nasm asm/_start_stub.asm -f elf64 -o build/_start_stub.o", verbose);
+    run_command("llc build/build.bc -filetype=obj -o build/build.o", verbose);
+    run_command("cc -nostartfiles build/build.o build/_start_stub.o -o build/build", verbose);
 
-    std::cout << "Built successfully!\n";
+    if(verbose) std::cout << "Built successfully!\n";
 
     return EXIT_SUCCESS;
 }
 
-void run_command(const char* cmd) {
-    std::cout << "> " << cmd << "\n";
+void run_command(const char* cmd, bool verbose) {
+    if(verbose) std::cout << "> " << cmd << "\n";
     if(std::system(cmd)) exit(1);
 }
