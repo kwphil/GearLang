@@ -7,8 +7,8 @@
 
 #include "ast/base.hpp"
 #include "lex.hpp"
-#include "syscall.hpp"
 #include "error.hpp"
+#include "func.hpp"
 
 #define VERSION "0.1.0"
 
@@ -72,15 +72,10 @@ int main(int argc, char** argv) {
     }
 
     // And return .global_fn
-    auto exit_fn = syscall_exit(ctx.llvmCtx);
-
-    auto retVal = llvm::ConstantInt::get(
-        llvm::Type::getInt32Ty(ctx.llvmCtx),
-        0,
-        true
-    );
-    ctx.builder.CreateCall(exit_fn, { retVal });
-    ctx.builder.CreateUnreachable();
+    call_exit(ctx, new Value { 
+        llvm::ConstantInt::get( llvm::Type::getInt32Ty(ctx.llvmCtx), 0 ), 
+        llvm::Type::getInt32Ty(ctx.llvmCtx), false 
+    });
 
     if(verbose) std::cout << "done\n";
 

@@ -95,9 +95,9 @@ namespace Ast::Nodes {
         /// @brief The function name
         std::string name;
         /// @brief The function return type
-        Ast::Type ty;
+        Sem::Type ty;
         /// @brief The function arguments
-        std::vector<Ast::Variable> args;
+        std::vector<Sem::Variable> args;
         /// @brief The function body block
         std::unique_ptr<NodeBase> block;
         /// @brief If the function is variadic
@@ -106,8 +106,8 @@ namespace Ast::Nodes {
     public:
         Function(
             std::string& name, 
-            Ast::Type ty, 
-            std::vector<Ast::Variable> args, 
+            Sem::Type ty, 
+            std::vector<Sem::Variable> args, 
             std::unique_ptr<NodeBase> block, 
             bool is_variadic,
             int line_number
@@ -126,17 +126,17 @@ namespace Ast::Nodes {
         /// @brief the callee name
         std::string callee;
         /// @brief the function return type
-        Ast::Type ty;
+        Sem::Type ty;
         /// @brief args
-        std::vector<Ast::Variable> args;
+        std::vector<Sem::Variable> args;
         /// @brief is_variadic
         bool is_variadic;
 
     public:
         ExternFn(
             std::string& callee, 
-            Ast::Type ty,
-            std::vector<Ast::Variable>& args, 
+            Sem::Type ty,
+            std::vector<Sem::Variable>& args, 
             bool is_variadic,
             int line_number
         ) : callee(callee), args(args), ty(ty), 
