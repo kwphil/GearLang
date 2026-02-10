@@ -40,7 +40,7 @@ namespace Sem {
 
         static PrimType parse_primitive(std::string& s);
         static PrimType parse_primitive(Lexer::Stream& s);
-        static NonPrimitive parse_nonprimitive(Lexer::Stream& s);
+        static NonPrimitive parse_nonprimitive(Lexer::Stream& s, PrimType prim_type);
 
     public:
         Type() = default;

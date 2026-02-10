@@ -2,6 +2,7 @@
 #include "ctx.hpp"
 #include "value.hpp"
 
+
 llvm::Function* declare_func(
     llvm::Type* ret_type,
     llvm::ArrayRef<llvm::Type*> args,
@@ -22,12 +23,16 @@ llvm::Function* declare_func(
 }
 
 void call_exit(Context& ctx, Value* retVal) {
-    llvm::Function* exit = declare_func(
-        llvm::Type::getVoidTy(ctx.llvmCtx),
-        { llvm::Type::getInt32Ty(ctx.llvmCtx) },
-        "exit", ctx, false
-    );
+    static llvm::Function* exit_fn;
+    
+    if(!exit_fn) { // If exit hasn't been created yet
+        exit_fn = declare_func( // Setting up exit call
+            llvm::Type::getVoidTy(ctx.llvmCtx),
+            { llvm::Type::getInt32Ty(ctx.llvmCtx) },
+            "exit", ctx, false
+        );
+    }
 
-    ctx.builder.CreateCall(exit, { retVal->ir });
+    ctx.builder.CreateCall(exit_fn, { retVal->ir });
     ctx.builder.CreateUnreachable();
 }
