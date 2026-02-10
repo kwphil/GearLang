@@ -23,10 +23,7 @@ std::unique_ptr<Ast::Nodes::ExprLitFloat> Ast::Nodes::ExprLitFloat::parse(Lexer:
 std::unique_ptr<Ast::Nodes::ExprLitString> Ast::Nodes::ExprLitString::parse(Lexer::Stream& s) {
     std::unique_ptr<Lexer::Token> t = s.pop();
 
-    // the string contains the sorrounding quotes, so let's remove them
-    std::string string = t->content.substr(1, t->content.size() - 2); // - 2 because first and last
-    
-    return std::make_unique<ExprLitString>(string, t->line);
+    return std::make_unique<ExprLitString>(t->content, t->line);
 }
 
 std::unique_ptr<Ast::Nodes::ExprVar> Ast::Nodes::ExprVar::parse(const Lexer::Token& token) { 

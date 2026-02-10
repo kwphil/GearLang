@@ -1,5 +1,5 @@
 // External function
-extern fn printf: s char&, ...;
+extern "C" fn printf: s char&, ...;
 
 //simple assignment
 let a = 3;

@@ -70,7 +70,15 @@ Lexer::Stream Lexer::tokenize(std::string& source_path)
     transition_cancel:
 
         if (state_new == CharType::Quote) {
-            if(is_string) tok.content += '\0'; // NULL terminated
+            if(is_string) {
+                tok.content = tok.content.substr(1); // Removing the quote
+                tok.content += '\0'; // NULL terminated
+                is_string = !is_string;
+                state_old = state_new;
+                continue; // Prevent last quote from being added 
+                          // by skipping the iteration
+            }
+
             is_string = !is_string;
         }
 

@@ -131,6 +131,8 @@ namespace Ast::Nodes {
         std::vector<Sem::Variable> args;
         /// @brief is_variadic
         bool is_variadic;
+        /// @brief not implemented yet, but forces no name mangling
+        bool no_mangle;
 
     public:
         ExternFn(
@@ -138,9 +140,11 @@ namespace Ast::Nodes {
             Sem::Type ty,
             std::vector<Sem::Variable>& args, 
             bool is_variadic,
+            bool no_mangle,
             int line_number
         ) : callee(callee), args(args), ty(ty), 
-            is_variadic(is_variadic), Stmt(line_number) { }
+            is_variadic(is_variadic), no_mangle(no_mangle),
+            Stmt(line_number) { }
 
         static std::unique_ptr<ExternFn> parse(Lexer::Stream& s);
 
