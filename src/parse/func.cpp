@@ -26,6 +26,7 @@ std::unique_ptr<Ast::Nodes::Function>
 Ast::Nodes::Function::parse(Lexer::Stream& s) {
     int line_number = s.peek()->line;
     bool is_variadic;
+    bool no_mangle;
 
     s.expect("fn", line_number);
 
@@ -44,11 +45,28 @@ Ast::Nodes::Function::parse(Lexer::Stream& s) {
     return std::make_unique<Function>(name, ty, args, std::move(block), is_variadic, line_number);
 }
 
+#include <iostream>
+
 std::unique_ptr<Ast::Nodes::ExternFn> Ast::Nodes::ExternFn::parse(Lexer::Stream& s) {
     int line_number = s.peek()->line;
     bool is_variadic;
+    bool no_mangle = false;
     
     s.expect("extern", line_number);
+    
+    if(s.peek()->type == Lexer::Type::StringLiteral) {
+        // Using strcmp because my strings have NULLs
+        // that screw everything up with std::string::operator==
+        if(strcmp(s.peek()->content.c_str(), "C") == 0) {
+            no_mangle = true;
+            s.pop();
+            goto after_extern;
+        } 
+
+        throw std::runtime_error(s.peek()->content);
+    }
+after_extern:
+
     s.expect("fn", line_number);
 
     Sem::Type ty;
@@ -62,7 +80,7 @@ std::unique_ptr<Ast::Nodes::ExternFn> Ast::Nodes::ExternFn::parse(Lexer::Stream&
 
     args = parse_function_args(s, line_number, false, is_variadic);
 
-    return std::make_unique<ExternFn>(name, ty, args, is_variadic, line_number);
+    return std::make_unique<ExternFn>(name, ty, args, is_variadic, no_mangle, line_number);
 }
 
 // PRIVATE FUNCTIONS
