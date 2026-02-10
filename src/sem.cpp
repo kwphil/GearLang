@@ -3,6 +3,8 @@
 #include "lex.hpp"
 #include "error.hpp"
 
+#include <format>
+
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Type.h>
 
@@ -29,21 +31,21 @@ Type::PrimType Type::parse_primitive(Lexer::Stream& s) {
    Non-primitive parsing
    ============================ */
 
-Type::NonPrimitive Type::parse_nonprimitive(Lexer::Stream& s) {
+Type::NonPrimitive Type::parse_nonprimitive(Lexer::Stream& s, PrimType prim_type) {
     // Currently only pointer types are supported: T&
     // Encoding: [0, <PrimType>]
     // 0 = pointer tag
 
-    std::string base = s.pop()->content;
 
     if (s.peek()->type == Lexer::Type::Amper) {
         s.pop(); // consume '&'
         return NonPrimitive{
-            { 0, static_cast<int>(parse_primitive(base)) }
+            { 0, static_cast<int>(prim_type) }
         };
     }
 
-    throw std::runtime_error("Unknown non-primitive type: " + base);
+    throw std::runtime_error(
+        std::format("Unknown non-primitive type: {}", (int)prim_type));
 }
 
 /* ============================
@@ -57,10 +59,9 @@ Type::Type(Lexer::Stream& s) {
 
     prim_type = parse_primitive(s);
 
+    // Pointer type
     if (s.peek()->type == Lexer::Type::Amper) {
-        // Pointer type
-        s.back(); // Scoot back
-        non_prim = parse_nonprimitive(s);
+        non_prim = parse_nonprimitive(s, prim_type);
         return;
     }
 

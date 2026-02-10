@@ -16,9 +16,8 @@ gearlang.exe
 # Generated Assembler and Executables
 _start_stub.o
 build.llvm
-build.bc
 build.o
-build
+a.out
 
 # I use codespaces sometimes
 .vscode/
