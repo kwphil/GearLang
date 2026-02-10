@@ -24,7 +24,7 @@ llvm::Function* declare_func(
 
 void call_exit(Context& ctx, Value* retVal) {
     static llvm::Function* exit_fn;
-    
+
     if(!exit_fn) { // If exit hasn't been created yet
         exit_fn = declare_func( // Setting up exit call
             llvm::Type::getVoidTy(ctx.llvmCtx),

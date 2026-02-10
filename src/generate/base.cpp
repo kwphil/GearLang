@@ -112,14 +112,7 @@ void Ast::Nodes::Return::generate(Context& ctx) {
         return;
     }
     
-    llvm::Function* exit = declare_func(
-        llvm::Type::getVoidTy(ctx.llvmCtx),
-        { llvm::Type::getInt32Ty(ctx.llvmCtx) },
-        "exit", ctx, false
-    );
-
-    ctx.builder.CreateCall(exit, { retVal->ir });
-    ctx.builder.CreateUnreachable();
+    call_exit(ctx, retVal);
 }
 
 // Generates the if condition, creates blocks for the if and the continuation
