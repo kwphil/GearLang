@@ -1,5 +1,3 @@
-#include <format>
-
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/GlobalVariable.h>
@@ -32,13 +30,13 @@ Ast::Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
             case Mul: out = ctx.builder.CreateFMul(lhs->ir, rhs->ir, "fmultmp");
             case Div: out = ctx.builder.CreateFDiv(lhs->ir, rhs->ir, "fdivtmp");
         }
-    }
-
-    switch (type) {
-        case Add: out = ctx.builder.CreateAdd(lhs->ir, rhs->ir, "iaddtmp");
-        case Sub: out = ctx.builder.CreateSub(lhs->ir, rhs->ir, "isubtmp");
-        case Mul: out = ctx.builder.CreateMul(lhs->ir, rhs->ir, "imultmp");
-        case Div: out = ctx.builder.CreateSDiv(lhs->ir, rhs->ir, "idivtmp");
+    } else {
+        switch (type) {
+            case Add: out = ctx.builder.CreateAdd(lhs->ir, rhs->ir, "iaddtmp");
+            case Sub: out = ctx.builder.CreateSub(lhs->ir, rhs->ir, "isubtmp");
+            case Mul: out = ctx.builder.CreateMul(lhs->ir, rhs->ir, "imultmp");
+            case Div: out = ctx.builder.CreateSDiv(lhs->ir, rhs->ir, "idivtmp");
+        }
     }
 
     if(out) {
@@ -186,7 +184,11 @@ Ast::Value* Ast::Nodes::ExprAddress::generate(Context& ctx) {
     // Just return the value because everything is allocated
     // TODO: Later I might optimize this to locate which variables
     // have to alloca and optimize ones that don't out
-    return var;
+    return new Value {
+        var->ir,
+        var->ty,
+        true
+    };
 }
 
 llvm::Value* deref(
@@ -200,27 +202,16 @@ llvm::Value* deref(
     // First try if it is a global
     if(auto* gptr = llvm::dyn_cast<llvm::GlobalVariable>(ptr)) {
         return ctx.builder.CreateLoad(
-            gptr->getValueType(),
+            type,
             gptr,
-            name
-        );
-    }
-
-    // Parse as an alloca otherwise
-    llvm::AllocaInst* alloca_ptr = llvm::dyn_cast<llvm::AllocaInst>(ptr);
-    if(!alloca_ptr) {
-        Error::throw_error(
-            line_number,
-            name.c_str(),
-            "Tried to dereference a variable that wasn't declared",
-            Error::ErrorCodes::VARIABLE_NOT_DEFINED
+            name + suffix
         );
     }
 
     return ctx.builder.CreateLoad(
         type,
         ptr,
-        name + ".load"
+        name + suffix
     );
 }
 

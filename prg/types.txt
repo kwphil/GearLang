@@ -21,9 +21,6 @@ fn char& str {
     return "Hello, World! %f";
 }
 
-// Nested function calls
-printf(str(), float(b, c));
-
 // Checking the deref
 printf("%d", @ptr);
 
