@@ -101,11 +101,11 @@ Lexer::Stream Lexer::tokenize(std::string& source_path)
 Lexer::Type Lexer::classify(std::string& content, CharType state)
 {
     static const std::unordered_set<std::string> keywords = {
-        "fn", "let", "comptime", "assert", "test", "if", "else", "extern"
+        "fn", "let", "comptime", "assert", "test", "if", "else", "extern", "return"
     };
 
     static const std::unordered_set<std::string> operators = {
-        "+", "-", "*", "/", "=>", ":"
+        "+", "-", "*", "/", "=>", ":" 
     };
 
     switch (state) {

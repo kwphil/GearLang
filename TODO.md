@@ -48,15 +48,14 @@
   * [ ] Keyword vs identifier disambiguation
 * [ ] **Parser**
   * [x] Expression parsing
-  * [ ] Statement parsing
-  * [ ] Operator precedence
+  * [x] Statement parsing
   * [ ] Error recovery
   * [ ] AST generation
-    * [ ] Typed AST
+    * [x] Typed AST
     * [ ] Source span metadata
 * [ ] **Semantic Analysis**
-  * [ ] Symbol table
-  * [ ] Scope resolution
+  * [x] Symbol table
+  * [x] Scope resolution
   * [ ] Type checking
   * [ ] Implicit casts
   * [ ] Function signature validation
