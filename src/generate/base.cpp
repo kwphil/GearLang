@@ -103,16 +103,9 @@ void Ast::Nodes::Return::generate(Context& ctx) {
     Expr* exp = dynamic_cast<Expr*>(expr.get());
     Value* retVal = exp->generate(ctx);
 
-    // If in global scope or main, we call exit()
-    if(
-        ctx.module->getFunction(".global_fn") != ctx.current_fn
-        && ctx.module->getFunction("main") != ctx.current_fn
-    ) {
-        ctx.builder.CreateRet(retVal->ir);
-        return;
-    }
-    
-    call_exit(ctx, retVal);
+    ctx.builder.CreateRet(retVal->ir);
+    return;
+        
 }
 
 // Generates the if condition, creates blocks for the if and the continuation
