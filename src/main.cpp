@@ -72,17 +72,8 @@ int main(int argc, char** argv) {
     ctx.current_fn = build_runtime(ctx);
     root.generate(ctx);
 
-    // Now call main (if it exists)
-    auto main = ctx.module->getFunction("main");
-    if (main) {
-        ctx.builder.CreateCall(ctx.module->getFunction("main"));
-    }
-
-    // And return .global_fn
-    call_exit(ctx, new Value { 
-        llvm::ConstantInt::get( llvm::Type::getInt32Ty(ctx.llvmCtx), 0 ), 
-        llvm::Type::getInt32Ty(ctx.llvmCtx), false 
-    });
+    // Return main
+    ctx.builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx.llvmCtx), EXIT_SUCCESS));
 
     if(compopt->verbose) std::cout << "done\n";
 
@@ -100,13 +91,12 @@ int main(int argc, char** argv) {
     if(compopt->verbose) std::cout << "building... \n";
     run_command("llvm-as build/build.llvm -o build/build.bc", compopt->verbose);
     if(compopt->output_llvm) { run_command("mv build/build.llvm build.llvm", compopt->verbose); goto cleanup; }
-    run_command("nasm asm/_start_stub.asm -f elf64 -o build/_start_stub.o", compopt->verbose);
     run_command("llc build/build.bc -filetype=obj -o build/build.o", compopt->verbose);
     if(compopt->output_object) { run_command("mv build/build.o build.o", compopt->verbose); goto cleanup; }
     { // Force cc out of scope so goto cleanup works
         std::string cc = 
             std::format(
-                "cc -nostartfiles build/build.o build/_start_stub.o -o {}", 
+                "cc -nostartfiles build/build.o -o {}", 
                 compopt->output_file
             );
         run_command(cc.c_str(), compopt->verbose);

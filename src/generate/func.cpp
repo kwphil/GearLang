@@ -4,8 +4,7 @@
 #include "../ast/base.hpp"
 #include "../ast/stmt.hpp"
 #include "../ctx.hpp"
-
-#include <iostream>
+#include "../func.hpp"
 
 // Creates the function type. 
 // Creates the function and adds it to the module
@@ -20,33 +19,28 @@ void Ast::Nodes::Function::generate(Context& ctx) {
         param_types.push_back(arg.type.to_llvm(ctx));
     }
 
-    // Creating the function type
-    llvm::FunctionType* fn_type =
-        llvm::FunctionType::get(
-            ty.to_llvm(ctx),
-            param_types,
-            is_variadic
-        );
-
-    llvm::Function* fn =
-        llvm::Function::Create(
-            fn_type,
-            llvm::Function::ExternalLinkage,
-            name,
-            *ctx.module
-        );
-
+    llvm::Function* fn;
+    llvm::BasicBlock* entry;
     unsigned idx = 0;
-    for (auto& llvm_arg : fn->args()) {
-        llvm_arg.setName(args[idx++].name);
+
+    if(name == "main") {
+        fn = ctx.module->getFunction("main");
+
+        entry = llvm::BasicBlock::Create(ctx.llvmCtx, "main_fn", fn);
+    } else {
+        fn = declare_func(
+            ty.to_llvm(ctx), param_types, name.c_str(), ctx, is_variadic
+        );
+
+        entry = llvm::BasicBlock::Create(ctx.llvmCtx, "entry", fn);
+
+        for (auto& llvm_arg : fn->args()) {
+            llvm_arg.setName(args[idx++].name);
+        }
     }
 
     ctx.current_fn = fn;
     ctx.push_scope();
-
-    llvm::BasicBlock* entry =
-        llvm::BasicBlock::Create(ctx.llvmCtx, "entry", fn);
-    ctx.builder.SetInsertPoint(entry);
 
     idx = 0;
     for(auto& arg : fn->args()) {
@@ -94,7 +88,7 @@ void Ast::Nodes::Function::generate(Context& ctx) {
     }
 
     ctx.pop_scope();
-    ctx.current_fn = ctx.module->getFunction(".global_fn");
+    ctx.current_fn = ctx.module->getFunction("main");
 
     ctx.builder.SetInsertPoint(*ctx.global_entry);
 }
