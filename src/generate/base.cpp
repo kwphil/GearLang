@@ -16,8 +16,6 @@
 #include "../func.hpp"
 #include "../sem.hpp"
 
-#include <iostream>
-
 // Checks if the variable already exists
 // If it does, it throws an error and quits
 // Otherwise, it creates the variable in the current scope
@@ -50,7 +48,7 @@ void Ast::Nodes::Let::generate(Context& ctx) {
 
     // GLOBAL SCOPE
     llvm::Function* _fn = ctx.current_fn;
-    if (_fn->getName() == ".global_fn") {
+    if (_fn->getName() == "main") {
         // Creating a placeholder and then assigning the value
         llvm::Constant* placeholder = 
             llvm::Constant::getNullValue(initVal->ty);

@@ -27,18 +27,20 @@ void Ast::Nodes::Function::generate(Context& ctx) {
         fn = ctx.module->getFunction("main");
 
         entry = llvm::BasicBlock::Create(ctx.llvmCtx, "main_fn", fn);
+        ctx.main_entry = std::make_unique<llvm::BasicBlock*>(entry);
     } else {
         fn = declare_func(
             ty.to_llvm(ctx), param_types, name.c_str(), ctx, is_variadic
         );
 
         entry = llvm::BasicBlock::Create(ctx.llvmCtx, "entry", fn);
-
-        for (auto& llvm_arg : fn->args()) {
-            llvm_arg.setName(args[idx++].name);
-        }
     }
 
+    for (auto& llvm_arg : fn->args()) {
+        llvm_arg.setName(args[idx++].name);
+    }
+    
+    ctx.builder.SetInsertPoint(entry);
     ctx.current_fn = fn;
     ctx.push_scope();
 
@@ -47,7 +49,7 @@ void Ast::Nodes::Function::generate(Context& ctx) {
         auto& ast_arg = args[idx];
 
         // Alloca
-        llvm::Type* arg_ty = ast_arg.type.to_llvm(ctx);
+        llvm::Type* arg_ty = arg.getType();
         llvm::AllocaInst* alloca = ctx.create_entry_block(
             fn,
             ast_arg.name,
@@ -77,12 +79,12 @@ void Ast::Nodes::Function::generate(Context& ctx) {
         idx++;
     }
 
-    generate_node(&*block, ctx);
+    generate_node(block.get(), ctx);
 
     if (!entry->getTerminator()) {
         ctx.builder.CreateRet(
             llvm::Constant::getNullValue(
-                ty.to_llvm(ctx)
+                fn->getReturnType()
             )
         );
     }

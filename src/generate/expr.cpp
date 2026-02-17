@@ -71,7 +71,7 @@ Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
 
     if (auto* gv = llvm::dyn_cast<llvm::GlobalVariable>(var->ir)) {
         llvm::Value* ir = ctx.builder.CreateLoad(
-            gv->getValueType(),
+            var->ty,
             gv,
             name + ".load"
         );
@@ -160,7 +160,12 @@ Value* Ast::Nodes::ExprCall::generate(Context& ctx) {
         arg_values.push_back(a->generate(ctx)->ir);
     }
 
-    llvm::Value* val = ctx.builder.CreateCall(func, arg_values);
+    if(func->getReturnType() == llvm::Type::getVoidTy(ctx.llvmCtx)) { 
+        ctx.builder.CreateCall(func, arg_values); 
+        return nullptr;
+    }
+
+    llvm::Value* val = ctx.builder.CreateCall(func, arg_values, "call");
 
     return new Value {
         .ir=val,
