@@ -22,6 +22,8 @@ public:
 
     /// @brief Start block for code outside functions
     std::unique_ptr<llvm::BasicBlock*> global_entry; 
+    /// @brief Block representing the main function. If main() doesn't exist, this just equals nullptr
+    std::unique_ptr<llvm::BasicBlock*> main_entry;
     /// @brief Currently active function being generated
     llvm::Function* current_fn;
 

@@ -73,6 +73,24 @@ int main(int argc, char** argv) {
     root.generate(ctx);
 
     // Return main
+    // Set to main_fn if it exists
+    // Otherwise the global_entry already exists
+    if(ctx.main_entry) {
+        llvm::BasicBlock* main = *ctx.main_entry;
+
+        // While we're here, jump to the main_entry rq
+        ctx.builder.CreateBr(main);
+
+        ctx.builder.SetInsertPoint(main);
+    }
+    
+    ctx.builder.CreateRet(
+        llvm::ConstantInt::get(
+            llvm::Type::getInt32Ty(ctx.llvmCtx), 
+            EXIT_SUCCESS
+        )
+    );
+    
     ctx.builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx.llvmCtx), EXIT_SUCCESS));
 
     if(compopt->verbose) std::cout << "done\n";
@@ -96,7 +114,7 @@ int main(int argc, char** argv) {
     { // Force cc out of scope so goto cleanup works
         std::string cc = 
             std::format(
-                "cc -nostartfiles build/build.o -o {}", 
+                "cc build/build.o -o {}", 
                 compopt->output_file
             );
         run_command(cc.c_str(), compopt->verbose);
@@ -106,7 +124,7 @@ int main(int argc, char** argv) {
 
 cleanup:
     if(compopt->verbose) std::cout << "Cleanup...\n";
-    run_command("rm -r build", compopt->verbose);
+    run_command("rm build/build*", compopt->verbose);
 
     return EXIT_SUCCESS;
 }
@@ -175,6 +193,7 @@ void match_flags(compopt_t* compopt) {
         switch(curr_tok[i]) {
             case('G'): compopt->output_object = true; break;
             case('S'): compopt->output_llvm = true; break;
+            case('v'): compopt->verbose = true; break;
             case('o'): 
                 compopt->index++;
                 compopt->output_file = compopt->argv[compopt->index];

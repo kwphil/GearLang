@@ -12,6 +12,9 @@ llvm::Function* build_runtime(Context& ctx) {
         i32, { i32, raw_ptr }, "main", ctx, false
     );
 
+    global_fn->getArg(0)->setName("argc");
+    global_fn->getArg(1)->setName("argv");
+
     llvm::BasicBlock* global_fn_entry =
         llvm::BasicBlock::Create(
             ctx.llvmCtx,
@@ -22,6 +25,7 @@ llvm::Function* build_runtime(Context& ctx) {
     // Set entry to main
     ctx.builder.SetInsertPoint(global_fn_entry);
     ctx.global_entry = std::make_unique<llvm::BasicBlock*>(global_fn_entry);
+    ctx.main_entry = nullptr;
     ctx.current_fn = global_fn;
 
     return global_fn;
