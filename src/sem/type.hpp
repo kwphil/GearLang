@@ -6,8 +6,8 @@
 
 #include <llvm/IR/Type.h>
 
-#include "ctx.hpp"
-#include "lex.hpp"
+#include "../ctx.hpp"
+#include "../lex.hpp"
 
 namespace Sem {
     class Type {

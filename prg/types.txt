@@ -1,5 +1,5 @@
 // Variadic args
-extern fn i32 printf: s char&, ... ;
+extern fn i32 printf: s char^, ... ;
 
 // Floats
 let a = 0.1 + 0.2;
@@ -12,12 +12,12 @@ let ptr = #deref;
 // Strings
 let c = "Hello, World!";
 
-fn f64 float: d f64, e char& {
+fn f64 float: d f64, e char^ {
     return d + 1.0;
 }
 
 // Returning pointers
-fn char& str {
+fn char^ str {
     return "Hello, World! %f";
 }
 

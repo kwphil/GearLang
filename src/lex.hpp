@@ -24,7 +24,7 @@ enum class CharType {
     Format,
     Quote,
     Brace,
-    Amp,
+    Caret,
     Semi,
     Hash,
     At
@@ -52,7 +52,7 @@ enum class Type {
     Ellipsis,
     Comma,
     Semi,
-    Amper,
+    Caret,
     Hash,
     At
 };

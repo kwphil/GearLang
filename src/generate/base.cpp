@@ -14,7 +14,7 @@
 #include "../ast/expr.hpp"
 #include "../error.hpp"
 #include "../func.hpp"
-#include "../sem.hpp"
+#include "../sem/type.hpp"
 
 // Checks if the variable already exists
 // If it does, it throws an error and quits
