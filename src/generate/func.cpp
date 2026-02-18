@@ -62,7 +62,7 @@ void Ast::Nodes::Function::generate(Context& ctx) {
             Value* val = new Value {
                 .ir=alloca,
                 .ty=ast_arg.type.get_underlying_type(ctx),
-                .is_address=true
+                .addr=ast_arg.type.pointer_level()
             };
 
             ctx.bind(ast_arg.name, val);
@@ -71,7 +71,7 @@ void Ast::Nodes::Function::generate(Context& ctx) {
         Value* val = new Value {
             .ir=alloca,
             .ty=arg_ty,
-            .is_address=false
+            .addr=false
         };
 
         ctx.bind(ast_arg.name, val);

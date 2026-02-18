@@ -16,7 +16,7 @@ Value* Ast::Nodes::ExprLitInt::generate(Context& ctx) {
             true
         ),
         .ty=llvm::Type::getInt32Ty(ctx.llvmCtx),
-        .is_address=false
+        .addr=false
     };
 }
 
@@ -28,7 +28,7 @@ Value* Ast::Nodes::ExprLitFloat::generate(Context& ctx) {
             this->value
         ),
         .ty=llvm::Type::getDoubleTy(ctx.llvmCtx),
-        .is_address=false
+        .addr=false
     };
 };
 
@@ -61,6 +61,6 @@ Value* Ast::Nodes::ExprLitString::generate(Context& ctx) {
     return new Value {
         .ir=val,
         .ty=arr_i8,
-        .is_address=false
+        .addr=false
     };
 }

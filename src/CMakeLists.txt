@@ -34,7 +34,6 @@ add_executable(gearlang
     main.cpp
     lex.cpp
     ctx.cpp
-    syscall.cpp
     sem.cpp
     error.cpp
     fsm.cpp

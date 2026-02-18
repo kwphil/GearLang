@@ -6,5 +6,5 @@
 typedef struct {
     llvm::Value* ir;
     llvm::Type* ty;
-    bool is_address;
+    int addr; // number of pointers to pointers. 0 means a raw value
 } Value;

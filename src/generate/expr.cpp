@@ -43,7 +43,7 @@ Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
         return new Value {
             .ir=out,
             .ty=lhs->ir->getType(),
-            .is_address = lhs->is_address
+            .addr = lhs->addr
         };
     }
 
@@ -79,7 +79,7 @@ Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
         return new Value {
             .ir=ir,
             .ty=var->ty,
-            .is_address=var->is_address
+            .addr=var->addr
         };
     }
 
@@ -94,7 +94,7 @@ Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
     return new Value {
         .ir=ir,
         .ty=var->ty,
-        .is_address=var->is_address
+        .addr=var->addr
     };
 }
 
@@ -124,7 +124,7 @@ Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
     Value* value = expr2->generate(ctx);
 
     // type checking
-    if(value->is_address != alloca->is_address
+    if((bool)value->addr != (bool)alloca->addr
        || value->ty != value->ty
     ) {
         Error::throw_error(
@@ -170,7 +170,7 @@ Value* Ast::Nodes::ExprCall::generate(Context& ctx) {
     return new Value {
         .ir=val,
         .ty=val->getType(),
-        .is_address=false
+        .addr=0
     };
 }
 
@@ -190,9 +190,9 @@ Value* Ast::Nodes::ExprAddress::generate(Context& ctx) {
     // TODO: Later I might optimize this to locate which variables
     // have to alloca and optimize ones that don't out
     return new Value {
-        var->ir,
-        var->ty,
-        true
+        .ir=var->ir,
+        .ty=var->ty,
+        .addr=var->addr+1
     };
 }
 
@@ -236,7 +236,7 @@ Value* Ast::Nodes::ExprDeref::generate(Context& ctx) {
     // Once to get the pointer
     // Twice to get the dereferenced data
 
-    if(!var->is_address) {
+    if(!var->addr) {
         Error::throw_error(
             line_number,
             var->ir->getName().str().c_str(),
@@ -266,6 +266,6 @@ Value* Ast::Nodes::ExprDeref::generate(Context& ctx) {
     return new Value {
         .ir=deref_var,
         .ty=var->ty,
-        .is_address=false
+        .addr=var->addr-1
     };
 }
