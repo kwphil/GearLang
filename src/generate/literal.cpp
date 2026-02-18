@@ -4,7 +4,7 @@
 #include <llvm/IR/Type.h>
 
 #include "../ast/expr.hpp"
-#include "../sem.hpp"
+#include "../sem/type.hpp"
 
 // Just generates an int constant and returns it
 // TODO: Support different bit widths for optimization 

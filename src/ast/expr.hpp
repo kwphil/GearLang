@@ -4,7 +4,7 @@
 
 #include "../lex.hpp"
 #include "../ctx.hpp"
-#include "../sem.hpp"
+#include "../sem/type.hpp"
 
 #include "base.hpp"
 

@@ -7,7 +7,7 @@
 #include "../ast/expr.hpp"
 
 #include "../lex.hpp"
-#include "../sem.hpp"
+#include "../sem/type.hpp"
 #include "../error.hpp"
 
 std::unique_ptr<Ast::Nodes::Let> Ast::Nodes::Let::parse(Lexer::Stream& s) {

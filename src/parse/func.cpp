@@ -3,7 +3,7 @@
 
 #include "../ast/stmt.hpp"
 #include "../ast/expr.hpp"
-#include "../sem.hpp"
+#include "../sem/type.hpp"
 #include "../lex.hpp"
 #include "../error.hpp"
 
