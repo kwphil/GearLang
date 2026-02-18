@@ -15,8 +15,9 @@ gearlang.exe
 # Generated output
 build/
 build.llvm
-build.o
+build.o1
 a.out
 
 # I use codespaces sometimes
 .vscode/
+compile_commands.json
