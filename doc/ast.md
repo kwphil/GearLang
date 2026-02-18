@@ -12,7 +12,6 @@
 ```cpp
 class NodeBase {
 public:
-    virtual std::string show() = 0;
     virtual llvm::Value* generate(Context&) = 0;
     static std::unique_ptr<NodeBase> parse(Lexer::Stream&);
 };

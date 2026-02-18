@@ -2,39 +2,41 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <format>
 
 #include <llvm/IR/InlineAsm.h>
 
-#include "ast.hpp"
-#include "syscall.hpp"
+#include "ast/base.hpp"
+#include "lex.hpp"
+#include "error.hpp"
+#include "func.hpp"
 
-llvm::Function* create_main(Context& ctx) {
-    llvm::FunctionType* mainType =
-        llvm::FunctionType::get(
-            llvm::Type::getInt32Ty(ctx.llvmCtx),
-            false
-        );
+#define VERSION "0.1.0"
 
-    llvm::Function* mainFn =
-        llvm::Function::Create(
-            mainType,
-            llvm::Function::ExternalLinkage,
-            "_start",
-            ctx.module.get()
-        );
+llvm::Function* build_runtime(Context& ctx);
 
-    llvm::BasicBlock* entry =
-        llvm::BasicBlock::Create(
-            ctx.llvmCtx,
-            "entry",
-            mainFn
-        );
+void run_command(const char* cmd, bool verbose);
 
-    ctx.builder.SetInsertPoint(entry);
-    ctx._start_block = std::make_unique<llvm::BasicBlock*>(entry);
+typedef struct {
+    int argc;
+    char** argv;
+    int index;
+    char* input_file;
+    const char* output_file;
+    bool output_object;
+    bool output_llvm;
+    bool verbose;
+} compopt_t;
 
-    return mainFn;
+void compopt_setup(compopt_t** compopt, int argc, char** argv) {
+    *compopt = new compopt_t {
+        argc, argv, 0, nullptr, "a.out", false, false, false
+    };
 }
+
+void parse_output(compopt_t* compopt);
+
+void match_flags(compopt_t* compopt);
 
 int main(int argc, char** argv) {
     if(argc < 2) {
@@ -42,65 +44,161 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    std::string source_path(argv[1]);
-    std::cout << "tokenizing... ";
-    auto tokens = Lexer::tokenize(source_path);
-    std::cout << "done\n";
+    compopt_t* compopt;
 
-    std::cout << "parsing... ";
+    compopt_setup(&compopt, argc, argv);
+    
+    parse_output(compopt);
+
+    if(!compopt->input_file) {
+        std::cerr << "No input file provided\n";
+        exit(-1);
+    }
+
+    Error::setup_error_manager(argv[1]);
+    std::string source_path(argv[1]);
+    if(compopt->verbose) std::cout << "tokenizing... ";
+    auto tokens = Lexer::tokenize(source_path);
+    if(compopt->verbose) std::cout << "done\n";
+
+    if(compopt->verbose) std::cout << "parsing... ";
     auto root = Ast::Program::parse(tokens);
-    std::cout << "done\n";
+    if(compopt->verbose) std::cout << "done\n";
 
     Context ctx;
 
-    std::cout << "generating... ";
+    if(compopt->verbose) std::cout << "generating... ";
 
-    ctx.current_fn = create_main(ctx);
+    ctx.current_fn = build_runtime(ctx);
     root.generate(ctx);
 
-    // Now call main (if it exists)
-    auto main = ctx.module->getFunction("main");
-    if (main) {
-        ctx.builder.CreateCall(ctx.module->getFunction("main"));
+    // Return main
+    // Set to main_fn if it exists
+    // Otherwise the global_entry already exists
+    if(ctx.main_entry) {
+        llvm::BasicBlock* main = *ctx.main_entry;
+
+        // While we're here, jump to the main_entry rq
+        ctx.builder.CreateBr(main);
+
+        ctx.builder.SetInsertPoint(main);
     }
-
-    // And return _start
-    auto exit_fn = syscall_exit(ctx.llvmCtx);
-
-    auto retVal = llvm::ConstantInt::get(
-        llvm::Type::getInt32Ty(ctx.llvmCtx),
-        0,
-        true
+    
+    ctx.builder.CreateRet(
+        llvm::ConstantInt::get(
+            llvm::Type::getInt32Ty(ctx.llvmCtx), 
+            EXIT_SUCCESS
+        )
     );
-    ctx.builder.CreateCall(exit_fn, { retVal });
-    ctx.builder.CreateUnreachable();
+    
+    ctx.builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx.llvmCtx), EXIT_SUCCESS));
 
-    std::cout << "done\n";
+    if(compopt->verbose) std::cout << "done\n";
 
-    std::cout << "rendering... ";
+    if(compopt->verbose) std::cout << "rendering...";
     std::string output = ctx.render();
+    if(compopt->verbose) std::cout << "done\n";
 
-    std::cout << "writing llvm file... ";
-    std::ofstream out_file("build.llvm");
+    if(compopt->verbose) std::cout << "writing llvm file...\n";
+    run_command("mkdir -p build", compopt->verbose);
+    std::ofstream out_file("build/build.llvm");
     out_file << output;
     out_file.close();
-    std::cout << "done\n";
+    if(compopt->verbose) std::cout << "done\n";
 
-    std::cout << "compiling llvm file... \n";
-    std::string command = "llvm-as build.llvm -o build.bc";
-    std::cout << "> " << command << "\n";
-    if(std::system(command.c_str())) exit(2);
-    command = "llc build.bc -filetype=obj -o build.o";
-    std::cout << "> " << command << "\n";
-    if(std::system(command.c_str())) exit(3);
-    command = "cc -nostartfiles build.o -o build";
-    std::cout << "> " << command << "\n";
-    if(std::system(command.c_str())) exit(4);
-    std::cout << "done\n";
+    if(compopt->verbose) std::cout << "building... \n";
+    run_command("llvm-as build/build.llvm -o build/build.bc", compopt->verbose);
+    if(compopt->output_llvm) { run_command("mv build/build.llvm build.llvm", compopt->verbose); goto cleanup; }
+    run_command("llc build/build.bc -filetype=obj -o build/build.o", compopt->verbose);
+    if(compopt->output_object) { run_command("mv build/build.o build.o", compopt->verbose); goto cleanup; }
+    { // Force cc out of scope so goto cleanup works
+        std::string cc = 
+            std::format(
+                "cc build/build.o -o {}", 
+                compopt->output_file
+            );
+        run_command(cc.c_str(), compopt->verbose);
+    }
 
-    std::cout << "Built successfully!\n";
+    if(compopt->verbose) std::cout << "Built successfully!\n";
+
+cleanup:
+    if(compopt->verbose) std::cout << "Cleanup...\n";
+    run_command("rm build/build*", compopt->verbose);
 
     return EXIT_SUCCESS;
 }
 
+void parse_output(compopt_t* compopt) {
+    int i = 1;
+    for(; i < compopt->argc; i++) {
+        char* curr_tok = compopt->argv[i];
 
+        if(curr_tok[0] != '-') { // no - indicates no flags or options (aka file)
+            compopt->input_file = curr_tok;
+        }
+
+        if(strcmp(curr_tok, "--verbose") == 0) {
+            compopt->verbose = true;
+            continue;
+        }
+
+        if(strcmp(curr_tok, "--version") == 0) {
+            std::cout << VERSION << "\n";
+
+            exit(EXIT_SUCCESS);
+        }
+
+        if(strcmp(curr_tok, "--object") == 0) {
+            compopt->output_object = true;
+            continue;
+        }
+
+        if(strcmp(curr_tok, "--output") == 0) {
+            i++;
+            compopt->output_file = curr_tok;
+            continue;
+        }
+
+        if(strcmp(curr_tok, "--emit-llvm") == 0) {
+            compopt->output_llvm = true;
+            continue;
+        }
+
+        if(curr_tok[0] == '-' && curr_tok[1] != '-') {
+            bool set_output_file = false;
+            compopt->index = i;
+
+            match_flags(compopt);
+
+            if(set_output_file) {
+                i++;
+                compopt->output_file = compopt->argv[i];
+            }
+        }
+    }
+
+    compopt->index = i;
+}
+
+void run_command(const char* cmd, bool verbose) {
+    if(verbose) std::cout << "> " << cmd << "\n";
+    if(std::system(cmd)) exit(1);
+}
+
+void match_flags(compopt_t* compopt) {
+    // Skip the dash
+    char* curr_tok = compopt->argv[compopt->index];
+    for(int i = 1; i < strlen(curr_tok); i++) {
+        switch(curr_tok[i]) {
+            case('G'): compopt->output_object = true; break;
+            case('S'): compopt->output_llvm = true; break;
+            case('v'): compopt->verbose = true; break;
+            case('o'): 
+                compopt->index++;
+                compopt->output_file = compopt->argv[compopt->index];
+            break;
+            default: std::cerr << "Unknown option: " << curr_tok[i] << '\n'; exit(1);
+        }
+    }
+}
