@@ -1,8 +1,13 @@
-// This also tests a bug of crashing without a newline
+// Variadic args
+extern fn i32 printf: s char&, ... ;
 
 // Floats
 let a = 0.1 + 0.2;
 let b = a + 4.0;
+
+// Pointers
+let deref = 5;
+let ptr = #deref;
 
 // Strings
 let c = "Hello, World!";
@@ -11,4 +16,12 @@ fn f64 float: d f64, e char& {
     return d + 1.0;
 }
 
-return float(b, c);
+// Returning pointers
+fn char& str {
+    return "Hello, World! %f";
+}
+
+// Checking the deref
+printf("%d\n", @ptr);
+
+return 0;

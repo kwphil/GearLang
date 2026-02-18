@@ -24,6 +24,10 @@ enum class CharType {
     Format,
     Quote,
     Brace,
+    Amp,
+    Semi,
+    Hash,
+    At
 };
 
 /// @brief Get the character type of a given character
@@ -45,8 +49,12 @@ enum class Type {
     ParenClose,
     BraceOpen,
     BraceClose,
+    Ellipsis,
     Comma,
+    Semi,
     Amper,
+    Hash,
+    At
 };
 
 std::string print_type(Type ty);
@@ -93,20 +101,10 @@ public:
     void back() { index--; }
     /// @brief Expect the next token to match a specific content
     /// @param should Expected token content
-    /// @param location Source location for error reporting
+    /// @param line_number Line expected for the error
     void expect(
         const char* should, 
-        const std::source_location& location = std::source_location::current()
-    );
-
-    /// @brief Expect the next token to match a specific content and parse a node
-    /// @param should Expected token content
-    /// @param nodes_parsed Parsed node to be filled
-    /// @param location Source location for error reporting
-    void expect(
-        const char* should,
-        std::unique_ptr<Ast::Nodes::NodeBase>& nodes_parsed,
-        const std::source_location& location = std::source_location::current()
+        int line_number
     );
 
     /// @brief Dumps the remaining unparsed text

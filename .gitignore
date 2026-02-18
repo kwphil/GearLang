@@ -10,14 +10,14 @@ build.ninja
 
 # The executables
 gearlang
-# I use msys sometimes
 gearlang.exe
 
-# Generated Assembler and Executables
+# Generated output
+build/
 build.llvm
-build.bc
-build.o
-build
+build.o1
+a.out
 
 # I use codespaces sometimes
 .vscode/
+compile_commands.json

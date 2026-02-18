@@ -31,16 +31,21 @@ endfunction()
 find_package(LLVM REQUIRED CONFIG)
 
 add_executable(gearlang
-    src/main.cpp
-    src/lex.cpp
-    src/ctx.cpp
-    src/syscall.cpp
-    src/var.cpp
+    main.cpp
+    lex.cpp
+    ctx.cpp
+    sem.cpp
+    error.cpp
+    fsm.cpp
+    func.cpp
+    startup.cpp
     generate/base.cpp
     generate/expr.cpp
     generate/literal.cpp
+    generate/func.cpp
     parse/base.cpp
     parse/expr.cpp
+    parse/func.cpp
 )
 
 target_include_directories(gearlang PRIVATE ${LLVM_INCLUDE_DIRS})

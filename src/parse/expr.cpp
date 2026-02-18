@@ -1,11 +1,11 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <stdexcept>
 #include <format>
 
-#include "../ast.hpp"
+#include "../ast/expr.hpp"
 #include "../lex.hpp"
+#include "../error.hpp"
 
 std::unique_ptr<Ast::Nodes::Expr> Ast::Nodes::Expr::parse(Lexer::Stream& s) {
     return parseExpr(s);
@@ -23,10 +23,7 @@ std::unique_ptr<Ast::Nodes::ExprLitFloat> Ast::Nodes::ExprLitFloat::parse(Lexer:
 std::unique_ptr<Ast::Nodes::ExprLitString> Ast::Nodes::ExprLitString::parse(Lexer::Stream& s) {
     std::unique_ptr<Lexer::Token> t = s.pop();
 
-    // the string contains the sorrounding quotes, so let's remove them
-    std::string string = t->content.substr(1, t->content.size() - 2); // - 2 because first and last
-    
-    return std::make_unique<ExprLitString>(string, t->line);
+    return std::make_unique<ExprLitString>(t->content, t->line);
 }
 
 std::unique_ptr<Ast::Nodes::ExprVar> Ast::Nodes::ExprVar::parse(const Lexer::Token& token) { 
@@ -35,10 +32,12 @@ std::unique_ptr<Ast::Nodes::ExprVar> Ast::Nodes::ExprVar::parse(const Lexer::Tok
 
 std::unique_ptr<Ast::Nodes::ExprAssign>
 Ast::Nodes::ExprAssign::parse(const Lexer::Token& token, Lexer::Stream& s) {
-    s.expect("=");
+    int line_number = token.line;
+
+    s.expect("=", line_number);
     pExpr expr = Expr::parse(s);
 
-    return std::make_unique<ExprAssign>(token.content, std::move(expr), token.line);
+    return std::make_unique<ExprAssign>(token.content, std::move(expr), line_number);
 }
 
 Ast::Nodes::pExpr Ast::Nodes::Expr::parseExpr(Lexer::Stream& s) {
@@ -63,13 +62,13 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseExpr(Lexer::Stream& s) {
     return std::make_unique<ExprOp>(type, std::move(left), std::move(right), s.peek()->line);
 }
 
-Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s, llvm::Type* cast) {
+Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s) {
     int line_number = s.peek()->line;
 
     if (s.peek()->content == "(") {
-        s.expect("(");
+        s.expect("(", line_number);
         auto expr = parseExpr(s);
-        s.expect(")");
+        s.expect(")", line_number);
         return expr;
     }
 
@@ -79,17 +78,15 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s, llvm::Type* cast
         case Lexer::Type::FloatLiteral:   return ExprLitFloat::parse(s);    break;
         case Lexer::Type::IntegerLiteral: return ExprLitInt::parse(s);      break;
         case Lexer::Type::StringLiteral:  return ExprLitString::parse(s);   break;
+
+        case Lexer::Type::At:   return ExprDeref::parse(s); break;
+        case Lexer::Type::Hash: return ExprAddress::parse(s); break;
         default: break;
     }
 
     s.pop();
 
     if(lit.type == Lexer::Type::Identifier) {
-        if(lit.content == "if") {
-            s.back();
-            return If::parse(s);
-        }
-        
         if(s.peek()->content == "=") {
             return ExprAssign::parse(lit, s);
         }
@@ -102,7 +99,13 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s, llvm::Type* cast
     }
 
     std::string error_msg = std::format("Unexpect token: {} (type={})", lit.content, (int)lit.type);
-    throw std::runtime_error(error_msg);
+    
+    Error::throw_error(
+        line_number,
+        lit.content.c_str(),
+        "Unexpected token.",
+        Error::ErrorCodes::UNEXPECTED_TOKEN
+    );
 }
 
 std::unique_ptr<Ast::Nodes::ExprCall> Ast::Nodes::ExprCall::parse(
@@ -113,18 +116,28 @@ std::unique_ptr<Ast::Nodes::ExprCall> Ast::Nodes::ExprCall::parse(
     std::string nm = tok.content;
     std::vector<pExpr> args;
 
-    s.expect("(");
+    s.expect("(", line_number);
     
     while(s.peek()->type != Lexer::Type::ParenClose) {
         args.push_back(Expr::parse(s));
 
         // Looking for the ) the loop will end anyway
         if(s.peek()->type != Lexer::Type::ParenClose) {
-            s.expect(",");
+            s.expect(",", line_number);
         }
     }
 
-    s.expect(")");
+    s.expect(")", line_number);
 
     return std::make_unique<ExprCall>(nm, args, line_number);
+}
+
+std::unique_ptr<Ast::Nodes::ExprAddress> Ast::Nodes::ExprAddress::parse(Lexer::Stream& s) {
+    s.expect("#", s.peek()->line);
+    return std::make_unique<ExprAddress>(s.pop()->content, s.peek()->line);
+}
+
+std::unique_ptr<Ast::Nodes::ExprDeref> Ast::Nodes::ExprDeref::parse(Lexer::Stream& s) {
+    s.expect("@", s.peek()->line);
+    return std::make_unique<ExprDeref>(s.pop()->content, s.peek()->line);
 }
