@@ -37,7 +37,7 @@ void Ast::Nodes::Let::generate(Context& ctx) {
     // Making sure that the variable doesn't exist
     auto _var = ctx.lookup(target);
     
-    if(_var) {
+    if(_var) { 
         Error::throw_error(
             line_number,
             target.c_str(),
@@ -66,7 +66,7 @@ void Ast::Nodes::Let::generate(Context& ctx) {
         ctx.bind(target, new Value { 
             .ir=var, 
             .ty=initVal->ty, 
-            .is_address=initVal->is_address 
+            .addr=initVal->addr 
         });
 
         ctx.builder.CreateStore(initVal->ir, var);
@@ -81,7 +81,7 @@ void Ast::Nodes::Let::generate(Context& ctx) {
     ctx.bind(target, new Value {
         .ir=alloca,
         .ty=initVal->ty,
-        .is_address=initVal->is_address
+        .addr=initVal->addr
     });
 }
 
