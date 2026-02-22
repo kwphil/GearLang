@@ -1,5 +1,5 @@
-#include "lex.hpp"
-#include "error.hpp"
+#include <gearlang/lex.hpp>
+#include <gearlang/error.hpp>
 
 #include <iostream>
 #include <fstream>

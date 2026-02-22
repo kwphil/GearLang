@@ -34,11 +34,15 @@ add_executable(gearlang
     main.cpp
     lex.cpp
     ctx.cpp
-    sem/type.cpp
     error.cpp
     fsm.cpp
     func.cpp
     startup.cpp
+    sem/analyze.cpp
+    sem/type.cpp
+    analyze/decl.cpp
+    analyze/literal.cpp
+    analyze/ops.cpp
     generate/base.cpp
     generate/expr.cpp
     generate/literal.cpp
@@ -48,7 +52,11 @@ add_executable(gearlang
     parse/func.cpp
 )
 
-target_include_directories(gearlang PRIVATE ${LLVM_INCLUDE_DIRS})
+target_include_directories(gearlang PRIVATE 
+    ${LLVM_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+
 target_compile_definitions(gearlang PRIVATE ${LLVM_DEFINITIONS})
 
 llvm_map_components_to_libnames(LLVM_LIBS

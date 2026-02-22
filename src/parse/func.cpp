@@ -1,11 +1,12 @@
 #include <memory>
 #include <tuple>
 
-#include "../ast/stmt.hpp"
-#include "../ast/expr.hpp"
-#include "../sem/type.hpp"
-#include "../lex.hpp"
-#include "../error.hpp"
+#include <gearlang/ast/stmt.hpp>
+#include <gearlang/ast/expr.hpp>
+#include <gearlang/sem/type.hpp>
+
+#include <gearlang/lex.hpp>
+#include <gearlang/error.hpp>
 
 // Helper function for parsing function headers
 // Returns the type (returns Ast::Type::NonPrimitive, ... if non-primitive)

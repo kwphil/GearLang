@@ -3,12 +3,12 @@
 #include <memory>
 #include <format>
 
-#include "../ast/stmt.hpp"
-#include "../ast/expr.hpp"
+#include <gearlang/ast/stmt.hpp>
+#include <gearlang/ast/expr.hpp>
+#include <gearlang/sem/type.hpp>
 
-#include "../lex.hpp"
-#include "../sem/type.hpp"
-#include "../error.hpp"
+#include <gearlang/lex.hpp>
+#include <gearlang/error.hpp>
 
 std::unique_ptr<Ast::Nodes::Let> Ast::Nodes::Let::parse(Lexer::Stream& s) {
     int line_number = s.peek()->line;

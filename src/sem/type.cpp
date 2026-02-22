@@ -1,7 +1,8 @@
-#include "type.hpp"
-#include "../ctx.hpp"
-#include "../lex.hpp"
-#include "../error.hpp"
+
+#include <gearlang/sem/type.hpp>
+#include <gearlang/ctx.hpp>
+#include <gearlang/lex.hpp>
+#include <gearlang/error.hpp>
 
 #include <format>
 
@@ -17,6 +18,8 @@ using namespace Sem;
 Type::PrimType Type::parse_primitive(std::string& s) {
     if (s == "void") return PrimType::Void;
     if (s == "char") return PrimType::Char;
+    if (s == "i8")   return PrimType::I8;
+    if (s == "i16")  return PrimType::I16;
     if (s == "i32")  return PrimType::I32;
     if (s == "f32")  return PrimType::F32;
     if (s == "f64")  return PrimType::F64;
@@ -150,4 +153,40 @@ int Type::pointer_level() const {
     if(non_prim->type[0]) return -2;
 
     return non_prim->type[1];
+}
+
+std::string Type::dump() {
+    std::string prim;
+
+    using enum PrimType;
+    switch(prim_type) {
+        case(Void): prim = "void"; break;
+        case(Char): prim = "char"; break;
+        case(I8): prim = "i8"; break;
+        case(I16): prim = "i16"; break;
+        case(I32): prim = "i32"; break;
+        case(F32): prim = "f32"; break;
+        case(F64): prim = "f64"; break;
+        default: prim = "invalid"; break; 
+    }
+
+    if(is_primitive()) return prim;
+
+    std::string s = "";
+    for(int i = 0; i < non_prim.value().type[1]; i++)
+        s.push_back('&');
+
+    s.append(prim);
+    return s;
+}
+
+bool Type::is_float() const {
+    if(!is_primitive()) return false;
+
+    using enum PrimType;
+    switch(prim_type) {
+        case(F32):
+        case(F64): return true;
+        default: return false;
+    }
 }

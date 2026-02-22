@@ -3,8 +3,8 @@
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/Type.h>
 
-#include "../ast/expr.hpp"
-#include "../sem/type.hpp"
+#include <gearlang/ast/expr.hpp>
+#include <gearlang/sem/type.hpp>
 
 // Just generates an int constant and returns it
 // TODO: Support different bit widths for optimization 

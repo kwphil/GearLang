@@ -1,10 +1,10 @@
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Function.h>
 
-#include "../ast/base.hpp"
-#include "../ast/stmt.hpp"
-#include "../ctx.hpp"
-#include "../func.hpp"
+#include <gearlang/ast/base.hpp>
+#include <gearlang/ast/stmt.hpp>
+#include <gearlang/ctx.hpp>
+#include <gearlang/func.hpp>
 
 // Creates the function type. 
 // Creates the function and adds it to the module

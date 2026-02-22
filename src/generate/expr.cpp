@@ -3,8 +3,8 @@
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/Type.h>
 
-#include "../ast/expr.hpp"
-#include "../error.hpp"
+#include <gearlang/ast/expr.hpp>
+#include <gearlang/error.hpp>
 
 // Generates both sides of the expression, and stores them in temporary values
 // Matches through each operation and stores the output as a temp
