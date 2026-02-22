@@ -12,6 +12,11 @@ namespace Ast::Nodes {
     class Stmt : public NodeBase {
     public:
         Stmt(int line_number) : NodeBase(line_number) { }
+
+        /// @brief For the semantic analyzer
+        /// @param analyzer The analyzer object
+        virtual void analyze(Sem::Analyzer& analyzer) = 0;
+
         /// @brief generate function that doesn't return anything
         /// @param ctx the context
         virtual void generate(Context& ctx) = 0;
@@ -35,6 +40,7 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<If> parse(Lexer::Stream& s);
 
+        virtual void analyze(Sem::Analyzer& analyzer) override { }
         void generate(Context& ctx) override;
     };
 
@@ -54,6 +60,8 @@ namespace Ast::Nodes {
             std::unique_ptr<If>,
             Lexer::Stream& s
         );
+
+        virtual void analyze(Sem::Analyzer& analyzer) override { }
         void generate(Context& ctx);
     };
 
@@ -66,12 +74,16 @@ namespace Ast::Nodes {
         pExpr expr;
 
     public:
+        bool is_global = false;
+
         Let(std::string& target, pExpr expr, int line_number)
         : target(target), expr(std::move(expr)), Stmt(line_number) {}
 
         static std::unique_ptr<Let> parse(Lexer::Stream& s);
 
+        std::string get_name() { return target; }
         void generate(Context& ctx) override;
+        void analyze(Sem::Analyzer& analyzer) override; 
     };
 
     /// @brief Node for return statements
@@ -86,6 +98,7 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<Return> parse(Lexer::Stream& s);
 
+        virtual void analyze(Sem::Analyzer& analyzer) override { }
         void generate(Context& ctx) override;
     };
 
@@ -117,6 +130,7 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<Function> parse(Lexer::Stream& s);
 
+        virtual void analyze(Sem::Analyzer& analyzer) override { }
         // This has no use for generating code, so this always returns nullptr
         void generate(Context& ctx) override;
     };
@@ -148,6 +162,7 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<ExternFn> parse(Lexer::Stream& s);
 
+        virtual void analyze(Sem::Analyzer& analyzer) override { }
         // This has no use for generating code, so this always returns nullptr
         void generate(Context& ctx) override;
     };

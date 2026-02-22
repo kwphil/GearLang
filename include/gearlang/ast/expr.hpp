@@ -4,7 +4,8 @@
 
 #include "../lex.hpp"
 #include "../ctx.hpp"
-#include "../sem/type.hpp"
+#include <gearlang/sem/val.hpp>
+#include <gearlang/sem/type.hpp>
 
 #include "base.hpp"
 
@@ -25,6 +26,7 @@ namespace Ast::Nodes {
         /// @param s The lexer stream to parse from
         /// @return A unique pointer to the parsed term
         static std::unique_ptr<Expr> parseTerm(Lexer::Stream& s);
+        virtual Sem::ExprValue* analyze(Sem::Analyzer& analyzer) = 0;
         /// @brief Generates the llvm code
         virtual Value* generate(Context& ctx) = 0;
     };
@@ -43,6 +45,7 @@ namespace Ast::Nodes {
         ExprOp(Type type, pExpr left, pExpr right, int line_number)
         : type(type), left(std::move(left)), right(std::move(right)), Expr(line_number) {};
 
+        virtual Sem::ExprValue* analyze(Sem::Analyzer& analyzer) override;
         Value* generate(Context& ctx) override;
     };
 
@@ -69,6 +72,7 @@ namespace Ast::Nodes {
         ExprLitInt(uint64_t x, int line_number) : Literal(line_number, nullptr), value(x) {}
         static std::unique_ptr<ExprLitInt> parse(Lexer::Stream& s);
 
+        virtual Sem::ExprValue* analyze(Sem::Analyzer& analyzer) override;
         virtual Value* generate(Context& ctx) override;
     };
 
@@ -81,6 +85,7 @@ namespace Ast::Nodes {
         ExprLitFloat(double x, int line_number) : Literal(line_number, nullptr), value(x) { }
         static std::unique_ptr<ExprLitFloat> parse(Lexer::Stream& s);
         
+        virtual Sem::ExprValue* analyze(Sem::Analyzer& analyzer) override { return nullptr; }
         virtual Value* generate(Context& ctx) override;
     };
 
@@ -93,6 +98,7 @@ namespace Ast::Nodes {
         ExprLitString(std::string& s, int line_number) : Literal(line_number, nullptr), string(s) { }
         static std::unique_ptr<ExprLitString> parse(Lexer::Stream& s);
 
+        virtual Sem::ExprValue* analyze(Sem::Analyzer& analyzer) override { return nullptr; }
         virtual Value* generate(Context& ctx) override;
     };
 
@@ -107,6 +113,7 @@ namespace Ast::Nodes {
         : name(name), Expr(line_number) {};
 
         static std::unique_ptr<ExprVar> parse(const Lexer::Token& name);
+        virtual Sem::ExprValue* analyze(Sem::Analyzer& analyzer) override { return nullptr; }
         Value* generate(Context& ctx) override;
     };
 
@@ -123,7 +130,7 @@ namespace Ast::Nodes {
         : name(name), expr(std::move(expr)), Expr(line_number) { }
 
         static std::unique_ptr<ExprAssign> parse(const Lexer::Token& name, Lexer::Stream& s);
-
+        virtual Sem::ExprValue* analyze(Sem::Analyzer& analyzer) override { return nullptr; }
         Value* generate(Context& ctx) override;
     };
 
@@ -147,6 +154,7 @@ namespace Ast::Nodes {
             Lexer::Stream& s
         );
 
+        virtual Sem::ExprValue* analyze(Sem::Analyzer& analyzer) override { return nullptr; }
         Value* generate(Context& ctx) override;
     };
 
@@ -162,6 +170,7 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<ExprAddress> parse(Lexer::Stream& s);
 
+        virtual Sem::ExprValue* analyze(Sem::Analyzer& analyzer) override { return nullptr; }
         Value* generate(Context& ctx) override;
     };
 
@@ -177,6 +186,7 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<ExprDeref> parse(Lexer::Stream& s);
 
+        virtual Sem::ExprValue* analyze(Sem::Analyzer& analyzer) override { return nullptr; }
         Value* generate(Context& ctx) override;
     };
 
@@ -192,6 +202,7 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<ExprBlock> parse(Lexer::Stream& s);
 
+        virtual Sem::ExprValue* analyze(Sem::Analyzer& analyzer) override { return nullptr; }
         // Will probably return the return variable
         // Will stay void until I get Function to return non-void
         Value* generate(Context& ctx) override;

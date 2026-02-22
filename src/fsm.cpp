@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <format>
 
-#include "lex.hpp"
+#include <gearlang/lex.hpp>
 
 static inline bool is_single_char_token(Lexer::CharType t);
 

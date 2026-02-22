@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 
-#include "error.hpp"
+#include <gearlang/error.hpp>
 
 std::ifstream input_file;
 std::vector<std::string> error_split_file;

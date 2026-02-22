@@ -9,13 +9,13 @@ CMakeCache.txt
 build.ninja
 
 # The executables
-gearlang
-gearlang.exe
+/gearlang
+/gearlang.exe
 
 # Generated output
 build/
 build.llvm
-build.o1
+build.o
 a.out
 
 # I use codespaces sometimes

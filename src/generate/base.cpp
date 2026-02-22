@@ -9,12 +9,13 @@
 #include <stdexcept>
 #include <memory>
 
-#include "../ast/base.hpp"
-#include "../ast/stmt.hpp"
-#include "../ast/expr.hpp"
-#include "../error.hpp"
-#include "../func.hpp"
-#include "../sem/type.hpp"
+#include <gearlang/ast/base.hpp>
+#include <gearlang/ast/stmt.hpp>
+#include <gearlang/ast/expr.hpp>
+#include <gearlang/sem/type.hpp>
+
+#include <gearlang/error.hpp>
+#include <gearlang/func.hpp>
 
 // Checks if the variable already exists
 // If it does, it throws an error and quits
