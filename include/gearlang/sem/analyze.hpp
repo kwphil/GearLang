@@ -18,9 +18,6 @@ namespace Sem {
         typedef std::unordered_map<string, Variable> Scope;
 
     private: 
-        // Nodes that don't get removed are moved here for generation
-        vector<std::unique_ptr<NodeBase>> analyzed_nodes;
-
         Scope* global_scope;
         vector<Scope*> active_scopes;
         Scope* new_scope();
@@ -51,10 +48,5 @@ namespace Sem {
 
         /// @brief Checks if two types are convertible. 
         bool type_is_compatible(Type lhs, Type rhs);
-
-        // ---------- ETC ------------------------
-
-        /// @brief Pushes a new node to be generated.
-        void add_node(std::unique_ptr<NodeBase> node);
     };
 }

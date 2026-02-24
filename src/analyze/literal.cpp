@@ -7,12 +7,10 @@ using Sem::ExprValue;
 using Sem::Type;
 
 ExprValue* ExprLitInt::analyze(Sem::Analyzer& analyzer) {
-    Type ty;
+    if(value <= 0xff) ty = new Type("i8");
+    else if(value <= 0xffff) ty = new Type("i16");
+    else if(value <= 0xffffffff) ty = new Type("i32");
+    else ty = new Type("i64");
 
-    if(value <= 0xff) ty = Type("i8");
-    else if(value <= 0xffff) ty = Type("i16");
-    else if(value <= 0xffffffff) ty = Type("i32");
-    else ty = Type("i64");
-
-    return new ExprValue(value, ty);
+    return new ExprValue(value, *ty);
 }
