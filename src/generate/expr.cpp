@@ -4,7 +4,9 @@
 #include <llvm/IR/Type.h>
 
 #include <gearlang/ast/expr.hpp>
+#include <gearlang/ast/stmt.hpp>
 #include <gearlang/error.hpp>
+#include <gearlang/etc.hpp>
 
 // Generates both sides of the expression, and stores them in temporary values
 // Matches through each operation and stores the output as a temp
@@ -14,35 +16,26 @@ Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
     Value* rhs = right->generate(ctx);
     llvm::Value* out;
 
-    if(lhs->ir->getType() != rhs->ir->getType()) {
-        Error::throw_error(
-            line_number,
-            "",
-            "Mismatched types",
-            Error::ErrorCodes::BAD_TYPE
-        );
-    }
-
-    if(lhs->ir->getType()->isDoubleTy()) {
+    if(ty->is_float()) {
         switch(type) {
-            case Add: out = ctx.builder.CreateFAdd(lhs->ir, rhs->ir, "faddtmp");
-            case Sub: out = ctx.builder.CreateFSub(lhs->ir, rhs->ir, "fsubtmp");
-            case Mul: out = ctx.builder.CreateFMul(lhs->ir, rhs->ir, "fmultmp");
-            case Div: out = ctx.builder.CreateFDiv(lhs->ir, rhs->ir, "fdivtmp");
+            case Add: out = ctx.builder.CreateFAdd(lhs->ir, rhs->ir, "faddtmp"); break;
+            case Sub: out = ctx.builder.CreateFSub(lhs->ir, rhs->ir, "fsubtmp"); break;
+            case Mul: out = ctx.builder.CreateFMul(lhs->ir, rhs->ir, "fmultmp"); break;
+            case Div: out = ctx.builder.CreateFDiv(lhs->ir, rhs->ir, "fdivtmp"); break;
         }
     } else {
         switch (type) {
-            case Add: out = ctx.builder.CreateAdd(lhs->ir, rhs->ir, "iaddtmp");
-            case Sub: out = ctx.builder.CreateSub(lhs->ir, rhs->ir, "isubtmp");
-            case Mul: out = ctx.builder.CreateMul(lhs->ir, rhs->ir, "imultmp");
-            case Div: out = ctx.builder.CreateSDiv(lhs->ir, rhs->ir, "idivtmp");
+            case Add: out = ctx.builder.CreateAdd(lhs->ir, rhs->ir, "iaddtmp"); break;
+            case Sub: out = ctx.builder.CreateSub(lhs->ir, rhs->ir, "isubtmp"); break;
+            case Mul: out = ctx.builder.CreateMul(lhs->ir, rhs->ir, "imultmp"); break;
+            case Div: out = ctx.builder.CreateSDiv(lhs->ir, rhs->ir, "idivtmp"); break;
         }
     }
 
     if(out) {
         return new Value {
             .ir=out,
-            .ty=lhs->ir->getType(),
+            .ty=ty->to_llvm(ctx),
             .addr = lhs->addr
         };
     }
@@ -60,41 +53,34 @@ Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
 // Otherwise:
 // Checks if it is a global and returns it
 Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
-    Value* var = ctx.lookup(name);
-    if (!var)
-        Error::throw_error(
-            line_number,
-            name.c_str(),
-            "Unknown variable",
-            Error::ErrorCodes::VARIABLE_NOT_DEFINED
-        );
+    llvm::Value* var = cast_from_uptr<NodeBase, Let>(let)->var;
 
-    if (auto* gv = llvm::dyn_cast<llvm::GlobalVariable>(var->ir)) {
+    if (auto* gv = llvm::dyn_cast<llvm::GlobalVariable>(var)) {
         llvm::Value* ir = ctx.builder.CreateLoad(
-            var->ty,
+            ty->to_llvm(ctx),
             gv,
             name + ".load"
         );
 
         return new Value {
             .ir=ir,
-            .ty=var->ty,
-            .addr=var->addr
+            .ty=ty->to_llvm(ctx),
+            .addr=ty->pointer_level()
         };
     }
 
-    llvm::AllocaInst* alloca = llvm::dyn_cast<llvm::AllocaInst>(var->ir);
+    llvm::AllocaInst* alloca = llvm::dyn_cast<llvm::AllocaInst>(var);
 
     llvm::Value* ir = ctx.builder.CreateLoad(
         alloca->getAllocatedType(),
-        var->ir,
+        var,
         name + ".load"
     );
 
     return new Value {
         .ir=ir,
-        .ty=var->ty,
-        .addr=var->addr
+        .ty=ty->to_llvm(ctx),
+        .addr=ty->pointer_level()
     };
 }
 

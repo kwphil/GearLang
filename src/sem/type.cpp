@@ -89,7 +89,9 @@ Type::Type(Lexer::Stream& s) {
 
 llvm::Type* Type::primitive_to_llvm(PrimType ty, Context& ctx) {
     switch (ty) {
-        case PrimType::Char: return llvm::Type::getInt8Ty(ctx.llvmCtx);
+        case PrimType::Char: // Same as i8
+        case PrimType::I8: return llvm::Type::getInt8Ty(ctx.llvmCtx);
+        case PrimType::I16: return llvm::Type::getInt16Ty(ctx.llvmCtx);
         case PrimType::I32:  return llvm::Type::getInt32Ty(ctx.llvmCtx);
         case PrimType::F32:  return llvm::Type::getFloatTy(ctx.llvmCtx);
         case PrimType::F64:  return llvm::Type::getDoubleTy(ctx.llvmCtx);

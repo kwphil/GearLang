@@ -69,7 +69,6 @@ int main(int argc, char** argv) {
     Sem::Analyzer analyzer;
     analyzer.analyze(root.content);
 
-    return 0;
     Context ctx;
 
     if(compopt->verbose) std::cout << "generating... ";

@@ -72,8 +72,11 @@ namespace Ast::Nodes {
         std::string target;
         /// @brief The expression for the variable's initial value
         pExpr expr;
-
     public:
+        /// @brief The LLVM variable
+        llvm::Value* var;
+
+        /// @brief If the variable is to be generated as a global
         bool is_global = false;
 
         Let(std::string& target, pExpr expr, int line_number)
@@ -98,7 +101,7 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<Return> parse(Lexer::Stream& s);
 
-        virtual void analyze(Sem::Analyzer& analyzer) override { }
+        virtual void analyze(Sem::Analyzer& analyzer) override;
         void generate(Context& ctx) override;
     };
 

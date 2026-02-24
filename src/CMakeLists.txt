@@ -40,8 +40,9 @@ add_executable(gearlang
     startup.cpp
     sem/analyze.cpp
     sem/type.cpp
-    analyze/decl.cpp
+    analyze/vars.cpp
     analyze/literal.cpp
+    analyze/stmt.cpp
     analyze/ops.cpp
     generate/base.cpp
     generate/expr.cpp

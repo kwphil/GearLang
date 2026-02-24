@@ -15,28 +15,29 @@ using std::string;
 using std::vector;
 using std::unique_ptr;
 
-using Ast::Nodes::NodeBase;
-using Ast::Nodes::Let;
+using namespace Ast::Nodes;
 
 bool Analyzer::analyze_decl_statements(std::unique_ptr<NodeBase>* node) {
     Let* let = try_cast<NodeBase, Let>(node->get());
 
+    // First we just grab definitions
     if(let) {
         let->analyze(*this);
 
         // Need to get the Variable we created
         auto& var = active_scopes.back()->find(let->get_name())->second;
 
-        // Don't need this for now, access with the vector instead
-        add_node(std::move(*node));
-
         // Now we can set the index if need to be updated
-        var.node_index = analyzed_nodes.size()-1;
+        var.let_stmt = node;
 
         return true;
     }
 
-    return false;
+    // Otherwise just analyze as normal
+    Stmt* stmt = try_cast<NodeBase, Stmt>(node->get());
+    stmt->analyze(*this);
+    
+    return true;
 }
 
 #include <iostream>
@@ -46,17 +47,12 @@ void Analyzer::analyze(vector<unique_ptr<NodeBase>>& nodes) {
     // Declarations
     // Type checking
     for(auto& node : nodes) {
-        if(
-            analyze_decl_statements(&node)
-        ) {
-
-        }
+        analyze_decl_statements(&node);
     }
 
     for(auto& scope : active_scopes) {
         for(auto& pair : *scope) {
             auto& var = pair.second;
-            std::cout << var.name << ": type=" << var.type.dump() << ", global=" << (int)(var.is_global) << std::endl;;
         }
     }
 }
@@ -86,7 +82,7 @@ std::optional<Variable> Analyzer::decl_lookup(string name) {
                 var.is_global = 1; 
                 // Also let the Let node know
                 cast_from_uptr<NodeBase, Let>
-                    (&analyzed_nodes[var.node_index])
+                    (var.let_stmt)
                     ->is_global = true;
             }
 
@@ -107,8 +103,4 @@ bool Analyzer::is_global_scope() {
 }
 
 // TODO
-bool Analyzer::type_is_compatible(Type lhs, Type rhs) { return false; }
-
-void Analyzer::add_node(std::unique_ptr<NodeBase> node) {
-    analyzed_nodes.push_back(std::move(node));
-}
+bool Analyzer::type_is_compatible(Type lhs, Type rhs) { return true; }
