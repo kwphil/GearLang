@@ -31,10 +31,17 @@ The last comma is not required, but allowed
 ```gear
 // Declaring a function
 extern fn i32 foo: a i32;
+
 // Defining a function
 fn main {
     return a;
 }
+
+//with parameters
+fn i32 foo: _a i32, _b i32 {
+    return _a + _b;
+}
+
 // OR
 fn foo: a i32 => a;
 ```
