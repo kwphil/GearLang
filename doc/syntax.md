@@ -30,7 +30,7 @@ The last comma is not required, but allowed
 
 ```gear
 // Declaring a function
-extern fn int foo: a i32;
+extern fn i32 foo: a i32;
 // Defining a function
 fn main {
     return a;
