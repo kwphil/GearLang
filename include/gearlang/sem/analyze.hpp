@@ -5,12 +5,16 @@
 #include <string>
 
 #include <gearlang/ast/base.hpp>
+#include <gearlang/ast/stmt.hpp>
+#include <gearlang/ast/expr.hpp>
 #include <gearlang/lex.hpp>
+#include <gearlang/etc.hpp>
 #include "type.hpp"
 
 using std::string;
 using std::vector;
-using Ast::Nodes::NodeBase;
+using namespace Ast::Nodes;
+using namespace Sem;
 
 namespace Sem {
     class Analyzer {
@@ -20,10 +24,8 @@ namespace Sem {
     private: 
         Scope* global_scope;
         vector<Scope*> active_scopes;
-        Scope* new_scope();
-        void delete_scope();
 
-        bool analyze_decl_statements(std::unique_ptr<NodeBase>* node);
+        bool analyze_decl_statements(NodeBase* node);
 
     public: 
         Analyzer()
@@ -37,6 +39,11 @@ namespace Sem {
         /// @param name the name of the variable
         /// @return the semantic information from the variable
         std::optional<Variable> decl_lookup(string name); 
+        /// @brief Pushes a new scope to the stack
+        /// @return a pointer to the new scope
+        Scope* new_scope();
+        /// @brief Pops the scope off the stack
+        void delete_scope();
         /// @brief Adds a variable
         /// @param name the name of the variable
         /// @param var the semantic information from the variable
@@ -49,4 +56,13 @@ namespace Sem {
         /// @brief Checks if two types are convertible. 
         bool type_is_compatible(Type lhs, Type rhs);
     };
+}
+
+constexpr void analyze_nodebase(std::unique_ptr<NodeBase>* node, Analyzer& analyzer) {
+    if(Stmt* stmt = cast_from_uptr<NodeBase, Stmt>(node)) {
+        stmt->analyze(analyzer);
+        return;
+    }
+
+    cast_from_uptr<NodeBase, Expr>(node)->analyze(analyzer);
 }

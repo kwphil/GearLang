@@ -53,6 +53,8 @@ namespace Sem {
         bool is_pointer_ty() const;
         /// @brief How many pointers stacked on top of eachother. T& would return 1, T&& = 2, ...
         int pointer_level() const;
+        /// @brief Wraps a pointer type around the current type and returns it
+        Type ref();
         /// @brief Checks if the type is an fxx type
         bool is_float() const;
 

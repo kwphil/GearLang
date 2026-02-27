@@ -1,10 +1,9 @@
-#pragma once
+#ifndef GEARLANG_AST_BASE_HPP
+#define GEARLANG_AST_BASE_HPP
 
 #include <vector>
 #include <memory>
 
-#include <gearlang/sem/val.hpp>
-#include <gearlang/sem/analyze.hpp>
 #include <gearlang/lex.hpp>
 #include <gearlang/ctx.hpp>
 
@@ -41,3 +40,5 @@ namespace Ast {
         void generate(Context& ctx);
     };
 }
+
+#endif // AST_BASE_HPP

@@ -6,11 +6,6 @@
 #include <source_location>
 #include <memory>
 
-// stupid circular dependencies
-namespace Ast::Nodes {
-    class NodeBase;
-}
-
 /// @brief Lexer namespace
 namespace Lexer {
 

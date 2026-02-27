@@ -12,5 +12,15 @@ ExprValue* ExprLitInt::analyze(Sem::Analyzer& analyzer) {
     else if(value <= 0xffffffff) ty = new Type("i32");
     else ty = new Type("i64");
 
-    return new ExprValue(value, *ty);
+    return new ExprValue(true, *ty);
+}
+
+ExprValue* ExprLitFloat::analyze(Sem::Analyzer& analyzer) {
+    ty = new Type("f32");
+    return new ExprValue(true, *ty);
+}
+
+ExprValue* ExprLitString::analyze(Sem::Analyzer& analyzer) {
+    ty = new Type("char^");
+    return new ExprValue(true, *ty);
 }

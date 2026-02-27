@@ -17,37 +17,23 @@ using std::unique_ptr;
 
 using namespace Ast::Nodes;
 
-bool Analyzer::analyze_decl_statements(std::unique_ptr<NodeBase>* node) {
-    Let* let = try_cast<NodeBase, Let>(node->get());
-
-    // First we just grab definitions
-    if(let) {
-        let->analyze(*this);
-
-        // Need to get the Variable we created
-        auto& var = active_scopes.back()->find(let->get_name())->second;
-
-        // Now we can set the index if need to be updated
-        var.let_stmt = node;
-
+bool Analyzer::analyze_decl_statements(NodeBase* node) {
+    if(Stmt* stmt = try_cast<NodeBase, Stmt>(node)) {
+        stmt->analyze(*this);
         return true;
     }
 
-    // Otherwise just analyze as normal
-    Stmt* stmt = try_cast<NodeBase, Stmt>(node->get());
-    stmt->analyze(*this);
+    try_cast<NodeBase, Expr>(node)->analyze(*this);
     
     return true;
 }
-
-#include <iostream>
 
 void Analyzer::analyze(vector<unique_ptr<NodeBase>>& nodes) {
     // Steps:
     // Declarations
     // Type checking
     for(auto& node : nodes) {
-        analyze_decl_statements(&node);
+        analyze_decl_statements(node.get());
     }
 
     for(auto& scope : active_scopes) {
@@ -66,7 +52,7 @@ Analyzer::Scope* Analyzer::new_scope() {
 }
 
 void Analyzer::delete_scope() {
-    delete active_scopes.back();
+    delete active_scopes.back(); 
     active_scopes.pop_back();
 }
 
@@ -81,7 +67,7 @@ std::optional<Variable> Analyzer::decl_lookup(string name) {
             if(var.is_global == 2 && !is_global_scope()) {
                 var.is_global = 1; 
                 // Also let the Let node know
-                cast_from_uptr<NodeBase, Let>
+                try_cast<NodeBase, Let>
                     (var.let_stmt)
                     ->is_global = true;
             }

@@ -5,6 +5,8 @@
 
 #include <gearlang/ast/expr.hpp>
 #include <gearlang/ast/stmt.hpp>
+#include <gearlang/ast/func.hpp>
+
 #include <gearlang/error.hpp>
 #include <gearlang/etc.hpp>
 
@@ -48,12 +50,22 @@ Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
     );
 }
 
+#include <iostream>
+
 // Looks up the name of the variable
 // If the variable doesn't exist, it throws an error and quits
-// Otherwise:
-// Checks if it is a global and returns it
+// Otherwise Checks if it is a global and returns it
 Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
-    llvm::Value* var = cast_from_uptr<NodeBase, Let>(let)->var;
+    // Link to the declaration statement
+    llvm::Value* var;
+
+    // std::cout << name << ": " << let << std::endl;
+    // Checking if it came from a let stmt
+    if(Let* let_val = try_cast<NodeBase, Let>(let))
+        var = let_val->var;
+    else
+        var = try_cast<NodeBase, Argument>(let)->var;
+
 
     if (auto* gv = llvm::dyn_cast<llvm::GlobalVariable>(var)) {
         llvm::Value* ir = ctx.builder.CreateLoad(
@@ -87,14 +99,14 @@ Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
 // Assigns a value to a variable, and stores the value in the variable's alloca
 // If the variable doesn't exist, it throws an error and quits
 Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
-    Value* alloca = ctx.lookup(name);
-    if (!alloca)
-        Error::throw_error(
-            line_number,
-            name.c_str(),
-            "Tried to assign a variable that wasn't defined",
-            Error::ErrorCodes::VARIABLE_NOT_DEFINED
-        );
+    // Link to the declaration statement
+    llvm::Value* var;
+
+    // Checking if it came from a let stmt
+    if(Let* let_val = try_cast<NodeBase, Let>(let))
+        var = let_val->var;
+    else
+        var = try_cast<NodeBase, Argument>(let)->var;
 
     Expr* expr2 = dynamic_cast<Expr*>(expr.get());
     
@@ -109,19 +121,7 @@ Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
     
     Value* value = expr2->generate(ctx);
 
-    // type checking
-    if((bool)value->addr != (bool)alloca->addr
-       || value->ty != value->ty
-    ) {
-        Error::throw_error(
-            line_number,
-            "=",
-            "Mismatched types",
-            Error::ErrorCodes::BAD_TYPE
-        );
-    }
-
-    ctx.builder.CreateStore(value->ir, alloca->ir);
+    ctx.builder.CreateStore(value->ir, var);
 
     return value;
 }

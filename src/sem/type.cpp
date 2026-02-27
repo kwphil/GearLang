@@ -83,6 +83,10 @@ Type::Type(Lexer::Stream& s) {
     }
 }
 
+Type Type::ref() {
+    return Type(std::format("{}^", dump()).c_str());
+}
+
 /* ============================
    LLVM lowering
    ============================ */

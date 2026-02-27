@@ -3,8 +3,11 @@
 
 #include <gearlang/ast/base.hpp>
 #include <gearlang/ast/stmt.hpp>
+#include <gearlang/ast/func.hpp>
 #include <gearlang/ctx.hpp>
 #include <gearlang/func.hpp>
+
+using namespace Ast::Nodes;
 
 // Creates the function type. 
 // Creates the function and adds it to the module
@@ -12,11 +15,11 @@
 // Generates the function body
 // Pops the scope and resets the current function
 // Sets the insert point back to the start block
-void Ast::Nodes::Function::generate(Context& ctx) {
+void Function::generate(Context& ctx) {
     std::vector<llvm::Type*> param_types;
     param_types.reserve(args.size());
     for (auto& arg : args) {
-        param_types.push_back(arg.type.to_llvm(ctx));
+        param_types.push_back(arg->get_type().value().to_llvm(ctx));
     }
 
     llvm::Function* fn;
@@ -37,7 +40,7 @@ void Ast::Nodes::Function::generate(Context& ctx) {
     }
 
     for (auto& llvm_arg : fn->args()) {
-        llvm_arg.setName(args[idx++].name);
+        llvm_arg.setName(args[idx++]->name);
     }
     
     ctx.builder.SetInsertPoint(entry);
@@ -52,29 +55,31 @@ void Ast::Nodes::Function::generate(Context& ctx) {
         llvm::Type* arg_ty = arg.getType();
         llvm::AllocaInst* alloca = ctx.create_entry_block(
             fn,
-            ast_arg.name,
+            ast_arg->name,
             arg_ty
         );
 
         ctx.builder.CreateStore(&arg, alloca);
 
-        if(ast_arg.type.is_pointer_ty()) {
+        ast_arg->var = alloca;
+
+        if(ast_arg->get_type()->is_pointer_ty()) {
             Value* val = new Value {
                 .ir=alloca,
-                .ty=ast_arg.type.get_underlying_type(ctx),
-                .addr=ast_arg.type.pointer_level()
+                .ty=ast_arg->get_type()->get_underlying_type(ctx),
+                .addr=ast_arg->get_type()->pointer_level()
             };
 
-            ctx.bind(ast_arg.name, val);
+            ctx.bind(ast_arg->name, val);
+        } else {
+            Value* val = new Value {
+                .ir=alloca,
+                .ty=arg_ty,
+                .addr=false
+            };
+
+            ctx.bind(ast_arg->name, val);
         }
-
-        Value* val = new Value {
-            .ir=alloca,
-            .ty=arg_ty,
-            .addr=false
-        };
-
-        ctx.bind(ast_arg.name, val);
 
         idx++;
     }
@@ -100,7 +105,7 @@ void Ast::Nodes::ExternFn::generate(Context& ctx) {
     param_types.reserve(args.size());
     for (auto& arg : args) {
         param_types.push_back(
-            arg.type.to_llvm(ctx)
+            arg->get_type()->to_llvm(ctx)
         );
     }
     
