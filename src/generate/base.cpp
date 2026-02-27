@@ -92,7 +92,7 @@ void Ast::Nodes::If::generate(Context& ctx) {
         llvm::BasicBlock::Create(ctx.llvmCtx, "if.end", fn);
 
     // Generate condition
-    Expr* cond_expr = dynamic_cast<Expr*>(cond_expr);
+    Expr* cond_expr = dynamic_cast<Expr*>(cond.get());
     if(!cond_expr) {
         Error::throw_error(
             line_number,

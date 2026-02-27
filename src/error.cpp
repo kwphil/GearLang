@@ -29,7 +29,7 @@ void Error::throw_error (
     const char* _search_for, 
     const char* err,
     ErrorCodes code,
-    int leniency
+    unsigned int leniency
 ) {
     std::string search_for = _search_for;
     // if nothing to highlight
@@ -38,10 +38,10 @@ void Error::throw_error (
     }
 
     std::string current_line;
-    int loc;
+    long unsigned int loc;
     
     // Looking for search_for
-    for(int i = 0; i < leniency+1; i++) {
+    for(unsigned int i = 0; i < leniency+1; i++) {
         current_line = error_split_file[line_number-1];
         loc = current_line.find(search_for);
         if(loc != std::string::npos) break;
@@ -67,12 +67,12 @@ void Error::throw_error (
     std::cerr << current_line << "\n";
     
     // Offset highlight
-    for(int i = 0; i < loc; i++) {
+    for(unsigned int i = 0; i < loc; i++) {
         std::cerr << " ";
     }
 
     // Print highlight
-    for(int i = 0; i < search_for.length(); i++) {
+    for(unsigned int i = 0; i < search_for.length(); i++) {
         std::cerr << "^";
     }
 

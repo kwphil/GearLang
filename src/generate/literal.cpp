@@ -39,7 +39,7 @@ unique_ptr<Value> Ast::Nodes::ExprLitString::generate(Context& ctx) {
     llvm::Type* i8 = llvm::Type::getInt8Ty(ctx.llvmCtx);
     llvm::ArrayType* arr_i8 = llvm::ArrayType::get(i8, chars.size());
 
-    for(int i = 0; i < string.size(); i++) {
+    for(long unsigned int i = 0; i < string.size(); i++) {
         chars[i] = llvm::ConstantInt::get(i8, string[i]);
     }
 

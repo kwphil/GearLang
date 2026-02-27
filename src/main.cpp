@@ -195,7 +195,7 @@ void run_command(const char* cmd, bool verbose) {
 void match_flags(compopt_t* compopt) {
     // Skip the dash
     char* curr_tok = compopt->argv[compopt->index];
-    for(int i = 1; i < strlen(curr_tok); i++) {
+    for(size_t i = 1; i < strlen(curr_tok); i++) {
         switch(curr_tok[i]) {
             case('G'): compopt->output_object = true; break;
             case('S'): compopt->output_llvm = true; break;

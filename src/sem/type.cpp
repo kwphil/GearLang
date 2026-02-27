@@ -94,7 +94,7 @@ Type Type::deref() {
     NonPrimitive new_np = non_prim.value();
 
     assert(new_np.at(0) == 0);
-    new_np.at(1)-1;
+    new_np.at(1)-=1;
 
     return Type(prim_type, new_np);
 }

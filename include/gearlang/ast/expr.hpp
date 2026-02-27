@@ -28,7 +28,7 @@ namespace Ast::Nodes {
         /// @returns an optional type
         optional<Sem::Type> get_type() { if(!ty) return std::nullopt; return *ty; }
 
-        Expr(int line_number, Sem::Type* ty = nullptr) : ty(ty), NodeBase(line_number) {}
+        Expr(int line_number, Sem::Type* ty = nullptr) : NodeBase(line_number), ty(ty) {}
 
         static std::unique_ptr<Expr> parse(Lexer::Stream& s);
 
@@ -60,7 +60,7 @@ namespace Ast::Nodes {
         std::unique_ptr<Expr> left, right;
 
         ExprOp(Type type, pExpr left, pExpr right, int line_number, Sem::Type* ty = nullptr)
-        : type(type), left(std::move(left)), right(std::move(right)), Expr(line_number, ty) {};
+        : Expr(line_number, ty), type(type), left(std::move(left)), right(std::move(right)) {};
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         unique_ptr<Value> generate(Context& ctx) override;
@@ -73,7 +73,7 @@ namespace Ast::Nodes {
         
     public:
         Literal(int line_number, llvm::Type* cast) 
-        : cast_type(cast), Expr(line_number) { }
+        : Expr(line_number), cast_type(cast) { }
         
         virtual ~Literal() = default;
     
@@ -129,7 +129,7 @@ namespace Ast::Nodes {
 
     public:
         ExprVar(const std::string& name, int line_number)
-        : name(name), Expr(line_number) {};
+        : Expr(line_number), name(name) {};
 
         static std::unique_ptr<ExprVar> parse(const Lexer::Token& name);
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
@@ -148,7 +148,7 @@ namespace Ast::Nodes {
 
     public:
         ExprAssign(const std::string& name, pExpr expr, int line_number)
-        : name(name), expr(std::move(expr)), Expr(line_number) { }
+        : Expr(line_number), name(name), expr(std::move(expr)) { }
 
         static std::unique_ptr<ExprAssign> parse(const Lexer::Token& name, Lexer::Stream& s);
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
@@ -168,7 +168,7 @@ namespace Ast::Nodes {
             std::vector<pExpr>& args, 
             int line_number
         ) 
-        : callee(callee), args(std::move(args)), Expr(line_number) { }
+        : Expr(line_number), args(std::move(args)), callee(callee) { }
 
         static std::unique_ptr<ExprCall> parse(
             const Lexer::Token& name,
@@ -189,7 +189,7 @@ namespace Ast::Nodes {
         NodeBase* let;
 
         ExprAddress(std::string& name, int line_number)
-        : name(name), Expr(line_number) { }
+        : Expr(line_number), name(name) { }
 
         static std::unique_ptr<ExprAddress> parse(Lexer::Stream& s);
 
@@ -207,7 +207,7 @@ namespace Ast::Nodes {
         NodeBase* let;
 
         ExprDeref(std::string& name, int line_number)
-        : name(name), Expr(line_number) { }
+        : Expr(line_number), name(name) { }
 
         static std::unique_ptr<ExprDeref> parse(Lexer::Stream& s);
 
