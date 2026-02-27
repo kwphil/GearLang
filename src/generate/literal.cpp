@@ -3,19 +3,18 @@
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/Type.h>
 
-#include "../ast/expr.hpp"
-#include "../sem.hpp"
+#include <gearlang/ast/expr.hpp>
+#include <gearlang/sem/type.hpp>
 
 // Just generates an int constant and returns it
-// TODO: Support different bit widths for optimization 
 Value* Ast::Nodes::ExprLitInt::generate(Context& ctx) {
     return new Value{
         .ir=llvm::ConstantInt::get(
-            llvm::Type::getInt32Ty(ctx.llvmCtx),
+            ty->to_llvm(ctx),
             this->value,
             true
         ),
-        .ty=llvm::Type::getInt32Ty(ctx.llvmCtx),
+        .ty=ty->to_llvm(ctx),
         .addr=false
     };
 }

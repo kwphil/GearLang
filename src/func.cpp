@@ -1,7 +1,6 @@
-#include "func.hpp"
-#include "ctx.hpp"
-#include "value.hpp"
-
+#include <gearlang/func.hpp>
+#include <gearlang/ctx.hpp>
+#include <gearlang/value.hpp>
 
 llvm::Function* declare_func(
     llvm::Type* ret_type,

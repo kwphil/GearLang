@@ -56,11 +56,11 @@ f64      | double
 
 ## Pointers
 
-Pointers can be defined with `&`. These functionally act as C pointers and can be directly passed into C functions
+Pointers can be defined with `^`. These functionally act as C pointers and can be directly passed into C functions
 
 ```gear
 // C-str
-let s: char& = "Hello, World!";
+let s: char^ = "Hello, World!";
 ```
 
 You can grab an address of a variable with #

@@ -1,54 +1,31 @@
-#include <llvm/IR/Value.h>
-#include <llvm/IR/Function.h>
-#include <llvm/IR/Module.h>
-#include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/Constants.h>
+#include <llvm/IR/Value.h>         
+#include <llvm/IR/Function.h>      
+#include <llvm/IR/Module.h>        
+#include <llvm/IR/BasicBlock.h>    
+#include <llvm/IR/Constants.h>     
 #include <llvm/IR/GlobalVariable.h>
-#include <llvm/IR/Type.h>
+#include <llvm/IR/Type.h>          
+                                   
+#include <stdexcept>               
+#include <memory>                  
+                                   
+#include <gearlang/ast/base.hpp>   
+#include <gearlang/ast/stmt.hpp>   
+#include <gearlang/ast/expr.hpp>   
+#include <gearlang/sem/type.hpp>   
 
-#include <stdexcept>
-#include <memory>
-
-#include "../ast/base.hpp"
-#include "../ast/stmt.hpp"
-#include "../ast/expr.hpp"
-#include "../error.hpp"
-#include "../func.hpp"
-#include "../sem.hpp"
+#include <gearlang/error.hpp>
+#include <gearlang/func.hpp>
 
 // Checks if the variable already exists
 // If it does, it throws an error and quits
 // Otherwise, it creates the variable in the current scope
 // If in the global scope, it creates a global variable
 void Ast::Nodes::Let::generate(Context& ctx) {
-    Expr* rvalue = dynamic_cast<Expr*>(expr.get());
-    
-    if(!rvalue) {
-        Error::throw_error(
-            line_number,
-            target.c_str(),
-            "Expected an rvalue",
-            Error::ErrorCodes::INVALID_AST
-        );
-    }
-    
+    Expr* rvalue = dynamic_cast<Expr*>(expr.value().get());
     Value* initVal = rvalue->generate(ctx);
 
-    // Making sure that the variable doesn't exist
-    auto _var = ctx.lookup(target);
-    
-    if(_var) { 
-        Error::throw_error(
-            line_number,
-            target.c_str(),
-            "Variable already defined.",
-            Error::ErrorCodes::VARIABLE_ALREADY_DEFINED
-        );
-    }
-
-    // GLOBAL SCOPE
-    llvm::Function* _fn = ctx.current_fn;
-    if (_fn->getName() == "main") {
+    if (is_global) {
         // Creating a placeholder and then assigning the value
         llvm::Constant* placeholder = 
             llvm::Constant::getNullValue(initVal->ty);
@@ -70,14 +47,20 @@ void Ast::Nodes::Let::generate(Context& ctx) {
         });
 
         ctx.builder.CreateStore(initVal->ir, var);
+
+        this->var = var;
+
         return;
     }
 
-    // FUNCTION SCOPE
     llvm::Function* fn = ctx.current_fn;
     llvm::AllocaInst* alloca =
         ctx.create_entry_block(fn, target, initVal->ir->getType());
 
+    var = alloca;
+
+    ctx.builder.CreateStore(initVal->ir, alloca);
+    
     ctx.bind(target, new Value {
         .ir=alloca,
         .ty=initVal->ty,
@@ -95,15 +78,18 @@ Value* Ast::Nodes::ExprBlock::generate(Context& ctx) {
     return nullptr;
 }
 
-// Generates the return value, ensures it is i32
-// Then creates a syscall to exit with that return value
 void Ast::Nodes::Return::generate(Context& ctx) {
     Expr* exp = dynamic_cast<Expr*>(expr.get());
     Value* retVal = exp->generate(ctx);
+    llvm::Type* fn_return = ctx.current_fn->getReturnType();
 
-    ctx.builder.CreateRet(retVal->ir);
+    llvm::Value* ret_ir = retVal->ir;
+    if(retVal->ty != fn_return) {
+        ret_ir = ctx.builder.CreateIntCast(retVal->ir, fn_return, true);
+    }
+
+    ctx.builder.CreateRet(ret_ir);
     return;
-        
 }
 
 // Generates the if condition, creates blocks for the if and the continuation
