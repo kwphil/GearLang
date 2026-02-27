@@ -10,12 +10,21 @@
 #include <gearlang/error.hpp>
 #include <gearlang/etc.hpp>
 
+using namespace Ast::Nodes;
+
+llvm::Value* get_var(NodeBase* let) {
+    if(Let* let_val = try_cast<NodeBase, Let>(let))
+        return let_val->var;
+    
+    return try_cast<NodeBase, Argument>(let)->var;
+}
+
 // Generates both sides of the expression, and stores them in temporary values
 // Matches through each operation and stores the output as a temp
 // Returns the temporary variable
-Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
-    Value* lhs = left->generate(ctx);
-    Value* rhs = right->generate(ctx);
+unique_ptr<Value> Ast::Nodes::ExprOp::generate(Context& ctx) {
+    unique_ptr<Value> lhs = left->generate(ctx);
+    unique_ptr<Value> rhs = right->generate(ctx);
     llvm::Value* out;
 
     if(ty->is_float()) {
@@ -35,11 +44,11 @@ Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
     }
 
     if(out) {
-        return new Value {
-            .ir=out,
-            .ty=ty->to_llvm(ctx),
-            .addr = lhs->addr
-        };
+        return std::make_unique<Value>(
+            out,
+            ty->to_llvm(ctx),
+            lhs->addr
+        );
     }
 
     Error::throw_error(
@@ -55,17 +64,9 @@ Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
 // Looks up the name of the variable
 // If the variable doesn't exist, it throws an error and quits
 // Otherwise Checks if it is a global and returns it
-Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
+unique_ptr<Value> Ast::Nodes::ExprVar::generate(Context& ctx) {
     // Link to the declaration statement
-    llvm::Value* var;
-
-    // std::cout << name << ": " << let << std::endl;
-    // Checking if it came from a let stmt
-    if(Let* let_val = try_cast<NodeBase, Let>(let))
-        var = let_val->var;
-    else
-        var = try_cast<NodeBase, Argument>(let)->var;
-
+    llvm::Value* var = get_var(let);
 
     if (auto* gv = llvm::dyn_cast<llvm::GlobalVariable>(var)) {
         llvm::Value* ir = ctx.builder.CreateLoad(
@@ -74,11 +75,11 @@ Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
             name + ".load"
         );
 
-        return new Value {
-            .ir=ir,
-            .ty=ty->to_llvm(ctx),
-            .addr=ty->pointer_level()
-        };
+        return std::make_unique<Value>(
+            ir,
+            ty->to_llvm(ctx),
+            ty->pointer_level()
+        );
     }
 
     llvm::AllocaInst* alloca = llvm::dyn_cast<llvm::AllocaInst>(var);
@@ -89,24 +90,17 @@ Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
         name + ".load"
     );
 
-    return new Value {
-        .ir=ir,
-        .ty=ty->to_llvm(ctx),
-        .addr=ty->pointer_level()
-    };
+    return std::make_unique<Value>(
+        ir,
+        ty->to_llvm(ctx),
+        ty->pointer_level()
+    );
 }
 
 // Assigns a value to a variable, and stores the value in the variable's alloca
 // If the variable doesn't exist, it throws an error and quits
-Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
-    // Link to the declaration statement
-    llvm::Value* var;
-
-    // Checking if it came from a let stmt
-    if(Let* let_val = try_cast<NodeBase, Let>(let))
-        var = let_val->var;
-    else
-        var = try_cast<NodeBase, Argument>(let)->var;
+unique_ptr<Value> Ast::Nodes::ExprAssign::generate(Context& ctx) {
+    llvm::Value* var = get_var(let);
 
     Expr* expr2 = dynamic_cast<Expr*>(expr.get());
     
@@ -119,7 +113,7 @@ Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
         );
     }
     
-    Value* value = expr2->generate(ctx);
+    unique_ptr<Value> value = expr2->generate(ctx);
 
     ctx.builder.CreateStore(value->ir, var);
 
@@ -128,7 +122,7 @@ Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
 
 // Gets the function by name, and creates a call for it
 // Parses the expressions for each argument and calls it
-Value* Ast::Nodes::ExprCall::generate(Context& ctx) {
+unique_ptr<Value> Ast::Nodes::ExprCall::generate(Context& ctx) {
     llvm::Function* func = ctx.module->getFunction(callee);
 
     if(!func) {
@@ -153,33 +147,22 @@ Value* Ast::Nodes::ExprCall::generate(Context& ctx) {
 
     llvm::Value* val = ctx.builder.CreateCall(func, arg_values, "call");
 
-    return new Value {
-        .ir=val,
-        .ty=val->getType(),
-        .addr=0
-    };
+    return std::make_unique<Value>(
+        val,
+        val->getType(),
+        0
+    );
 }
 
-Value* Ast::Nodes::ExprAddress::generate(Context& ctx) {
-    Value* var = ctx.lookup(name);
-
-    if(!var) {
-        Error::throw_error(
-            line_number,
-            name.c_str(),
-            "Tried to reference a variable that wasn't declared",
-            Error::ErrorCodes::VARIABLE_NOT_DEFINED
-        );
-    }
-
+unique_ptr<Value> Ast::Nodes::ExprAddress::generate(Context& ctx) {
     // Just return the value because everything is allocated
     // TODO: Later I might optimize this to locate which variables
     // have to alloca and optimize ones that don't out
-    return new Value {
-        .ir=var->ir,
-        .ty=var->ty,
-        .addr=var->addr+1
-    };
+    return std::make_unique<Value>(
+        get_var(let),
+        ty->to_llvm(ctx),
+        ty->ref().pointer_level()
+    );
 }
 
 llvm::Value* deref(
@@ -206,8 +189,8 @@ llvm::Value* deref(
     );
 }
 
-Value* Ast::Nodes::ExprDeref::generate(Context& ctx) {
-    Value* var = ctx.lookup(name);
+unique_ptr<Value> Ast::Nodes::ExprDeref::generate(Context& ctx) {
+    llvm::Value* var = get_var(let);
 
     if(!var) {
         Error::throw_error(
@@ -222,10 +205,10 @@ Value* Ast::Nodes::ExprDeref::generate(Context& ctx) {
     // Once to get the pointer
     // Twice to get the dereferenced data
 
-    if(!var->addr) {
+    if(!ty->pointer_level()) {
         Error::throw_error(
             line_number,
-            var->ir->getName().str().c_str(),
+            var->getName().str().c_str(),
             "Expected a pointer type",
             Error::ErrorCodes::BAD_TYPE
         );
@@ -233,9 +216,9 @@ Value* Ast::Nodes::ExprDeref::generate(Context& ctx) {
 
     llvm::Value* load = deref(
         ctx,
-        var->ir,
-        var->ir->getType(),
-        var->ir->getName().str(),
+        var,
+        ty->to_llvm(ctx),
+        var->getName().str(),
         ".load",
         line_number
     );
@@ -243,15 +226,15 @@ Value* Ast::Nodes::ExprDeref::generate(Context& ctx) {
     llvm::Value* deref_var = deref(
         ctx,
         load,
-        var->ty,
-        var->ir->getName().str(),
+        ty->to_llvm(ctx),
+        var->getName().str(),
         ".deref",
         line_number
     );
 
-    return new Value {
-        .ir=deref_var,
-        .ty=var->ty,
-        .addr=var->addr-1
-    };
+    return std::make_unique<Value>(
+        deref_var,
+        ty->to_llvm(ctx),
+        ty->pointer_level()-1
+    );
 }

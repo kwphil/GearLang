@@ -9,7 +9,7 @@ using namespace Ast::Nodes;
 using namespace Sem;
 using std::optional;
 
-ExprValue* ExprCall::analyze(Analyzer& analyzer) {
+unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
     optional<Variable> ref = analyzer.decl_lookup(callee);
 
     if(!ref.has_value()) {
@@ -27,13 +27,10 @@ ExprValue* ExprCall::analyze(Analyzer& analyzer) {
         arg->analyze(analyzer);
     } 
 
-    return new ExprValue {
-        .is_const=false,
-        .ty=retval.type
-    };
+    return std::make_unique<ExprValue>(false, retval.type);
 }
 
-ExprValue* ExprBlock::analyze(Analyzer& analyzer) {
+unique_ptr<ExprValue> ExprBlock::analyze(Analyzer& analyzer) {
     analyzer.new_scope();
     
     for(auto& node : nodes) {
@@ -45,7 +42,7 @@ ExprValue* ExprBlock::analyze(Analyzer& analyzer) {
     return nullptr;
 }
 
-ExprValue* ExprAddress::analyze(Analyzer& analyzer) {
+unique_ptr<ExprValue> ExprAddress::analyze(Analyzer& analyzer) {
     optional<Variable> lookup = analyzer.decl_lookup(name);
 
     if(!lookup.has_value()) {
@@ -59,15 +56,13 @@ ExprValue* ExprAddress::analyze(Analyzer& analyzer) {
 
     Variable var = lookup.value();
 
-    ty = new Type(var.type.ref());
+    ty = std::make_unique<Type>(var.type.ref());
+    let = var.let_stmt;
 
-    return new ExprValue {
-        .is_const=false,
-        .ty=*ty
-    };
+    return std::make_unique<ExprValue>(false, *ty);
 }
 
-ExprValue* ExprDeref::analyze(Analyzer& analyzer) {
+unique_ptr<ExprValue> ExprDeref::analyze(Analyzer& analyzer) {
     optional<Variable> lookup = analyzer.decl_lookup(name);
 
     if(!lookup.has_value()) {
@@ -80,9 +75,8 @@ ExprValue* ExprDeref::analyze(Analyzer& analyzer) {
     }
 
     Variable var = lookup.value();
+    ty = std::make_unique<Type>(var.type.deref());
+    let = var.let_stmt;
 
-    return new ExprValue {
-        .is_const=false,
-        .ty=var.type
-    };
+    return std::make_unique<ExprValue>(false, var.type);
 }

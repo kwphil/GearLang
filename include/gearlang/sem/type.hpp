@@ -25,9 +25,7 @@ namespace Sem {
         };
 
         /// @brief Non primitive types (WARNING: DO NOT USE DIRECTLY)
-        struct NonPrimitive {
-            std::vector<int> type;
-        };
+        using NonPrimitive = std::vector<int>;
 
     private:
         PrimType prim_type = PrimType::Void;
@@ -38,11 +36,10 @@ namespace Sem {
         static NonPrimitive parse_nonprimitive(Lexer::Stream& s, PrimType prim_type);
 
     public:
-        /// @brief default constructor
         Type() = default;
-        /// @brief Builds the type with a Lexer stream
-        /// @param s the stream
         Type(Lexer::Stream& s);
+        Type(PrimType prim_type, NonPrimitive non_prim) 
+        : prim_type(prim_type), non_prim(non_prim) { } 
         /// @brief Builds the type with a constant string
         /// @param s the string
         constexpr explicit Type(const char* s); 
@@ -55,6 +52,8 @@ namespace Sem {
         int pointer_level() const;
         /// @brief Wraps a pointer type around the current type and returns it
         Type ref();
+        /// @brief Unwraps a pointer type
+        Type deref();
         /// @brief Checks if the type is an fxx type
         bool is_float() const;
 

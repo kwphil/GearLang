@@ -6,21 +6,25 @@ using namespace Ast::Nodes;
 using Sem::ExprValue;
 using Sem::Type;
 
-ExprValue* ExprLitInt::analyze(Sem::Analyzer& analyzer) {
-    if(value <= 0xff) ty = new Type("i8");
-    else if(value <= 0xffff) ty = new Type("i16");
-    else if(value <= 0xffffffff) ty = new Type("i32");
-    else ty = new Type("i64");
+unique_ptr<ExprValue> ExprLitInt::analyze(Sem::Analyzer& analyzer) {
+    Type raw_ty;
 
-    return new ExprValue(true, *ty);
+    if(value <= 0xff) raw_ty = Type("i8");
+    else if(value <= 0xffff) raw_ty = Type("i16");
+    else if(value <= 0xffffffff) raw_ty = Type("i32");
+    else raw_ty = Type("i64");
+
+    ty = std::make_unique<Type>(raw_ty);
+
+    return std::make_unique<ExprValue>(true, *ty);
 }
 
-ExprValue* ExprLitFloat::analyze(Sem::Analyzer& analyzer) {
-    ty = new Type("f32");
-    return new ExprValue(true, *ty);
+unique_ptr<ExprValue> ExprLitFloat::analyze(Sem::Analyzer& analyzer) {
+    ty = std::make_unique<Type>("f32");
+    return std::make_unique<ExprValue>(true, *ty);
 }
 
-ExprValue* ExprLitString::analyze(Sem::Analyzer& analyzer) {
-    ty = new Type("char^");
-    return new ExprValue(true, *ty);
+unique_ptr<ExprValue> ExprLitString::analyze(Sem::Analyzer& analyzer) {
+    ty = std::make_unique<Type>("char^");
+    return std::make_unique<ExprValue>(true, *ty);
 }

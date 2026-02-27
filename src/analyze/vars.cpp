@@ -15,14 +15,13 @@ using namespace Sem;
 #include <iostream>
 
 void Let::analyze(Analyzer& analyzer) {
-    ExprValue* rvalue;
+    unique_ptr<ExprValue> rvalue;
     Type ty;
 
     ty = Type("void"); // TODO: Walk through the program and find the type if no rvalue is provided
 
     if(expr.has_value()) {
-        ExprValue* rvalue = expr.value()->analyze(analyzer);
-        std::cout << *expr << std::endl;
+        unique_ptr<ExprValue> rvalue = expr.value()->analyze(analyzer);
         ty = expr.value()->get_type().value(); 
     }
 
@@ -36,7 +35,7 @@ void Let::analyze(Analyzer& analyzer) {
     analyzer.add_variable(target, var);
 }
 
-ExprValue* ExprVar::analyze(Analyzer& analyzer) {
+unique_ptr<ExprValue> ExprVar::analyze(Analyzer& analyzer) {
     optional<Variable> var_wrap = analyzer.decl_lookup(name);
 
     if(!var_wrap.has_value()) {
@@ -51,15 +50,12 @@ ExprValue* ExprVar::analyze(Analyzer& analyzer) {
     Variable var = var_wrap.value();
 
     let = var.let_stmt;
-    ty = new Type(var.type);
+    ty = std::make_unique<Type>(var.type);
 
-    return new ExprValue {
-        .is_const=false,
-        .ty=var.type
-    };
+    return std::make_unique<ExprValue>(false, var.type);
 }
 
-ExprValue* ExprAssign::analyze(Analyzer& analyzer) {
+unique_ptr<ExprValue> ExprAssign::analyze(Analyzer& analyzer) {
     optional<Variable> var_wrap = analyzer.decl_lookup(name);
 
     if(!var_wrap.has_value()) {
@@ -74,12 +70,12 @@ ExprValue* ExprAssign::analyze(Analyzer& analyzer) {
     Variable var = var_wrap.value();
 
     let = var.let_stmt;
-    ty = new Type(var.type);
+    ty = std::make_unique<Type>(var.type);
 
     return expr->analyze(analyzer);
 }
 
-ExprValue* Argument::analyze(Analyzer& analyzer) {
+unique_ptr<ExprValue> Argument::analyze(Analyzer& analyzer) {
     Variable var = {
         .name=name,
         .type=*ty,

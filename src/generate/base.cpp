@@ -23,7 +23,7 @@
 // If in the global scope, it creates a global variable
 void Ast::Nodes::Let::generate(Context& ctx) {
     Expr* rvalue = dynamic_cast<Expr*>(expr.value().get());
-    Value* initVal = rvalue->generate(ctx);
+    unique_ptr<Value> initVal = rvalue->generate(ctx);
 
     if (is_global) {
         // Creating a placeholder and then assigning the value
@@ -40,12 +40,6 @@ void Ast::Nodes::Let::generate(Context& ctx) {
             target
         );
 
-        ctx.bind(target, new Value { 
-            .ir=var, 
-            .ty=initVal->ty, 
-            .addr=initVal->addr 
-        });
-
         ctx.builder.CreateStore(initVal->ir, var);
 
         this->var = var;
@@ -60,17 +54,11 @@ void Ast::Nodes::Let::generate(Context& ctx) {
     var = alloca;
 
     ctx.builder.CreateStore(initVal->ir, alloca);
-    
-    ctx.bind(target, new Value {
-        .ir=alloca,
-        .ty=initVal->ty,
-        .addr=initVal->addr
-    });
 }
 
 // Creates a new scope, generates all the expressions inside the block,
 // then pops the scope
-Value* Ast::Nodes::ExprBlock::generate(Context& ctx) {
+unique_ptr<Value> Ast::Nodes::ExprBlock::generate(Context& ctx) {
     ctx.push_scope();
     for (auto& expr : nodes)
         generate_node(expr.get(), ctx);
@@ -80,7 +68,7 @@ Value* Ast::Nodes::ExprBlock::generate(Context& ctx) {
 
 void Ast::Nodes::Return::generate(Context& ctx) {
     Expr* exp = dynamic_cast<Expr*>(expr.get());
-    Value* retVal = exp->generate(ctx);
+    unique_ptr<Value> retVal = exp->generate(ctx);
     llvm::Type* fn_return = ctx.current_fn->getReturnType();
 
     llvm::Value* ret_ir = retVal->ir;
@@ -113,7 +101,7 @@ void Ast::Nodes::If::generate(Context& ctx) {
             Error::ErrorCodes::INVALID_AST
         );
     }
-    Value* condVal = cond_expr->generate(ctx);
+    unique_ptr<Value> condVal = cond_expr->generate(ctx);
 
     // Convert to boolean: cond != 0
     // TODO: Support different types (String would be x != "", etc)
@@ -160,7 +148,7 @@ void Ast::Nodes::Else::generate(Context& ctx) {
             Error::ErrorCodes::INVALID_AST
         );
     }
-    Value* condVal = cond_expr->generate(ctx);
+    unique_ptr<Value> condVal = cond_expr->generate(ctx);
 
     // Convert to boolean: cond != 0
     // TODO: Support different types (String would be x != "", etc)

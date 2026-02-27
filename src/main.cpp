@@ -130,6 +130,8 @@ cleanup:
     if(compopt->verbose) std::cout << "Cleanup...\n";
     run_command("rm build/build*", compopt->verbose);
 
+    delete compopt;
+
     return EXIT_SUCCESS;
 }
 
