@@ -6,7 +6,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Type.h>
 
-#include "ctx.hpp"
+#include <gearlang/ctx.hpp>
 
 llvm::AllocaInst* Context::create_entry_block(
     llvm::Function* function,

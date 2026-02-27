@@ -1,29 +1,44 @@
 #include <memory>
+#include <deque>
 #include <tuple>
 
-#include "../ast/stmt.hpp"
-#include "../ast/expr.hpp"
-#include "../sem.hpp"
-#include "../lex.hpp"
-#include "../error.hpp"
+#include <gearlang/ast/stmt.hpp>
+#include <gearlang/ast/expr.hpp>
+#include <gearlang/ast/func.hpp>
+#include <gearlang/sem/type.hpp>
+
+#include <gearlang/lex.hpp>
+#include <gearlang/error.hpp>
+
+using namespace Ast::Nodes;
+using std::string;
+using std::unique_ptr;
+using std::vector;
+
+unique_ptr<Argument> Argument::parse(Lexer::Stream& s) {
+    string arg = s.pop()->content;
+    Sem::Type* ty = new Sem::Type(s); 
+
+    return std::make_unique<Argument>(arg, ty, s.peek()->line);
+}
 
 // Helper function for parsing function headers
 // Returns the type (returns Ast::Type::NonPrimitive, ... if non-primitive)
 // Returns the name of the function
-std::tuple<Sem::Type, std::string> 
+std::tuple<Sem::Type, string> 
 parse_function_header(Lexer::Stream& s, int line_number);
 
 // Helper function
 // Parses the arguments for a function
-std::vector<Sem::Variable> parse_function_args(
+deque<unique_ptr<Argument>> parse_function_args(
     Lexer::Stream& s, 
     int line_number,
     bool requires_names,
     bool& is_variadic
 );
 
-std::unique_ptr<Ast::Nodes::Function>
-Ast::Nodes::Function::parse(Lexer::Stream& s) {
+std::unique_ptr<Function>
+Function::parse(Lexer::Stream& s) {
     int line_number = s.peek()->line;
     bool is_variadic;
     bool no_mangle;
@@ -31,8 +46,8 @@ Ast::Nodes::Function::parse(Lexer::Stream& s) {
     s.expect("fn", line_number);
 
     Sem::Type ty;
-    std::string name;
-    std::vector<Sem::Variable> args;
+    string name;
+    deque<unique_ptr<Argument>> args;
 
     auto header = parse_function_header(s, line_number);
 
@@ -42,12 +57,12 @@ Ast::Nodes::Function::parse(Lexer::Stream& s) {
     args = parse_function_args(s, line_number, true, is_variadic);
 
     auto block = NodeBase::parse(s);
-    return std::make_unique<Function>(name, ty, args, std::move(block), is_variadic, line_number);
+    return std::make_unique<Function>(name, ty, std::move(args), std::move(block), is_variadic, line_number);
 }
 
 #include <iostream>
 
-std::unique_ptr<Ast::Nodes::ExternFn> Ast::Nodes::ExternFn::parse(Lexer::Stream& s) {
+std::unique_ptr<ExternFn> ExternFn::parse(Lexer::Stream& s) {
     int line_number = s.peek()->line;
     bool is_variadic;
     bool no_mangle = false;
@@ -70,8 +85,8 @@ after_extern:
     s.expect("fn", line_number);
 
     Sem::Type ty;
-    std::string name;
-    std::vector<Sem::Variable> args;
+    string name;
+    deque<unique_ptr<Argument>> args;
 
     auto header = parse_function_header(s, line_number);
 
@@ -86,7 +101,7 @@ after_extern:
 // PRIVATE FUNCTIONS
 
 
-std::tuple<Sem::Type, std::string> 
+std::tuple<Sem::Type, string> 
 parse_function_header(Lexer::Stream& s, int line_number) {
     // Skipping over the current token, is there a parameter list or a block? 
     // If there is not, then there is a type included
@@ -102,7 +117,7 @@ parse_function_header(Lexer::Stream& s, int line_number) {
     return { ty, name };
 }
 
-std::vector<Sem::Variable> parse_function_args(
+deque<unique_ptr<Argument>> parse_function_args(
     Lexer::Stream& s, 
     int line_number,
     bool requires_names, // TODO: Implement this
@@ -118,7 +133,7 @@ std::vector<Sem::Variable> parse_function_args(
     // Consume ':'
     s.pop();
 
-    std::vector<Sem::Variable> args;
+    deque<unique_ptr<Argument>> args;
 
     while (true) {
         if (!s.has()) {
@@ -136,11 +151,7 @@ std::vector<Sem::Variable> parse_function_args(
             break; // Will be the last parameter
         }
         
-        std::string arg_name = s.pop()->content;
-
-        Sem::Type arg_type(s);  
-
-        args.push_back({ arg_name, arg_type });
+        args.push_back(Argument::parse(s));
         
         if (s.peek()->content == "{" || s.peek()->content == ";") break;
         s.expect(",", line_number);

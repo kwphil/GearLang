@@ -6,11 +6,6 @@
 #include <source_location>
 #include <memory>
 
-// stupid circular dependencies
-namespace Ast::Nodes {
-    class NodeBase;
-}
-
 /// @brief Lexer namespace
 namespace Lexer {
 
@@ -24,7 +19,7 @@ enum class CharType {
     Format,
     Quote,
     Brace,
-    Amp,
+    Caret,
     Semi,
     Hash,
     At
@@ -52,7 +47,7 @@ enum class Type {
     Ellipsis,
     Comma,
     Semi,
-    Amper,
+    Caret,
     Hash,
     At
 };

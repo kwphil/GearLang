@@ -1,17 +1,34 @@
 #pragma once
-#include <memory>
 
-#include "../ctx.hpp"
-#include "../lex.hpp"
+#include <memory>
+#include <optional>
+
+#include <gearlang/ctx.hpp>
+#include <gearlang/lex.hpp>
 
 #include "base.hpp"
 #include "expr.hpp"
 
+using std::optional;
+
+namespace Sem {
+    class Analyzer;
+    struct ExprValue;
+}
+
 namespace Ast::Nodes {
+    class Expr;
+    using pExpr = std::unique_ptr<Expr>;
+
     /// @brief Base class for statements (i.e. functions, ifs and others)
     class Stmt : public NodeBase {
     public:
         Stmt(int line_number) : NodeBase(line_number) { }
+
+        /// @brief For the semantic analyzer
+        /// @param analyzer The analyzer object
+        virtual void analyze(Sem::Analyzer& analyzer) = 0;
+
         /// @brief generate function that doesn't return anything
         /// @param ctx the context
         virtual void generate(Context& ctx) = 0;
@@ -35,6 +52,7 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<If> parse(Lexer::Stream& s);
 
+        virtual void analyze(Sem::Analyzer& analyzer) override;
         void generate(Context& ctx) override;
     };
 
@@ -54,6 +72,8 @@ namespace Ast::Nodes {
             std::unique_ptr<If>,
             Lexer::Stream& s
         );
+
+        virtual void analyze(Sem::Analyzer& analyzer) override;
         void generate(Context& ctx);
     };
 
@@ -63,15 +83,22 @@ namespace Ast::Nodes {
         /// @brief The target variable name
         std::string target;
         /// @brief The expression for the variable's initial value
-        pExpr expr;
-
+        optional<pExpr> expr;
     public:
-        Let(std::string& target, pExpr expr, int line_number)
+        /// @brief The LLVM variable
+        llvm::Value* var;
+
+        /// @brief If the variable is to be generated as a global
+        bool is_global = false;
+
+        Let(std::string& target, optional<pExpr> expr, int line_number)
         : target(target), expr(std::move(expr)), Stmt(line_number) {}
 
         static std::unique_ptr<Let> parse(Lexer::Stream& s);
 
+        std::string get_name() { return target; }
         void generate(Context& ctx) override;
+        void analyze(Sem::Analyzer& analyzer) override; 
     };
 
     /// @brief Node for return statements
@@ -86,69 +113,7 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<Return> parse(Lexer::Stream& s);
 
-        void generate(Context& ctx) override;
-    };
-
-    /// @brief Node for function definitions
-    class Function : public Stmt {
-    private:
-        /// @brief The function name
-        std::string name;
-        /// @brief The function return type
-        Sem::Type ty;
-        /// @brief The function arguments
-        std::vector<Sem::Variable> args;
-        /// @brief The function body block
-        std::unique_ptr<NodeBase> block;
-        /// @brief If the function is variadic
-        bool is_variadic;
-
-    public:
-        Function(
-            std::string& name, 
-            Sem::Type ty, 
-            std::vector<Sem::Variable> args, 
-            std::unique_ptr<NodeBase> block, 
-            bool is_variadic,
-            int line_number
-        ) : 
-            name(name), ty(ty), args(args), is_variadic(is_variadic),
-            block(std::move(block)), Stmt(line_number) { } 
-
-        static std::unique_ptr<Function> parse(Lexer::Stream& s);
-
-        // This has no use for generating code, so this always returns nullptr
-        void generate(Context& ctx) override;
-    };
-
-    class ExternFn : public Stmt {
-    private:
-        /// @brief the callee name
-        std::string callee;
-        /// @brief the function return type
-        Sem::Type ty;
-        /// @brief args
-        std::vector<Sem::Variable> args;
-        /// @brief is_variadic
-        bool is_variadic;
-        /// @brief not implemented yet, but forces no name mangling
-        bool no_mangle;
-
-    public:
-        ExternFn(
-            std::string& callee, 
-            Sem::Type ty,
-            std::vector<Sem::Variable>& args, 
-            bool is_variadic,
-            bool no_mangle,
-            int line_number
-        ) : callee(callee), args(args), ty(ty), 
-            is_variadic(is_variadic), no_mangle(no_mangle),
-            Stmt(line_number) { }
-
-        static std::unique_ptr<ExternFn> parse(Lexer::Stream& s);
-
-        // This has no use for generating code, so this always returns nullptr
+        virtual void analyze(Sem::Analyzer& analyzer) override;
         void generate(Context& ctx) override;
     };
 }

@@ -1,7 +1,8 @@
-#include "sem.hpp"
-#include "ctx.hpp"
-#include "lex.hpp"
-#include "error.hpp"
+
+#include <gearlang/sem/type.hpp>
+#include <gearlang/ctx.hpp>
+#include <gearlang/lex.hpp>
+#include <gearlang/error.hpp>
 
 #include <format>
 
@@ -17,6 +18,8 @@ using namespace Sem;
 Type::PrimType Type::parse_primitive(std::string& s) {
     if (s == "void") return PrimType::Void;
     if (s == "char") return PrimType::Char;
+    if (s == "i8")   return PrimType::I8;
+    if (s == "i16")  return PrimType::I16;
     if (s == "i32")  return PrimType::I32;
     if (s == "f32")  return PrimType::F32;
     if (s == "f64")  return PrimType::F64;
@@ -36,12 +39,11 @@ Type::NonPrimitive Type::parse_nonprimitive(Lexer::Stream& s, PrimType prim_type
     // Encoding: [0, <count>, <PrimType>]
     // 0 = pointer tag
 
-
-    if (s.peek()->type == Lexer::Type::Amper) {
+    if (s.peek()->type == Lexer::Type::Caret) {
         // How many pointers?
         int count = 0;
         while(s.has()) {
-            if(s.peek()->type != Lexer::Type::Amper) break;
+            if(s.peek()->type != Lexer::Type::Caret) break;
 
             s.pop();
             count++;
@@ -66,7 +68,7 @@ Type::Type(Lexer::Stream& s) {
     prim_type = parse_primitive(s);
 
     // Pointer type
-    if (s.peek()->type == Lexer::Type::Amper) {
+    if (s.peek()->type == Lexer::Type::Caret) {
         non_prim = parse_nonprimitive(s, prim_type);
         return;
     }
@@ -81,13 +83,19 @@ Type::Type(Lexer::Stream& s) {
     }
 }
 
+Type Type::ref() {
+    return Type(std::format("{}^", dump()).c_str());
+}
+
 /* ============================
    LLVM lowering
    ============================ */
 
 llvm::Type* Type::primitive_to_llvm(PrimType ty, Context& ctx) {
     switch (ty) {
-        case PrimType::Char: return llvm::Type::getInt8Ty(ctx.llvmCtx);
+        case PrimType::Char: // Same as i8
+        case PrimType::I8: return llvm::Type::getInt8Ty(ctx.llvmCtx);
+        case PrimType::I16: return llvm::Type::getInt16Ty(ctx.llvmCtx);
         case PrimType::I32:  return llvm::Type::getInt32Ty(ctx.llvmCtx);
         case PrimType::F32:  return llvm::Type::getFloatTy(ctx.llvmCtx);
         case PrimType::F64:  return llvm::Type::getDoubleTy(ctx.llvmCtx);
@@ -151,4 +159,40 @@ int Type::pointer_level() const {
     if(non_prim->type[0]) return -2;
 
     return non_prim->type[1];
+}
+
+std::string Type::dump() {
+    std::string prim;
+
+    using enum PrimType;
+    switch(prim_type) {
+        case(Void): prim = "void"; break;
+        case(Char): prim = "char"; break;
+        case(I8): prim = "i8"; break;
+        case(I16): prim = "i16"; break;
+        case(I32): prim = "i32"; break;
+        case(F32): prim = "f32"; break;
+        case(F64): prim = "f64"; break;
+        default: prim = "invalid"; break; 
+    }
+
+    if(is_primitive()) return prim;
+
+    std::string s = "";
+    for(int i = 0; i < non_prim.value().type[1]; i++)
+        s.push_back('&');
+
+    s.append(prim);
+    return s;
+}
+
+bool Type::is_float() const {
+    if(!is_primitive()) return false;
+
+    using enum PrimType;
+    switch(prim_type) {
+        case(F32):
+        case(F64): return true;
+        default: return false;
+    }
 }

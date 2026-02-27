@@ -3,9 +3,9 @@
 #include <vector>
 #include <format>
 
-#include "../ast/expr.hpp"
-#include "../lex.hpp"
-#include "../error.hpp"
+#include <gearlang/ast/expr.hpp>
+#include <gearlang/lex.hpp>
+#include <gearlang/error.hpp>
 
 std::unique_ptr<Ast::Nodes::Expr> Ast::Nodes::Expr::parse(Lexer::Stream& s) {
     return parseExpr(s);

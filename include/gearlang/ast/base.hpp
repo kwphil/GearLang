@@ -1,10 +1,11 @@
-#pragma once
+#ifndef GEARLANG_AST_BASE_HPP
+#define GEARLANG_AST_BASE_HPP
 
 #include <vector>
 #include <memory>
 
-#include "../lex.hpp"
-#include "../ctx.hpp"
+#include <gearlang/lex.hpp>
+#include <gearlang/ctx.hpp>
 
 namespace Ast::Nodes {
     /// @brief Base class for all AST nodes
@@ -15,6 +16,7 @@ namespace Ast::Nodes {
 
         NodeBase(int line_number) : line_number(line_number) {}
         virtual ~NodeBase() = default;
+
         /// @brief Parses a node from the lexer stream
         /// @param s The lexer stream to parse from
         /// @return A unique pointer to the parsed node
@@ -29,7 +31,7 @@ void generate_node(Ast::Nodes::NodeBase* node, Context& ctx);
 
 namespace Ast {
     class Program {
-    private:
+    public:
         std::vector<std::unique_ptr<Nodes::NodeBase>> content;
         
     public:
@@ -38,3 +40,5 @@ namespace Ast {
         void generate(Context& ctx);
     };
 }
+
+#endif // AST_BASE_HPP

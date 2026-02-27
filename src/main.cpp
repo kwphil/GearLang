@@ -6,10 +6,11 @@
 
 #include <llvm/IR/InlineAsm.h>
 
-#include "ast/base.hpp"
-#include "lex.hpp"
-#include "error.hpp"
-#include "func.hpp"
+#include <gearlang/ast/base.hpp>
+#include <gearlang/lex.hpp>
+#include <gearlang/error.hpp>
+#include <gearlang/func.hpp>
+#include <gearlang/sem/analyze.hpp>
 
 #define VERSION "0.1.0"
 
@@ -64,6 +65,9 @@ int main(int argc, char** argv) {
     if(compopt->verbose) std::cout << "parsing... ";
     auto root = Ast::Program::parse(tokens);
     if(compopt->verbose) std::cout << "done\n";
+
+    Sem::Analyzer analyzer;
+    analyzer.analyze(root.content);
 
     Context ctx;
 

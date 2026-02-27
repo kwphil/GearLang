@@ -14,19 +14,7 @@ set(CMAKE_BUILD_TYPE Debug)
 
 include(CheckCXXCompilerFlag)
 
-function(enable_cxx_compiler_flag_if_supported flag)
-    string(FIND "${CMAKE_CXX_FLAGS}" "${flag}" flag_already_set)
-    if(flag_already_set EQUAL -1)
-        check_cxx_compiler_flag("${flag}" flag_supported)
-        if(flag_supported)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}" PARENT_SCOPE)
-        endif()
-        unset(flag_supported CACHE)
-    endif()
-endfunction()
-
-# enable_cxx_compiler_flag_if_supported("-Wall")
-# enable_cxx_compiler_flag_if_supported("-Wextra")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
 
 find_package(LLVM REQUIRED CONFIG)
 
@@ -34,11 +22,17 @@ add_executable(gearlang
     main.cpp
     lex.cpp
     ctx.cpp
-    sem.cpp
     error.cpp
     fsm.cpp
     func.cpp
     startup.cpp
+    sem/analyze.cpp
+    sem/type.cpp
+    analyze/vars.cpp
+    analyze/literal.cpp
+    analyze/stmt.cpp
+    analyze/ops.cpp
+    analyze/expr.cpp
     generate/base.cpp
     generate/expr.cpp
     generate/literal.cpp
@@ -48,7 +42,11 @@ add_executable(gearlang
     parse/func.cpp
 )
 
-target_include_directories(gearlang PRIVATE ${LLVM_INCLUDE_DIRS})
+target_include_directories(gearlang PRIVATE 
+    ${LLVM_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+
 target_compile_definitions(gearlang PRIVATE ${LLVM_DEFINITIONS})
 
 llvm_map_components_to_libnames(LLVM_LIBS

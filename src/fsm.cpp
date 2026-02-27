@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <format>
 
-#include "lex.hpp"
+#include <gearlang/lex.hpp>
 
 static inline bool is_single_char_token(Lexer::CharType t);
 
@@ -159,8 +159,8 @@ Lexer::Type Lexer::classify(std::string& content, CharType state)
         case CharType::Quote:
             return Type::StringLiteral;
         
-        case CharType::Amp:
-            return Type::Amper;
+        case CharType::Caret:
+            return Type::Caret;
 
         case CharType::Semi:
             return Type::Semi;
@@ -194,7 +194,7 @@ Lexer::CharType Lexer::getCharType(char c) {
         case('\n'): // Next
         case('\t'): return CharType::Format;
         case('"'): return CharType::Quote;
-        case('&'): return CharType::Amp;
+        case('^'): return CharType::Caret;
         case(';'): return CharType::Semi;
         case('#'): return CharType::Hash;
         case('@'): return CharType::At;
@@ -208,7 +208,7 @@ static inline bool is_single_char_token(Lexer::CharType t) {
     switch(t) {
     case(CharType::Paren):
     case(CharType::Brace):
-    case(CharType::Amp):
+    case(CharType::Caret):
     case(CharType::Semi):
     case(CharType::Hash):
     case(CharType::At):

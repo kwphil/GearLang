@@ -3,8 +3,12 @@
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/Type.h>
 
-#include "../ast/expr.hpp"
-#include "../error.hpp"
+#include <gearlang/ast/expr.hpp>
+#include <gearlang/ast/stmt.hpp>
+#include <gearlang/ast/func.hpp>
+
+#include <gearlang/error.hpp>
+#include <gearlang/etc.hpp>
 
 // Generates both sides of the expression, and stores them in temporary values
 // Matches through each operation and stores the output as a temp
@@ -14,35 +18,26 @@ Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
     Value* rhs = right->generate(ctx);
     llvm::Value* out;
 
-    if(lhs->ir->getType() != rhs->ir->getType()) {
-        Error::throw_error(
-            line_number,
-            "",
-            "Mismatched types",
-            Error::ErrorCodes::BAD_TYPE
-        );
-    }
-
-    if(lhs->ir->getType()->isDoubleTy()) {
+    if(ty->is_float()) {
         switch(type) {
-            case Add: out = ctx.builder.CreateFAdd(lhs->ir, rhs->ir, "faddtmp");
-            case Sub: out = ctx.builder.CreateFSub(lhs->ir, rhs->ir, "fsubtmp");
-            case Mul: out = ctx.builder.CreateFMul(lhs->ir, rhs->ir, "fmultmp");
-            case Div: out = ctx.builder.CreateFDiv(lhs->ir, rhs->ir, "fdivtmp");
+            case Add: out = ctx.builder.CreateFAdd(lhs->ir, rhs->ir, "faddtmp"); break;
+            case Sub: out = ctx.builder.CreateFSub(lhs->ir, rhs->ir, "fsubtmp"); break;
+            case Mul: out = ctx.builder.CreateFMul(lhs->ir, rhs->ir, "fmultmp"); break;
+            case Div: out = ctx.builder.CreateFDiv(lhs->ir, rhs->ir, "fdivtmp"); break;
         }
     } else {
         switch (type) {
-            case Add: out = ctx.builder.CreateAdd(lhs->ir, rhs->ir, "iaddtmp");
-            case Sub: out = ctx.builder.CreateSub(lhs->ir, rhs->ir, "isubtmp");
-            case Mul: out = ctx.builder.CreateMul(lhs->ir, rhs->ir, "imultmp");
-            case Div: out = ctx.builder.CreateSDiv(lhs->ir, rhs->ir, "idivtmp");
+            case Add: out = ctx.builder.CreateAdd(lhs->ir, rhs->ir, "iaddtmp"); break;
+            case Sub: out = ctx.builder.CreateSub(lhs->ir, rhs->ir, "isubtmp"); break;
+            case Mul: out = ctx.builder.CreateMul(lhs->ir, rhs->ir, "imultmp"); break;
+            case Div: out = ctx.builder.CreateSDiv(lhs->ir, rhs->ir, "idivtmp"); break;
         }
     }
 
     if(out) {
         return new Value {
             .ir=out,
-            .ty=lhs->ir->getType(),
+            .ty=ty->to_llvm(ctx),
             .addr = lhs->addr
         };
     }
@@ -55,60 +50,63 @@ Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
     );
 }
 
+#include <iostream>
+
 // Looks up the name of the variable
 // If the variable doesn't exist, it throws an error and quits
-// Otherwise:
-// Checks if it is a global and returns it
+// Otherwise Checks if it is a global and returns it
 Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
-    Value* var = ctx.lookup(name);
-    if (!var)
-        Error::throw_error(
-            line_number,
-            name.c_str(),
-            "Unknown variable",
-            Error::ErrorCodes::VARIABLE_NOT_DEFINED
-        );
+    // Link to the declaration statement
+    llvm::Value* var;
 
-    if (auto* gv = llvm::dyn_cast<llvm::GlobalVariable>(var->ir)) {
+    // std::cout << name << ": " << let << std::endl;
+    // Checking if it came from a let stmt
+    if(Let* let_val = try_cast<NodeBase, Let>(let))
+        var = let_val->var;
+    else
+        var = try_cast<NodeBase, Argument>(let)->var;
+
+
+    if (auto* gv = llvm::dyn_cast<llvm::GlobalVariable>(var)) {
         llvm::Value* ir = ctx.builder.CreateLoad(
-            var->ty,
+            ty->to_llvm(ctx),
             gv,
             name + ".load"
         );
 
         return new Value {
             .ir=ir,
-            .ty=var->ty,
-            .addr=var->addr
+            .ty=ty->to_llvm(ctx),
+            .addr=ty->pointer_level()
         };
     }
 
-    llvm::AllocaInst* alloca = llvm::dyn_cast<llvm::AllocaInst>(var->ir);
+    llvm::AllocaInst* alloca = llvm::dyn_cast<llvm::AllocaInst>(var);
 
     llvm::Value* ir = ctx.builder.CreateLoad(
         alloca->getAllocatedType(),
-        var->ir,
+        var,
         name + ".load"
     );
 
     return new Value {
         .ir=ir,
-        .ty=var->ty,
-        .addr=var->addr
+        .ty=ty->to_llvm(ctx),
+        .addr=ty->pointer_level()
     };
 }
 
 // Assigns a value to a variable, and stores the value in the variable's alloca
 // If the variable doesn't exist, it throws an error and quits
 Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
-    Value* alloca = ctx.lookup(name);
-    if (!alloca)
-        Error::throw_error(
-            line_number,
-            name.c_str(),
-            "Tried to assign a variable that wasn't defined",
-            Error::ErrorCodes::VARIABLE_NOT_DEFINED
-        );
+    // Link to the declaration statement
+    llvm::Value* var;
+
+    // Checking if it came from a let stmt
+    if(Let* let_val = try_cast<NodeBase, Let>(let))
+        var = let_val->var;
+    else
+        var = try_cast<NodeBase, Argument>(let)->var;
 
     Expr* expr2 = dynamic_cast<Expr*>(expr.get());
     
@@ -123,19 +121,7 @@ Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
     
     Value* value = expr2->generate(ctx);
 
-    // type checking
-    if((bool)value->addr != (bool)alloca->addr
-       || value->ty != value->ty
-    ) {
-        Error::throw_error(
-            line_number,
-            "=",
-            "Mismatched types",
-            Error::ErrorCodes::BAD_TYPE
-        );
-    }
-
-    ctx.builder.CreateStore(value->ir, alloca->ir);
+    ctx.builder.CreateStore(value->ir, var);
 
     return value;
 }

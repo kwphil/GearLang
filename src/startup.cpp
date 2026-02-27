@@ -1,7 +1,6 @@
 // This file builds the runtime
 
-#include "func.hpp"
-
+#include <gearlang/func.hpp>
 
 llvm::Function* build_runtime(Context& ctx) { 
     // Reworking this to be easier and just call main
