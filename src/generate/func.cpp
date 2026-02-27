@@ -63,24 +63,6 @@ void Function::generate(Context& ctx) {
 
         ast_arg->var = alloca;
 
-        if(ast_arg->get_type()->is_pointer_ty()) {
-            Value* val = new Value {
-                .ir=alloca,
-                .ty=ast_arg->get_type()->get_underlying_type(ctx),
-                .addr=ast_arg->get_type()->pointer_level()
-            };
-
-            ctx.bind(ast_arg->name, val);
-        } else {
-            Value* val = new Value {
-                .ir=alloca,
-                .ty=arg_ty,
-                .addr=false
-            };
-
-            ctx.bind(ast_arg->name, val);
-        }
-
         idx++;
     }
 

@@ -14,6 +14,7 @@ using namespace Sem;
 using std::string;
 using std::vector;
 using std::unique_ptr;
+using std::shared_ptr;
 
 using namespace Ast::Nodes;
 
@@ -43,16 +44,15 @@ void Analyzer::analyze(vector<unique_ptr<NodeBase>>& nodes) {
     }
 }
 
-Analyzer::Scope* Analyzer::new_scope() {
-    Scope* new_scope = new Scope();
+weak_ptr<Analyzer::Scope> Analyzer::new_scope() {
+    shared_ptr<Scope> new_scope = std::make_shared<Scope>();
 
-    active_scopes.push_back(new_scope);
+    active_scopes.push_back(std::move(new_scope));
 
     return new_scope;
 }
 
 void Analyzer::delete_scope() {
-    delete active_scopes.back(); 
     active_scopes.pop_back();
 }
 
@@ -80,8 +80,7 @@ std::optional<Variable> Analyzer::decl_lookup(string name) {
 }
 
 void Analyzer::add_variable(string name, Variable var) {
-    auto bottom_scope = active_scopes.back();
-    (*bottom_scope)[name] = var;
+    active_scopes.back()->insert({name, var});
 }
 
 bool Analyzer::is_global_scope() {

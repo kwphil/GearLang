@@ -7,34 +7,34 @@
 #include <gearlang/sem/type.hpp>
 
 // Just generates an int constant and returns it
-Value* Ast::Nodes::ExprLitInt::generate(Context& ctx) {
-    return new Value{
-        .ir=llvm::ConstantInt::get(
+unique_ptr<Value> Ast::Nodes::ExprLitInt::generate(Context& ctx) {
+    return std::make_unique<Value>(
+        llvm::ConstantInt::get(
             ty->to_llvm(ctx),
             this->value,
             true
         ),
-        .ty=ty->to_llvm(ctx),
-        .addr=false
-    };
+        ty->to_llvm(ctx),
+        false
+    );
 }
 
 // TODO
-Value* Ast::Nodes::ExprLitFloat::generate(Context& ctx) {
-    return new Value{
-        .ir=llvm::ConstantFP::get(
+unique_ptr<Value> Ast::Nodes::ExprLitFloat::generate(Context& ctx) {
+    return std::make_unique<Value>(
+        llvm::ConstantFP::get(
             llvm::Type::getDoubleTy(ctx.llvmCtx),
             this->value
         ),
-        .ty=llvm::Type::getDoubleTy(ctx.llvmCtx),
-        .addr=false
-    };
+        llvm::Type::getDoubleTy(ctx.llvmCtx),
+        false
+    );
 };
 
 // Converts a string into an array of constant i8s
 // Creates a constant array using that
 // Returns a pointer to the string
-Value* Ast::Nodes::ExprLitString::generate(Context& ctx) {
+unique_ptr<Value> Ast::Nodes::ExprLitString::generate(Context& ctx) {
     std::vector<llvm::Constant*> chars(string.size());
     llvm::Type* i8 = llvm::Type::getInt8Ty(ctx.llvmCtx);
     llvm::ArrayType* arr_i8 = llvm::ArrayType::get(i8, chars.size());
@@ -57,9 +57,9 @@ Value* Ast::Nodes::ExprLitString::generate(Context& ctx) {
         ".str"
     );
 
-    return new Value {
-        .ir=val,
-        .ty=arr_i8,
-        .addr=false
-    };
+    return std::make_unique<Value>(
+        val,
+        arr_i8,
+        false
+    );
 }

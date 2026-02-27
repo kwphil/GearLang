@@ -10,6 +10,7 @@
 #include <llvm/IR/Type.h>
 
 using namespace Sem;
+using std::optional;
 
 /* ============================
    Primitive parsing
@@ -49,9 +50,11 @@ Type::NonPrimitive Type::parse_nonprimitive(Lexer::Stream& s, PrimType prim_type
             count++;
         }
 
-        return NonPrimitive{
-            { 0, count, static_cast<int>(prim_type) }
-        };
+        NonPrimitive ret;
+        ret.reserve(3);
+
+        ret = { 0, count, static_cast<int>(prim_type) };
+        return ret;
     }
 
     throw std::runtime_error(
@@ -87,6 +90,15 @@ Type Type::ref() {
     return Type(std::format("{}^", dump()).c_str());
 }
 
+Type Type::deref() {
+    NonPrimitive new_np = non_prim.value();
+
+    assert(new_np.at(0) == 0);
+    new_np.at(1)-1;
+
+    return Type(prim_type, new_np);
+}
+
 /* ============================
    LLVM lowering
    ============================ */
@@ -114,15 +126,15 @@ llvm::Type* Type::to_llvm(Context& ctx) const {
     const auto& np = non_prim.value();
 
     // Pointer
-    if (np.type[0] == 0) {
+    if (np[0] == 0) {
         llvm::Type* base;
 
-        if(np.type[1] > 1) {
+        if(np[1] > 1) {
             // If pointers are stacked we don't truly care about what goes below the next
             base = llvm::PointerType::getUnqual(ctx.llvmCtx);
         } else {
             base = primitive_to_llvm(
-                static_cast<PrimType>(np.type[2]),
+                static_cast<PrimType>(np[2]),
                 ctx
             );
         }
@@ -136,12 +148,12 @@ llvm::Type* Type::to_llvm(Context& ctx) const {
 llvm::Type* Type::get_underlying_type(Context& ctx) const {
     if (!is_pointer_ty()) return nullptr;
 
-    if(non_prim->type[1] > 1) {
+    if(non_prim->at(1) > 1) {
         return llvm::PointerType::getUnqual(ctx.llvmCtx);
     }
 
     return primitive_to_llvm(
-        static_cast<PrimType>(non_prim->type[2]),
+        static_cast<PrimType>(non_prim->at(2)),
         ctx
     );
 }
@@ -151,14 +163,14 @@ llvm::Type* Type::get_underlying_type(Context& ctx) const {
    ============================ */
 
 bool Type::is_pointer_ty() const {
-    return non_prim.has_value() && non_prim->type[0] == 0;
+    return non_prim.has_value() && non_prim->at(0) == 0;
 }
 
 int Type::pointer_level() const {
     if(!is_pointer_ty()) return -1;
-    if(non_prim->type[0]) return -2;
+    if(non_prim->at(0)) return -2;
 
-    return non_prim->type[1];
+    return non_prim->at(1);
 }
 
 std::string Type::dump() {
@@ -179,7 +191,7 @@ std::string Type::dump() {
     if(is_primitive()) return prim;
 
     std::string s = "";
-    for(int i = 0; i < non_prim.value().type[1]; i++)
+    for(int i = 0; i < non_prim.value().at(1); i++)
         s.push_back('&');
 
     s.append(prim);

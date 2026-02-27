@@ -13,6 +13,9 @@
 
 using std::string;
 using std::vector;
+using std::unique_ptr;
+using std::shared_ptr;
+using std::weak_ptr;
 using namespace Ast::Nodes;
 using namespace Sem;
 
@@ -22,14 +25,12 @@ namespace Sem {
         typedef std::unordered_map<string, Variable> Scope;
 
     private: 
-        Scope* global_scope;
-        vector<Scope*> active_scopes;
+        vector<shared_ptr<Scope>> active_scopes;
 
         bool analyze_decl_statements(NodeBase* node);
 
     public: 
-        Analyzer()
-        : active_scopes({ new Scope() }) { }
+        Analyzer() { new_scope(); }
 
         void analyze(std::vector<std::unique_ptr<NodeBase>>& nodes);
 
@@ -41,7 +42,7 @@ namespace Sem {
         std::optional<Variable> decl_lookup(string name); 
         /// @brief Pushes a new scope to the stack
         /// @return a pointer to the new scope
-        Scope* new_scope();
+        weak_ptr<Scope> new_scope();
         /// @brief Pops the scope off the stack
         void delete_scope();
         /// @brief Adds a variable

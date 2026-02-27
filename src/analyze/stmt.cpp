@@ -23,7 +23,7 @@ void Return::analyze(Analyzer& analyzer) {
 }
 
 void Function::analyze(Analyzer& analyzer) {
-    Analyzer::Scope* fn_scope = analyzer.new_scope();
+    weak_ptr<Analyzer::Scope> fn_scope = analyzer.new_scope();
 
     for(auto& arg : args) { // Won't matter too much to change values 
         arg->analyze(analyzer);

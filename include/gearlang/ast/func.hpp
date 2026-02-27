@@ -25,8 +25,8 @@ namespace Ast::Nodes {
 
         static unique_ptr<Argument> parse(Lexer::Stream& s);
 
-        virtual Sem::ExprValue* analyze(Sem::Analyzer& analyzer) override;
-        Value* generate(Context& ctx) override { return nullptr; } 
+        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
+        unique_ptr<Value> generate(Context& ctx) override { return nullptr; } 
     };
 
     /// @brief Node for function definitions

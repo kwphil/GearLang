@@ -1,5 +1,4 @@
-#ifndef GEARLANG_AST_BASE_HPP
-#define GEARLANG_AST_BASE_HPP
+#pragma once
 
 #include <vector>
 #include <memory>
@@ -40,5 +39,3 @@ namespace Ast {
         void generate(Context& ctx);
     };
 }
-
-#endif // AST_BASE_HPP
