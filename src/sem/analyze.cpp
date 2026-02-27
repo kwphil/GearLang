@@ -36,12 +36,6 @@ void Analyzer::analyze(vector<unique_ptr<NodeBase>>& nodes) {
     for(auto& node : nodes) {
         analyze_decl_statements(node.get());
     }
-
-    for(auto& scope : active_scopes) {
-        for(auto& pair : *scope) {
-            auto& var = pair.second;
-        }
-    }
 }
 
 weak_ptr<Analyzer::Scope> Analyzer::new_scope() {

@@ -44,7 +44,7 @@ namespace Ast::Nodes {
 
     public:
         If(std::unique_ptr<NodeBase> expr, pExpr cond, int line_number)
-        : expr(std::move(expr)), cond(std::move(cond)), Stmt(line_number) { }
+        : Stmt(line_number), cond(std::move(cond)), expr(std::move(expr)) { }
 
         If(If&&) = default;
         If& operator=(If&&) = default;
@@ -66,7 +66,7 @@ namespace Ast::Nodes {
         Else(
             std::unique_ptr<NodeBase> expr,
             If&& if_expr
-        ) : else_expr(std::move(expr)), If(std::move(if_expr)) { }
+        ) : If(std::move(if_expr)), else_expr(std::move(expr)) { }
 
         static std::unique_ptr<Else> parse(
             std::unique_ptr<If>,
@@ -92,7 +92,7 @@ namespace Ast::Nodes {
         bool is_global = false;
 
         Let(std::string& target, optional<pExpr> expr, int line_number)
-        : target(target), expr(std::move(expr)), Stmt(line_number) {}
+        : Stmt(line_number), target(target), expr(std::move(expr)) {}
 
         static std::unique_ptr<Let> parse(Lexer::Stream& s);
 
@@ -109,7 +109,7 @@ namespace Ast::Nodes {
     
     public:
         Return(std::unique_ptr<Expr> expr, int line_number)
-        : expr(std::move(expr)), Stmt(line_number) {}
+        : Stmt(line_number), expr(std::move(expr)) {}
 
         static std::unique_ptr<Return> parse(Lexer::Stream& s);
 

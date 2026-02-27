@@ -90,6 +90,11 @@ void Ast::Nodes::ExternFn::generate(Context& ctx) {
             arg->get_type()->to_llvm(ctx)
         );
     }
+
+    // TODO
+    if(no_mangle) {
+
+    }
     
     llvm::FunctionType* fn_type = llvm::FunctionType::get(
         ty.to_llvm(ctx),

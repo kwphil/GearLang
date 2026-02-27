@@ -28,7 +28,7 @@ namespace Error {
         const char* search_for, 
         const char* err,
         ErrorCodes code,
-        int leniency = 5
+        unsigned int leniency = 5
     );
 
     /// @brief Sets up the error management system
