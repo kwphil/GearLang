@@ -22,7 +22,7 @@
 // Otherwise, it creates the variable in the current scope
 // If in the global scope, it creates a global variable
 void Ast::Nodes::Let::generate(Context& ctx) {
-    Expr* rvalue = dynamic_cast<Expr*>(expr.get());
+    Expr* rvalue = dynamic_cast<Expr*>(expr.value().get());
     Value* initVal = rvalue->generate(ctx);
 
     if (is_global) {

@@ -1,10 +1,12 @@
 #pragma once
 
 #include <memory>
+#include <cassert>
 
-/// @brief A bit nicer syntax for a dynamic_cast
+/// @brief Safe casting
 template<typename From, typename To>
 inline To* try_cast(From* from) {
+    assert(from != nullptr);
     return dynamic_cast<To*>(from);
 }
 

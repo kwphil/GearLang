@@ -8,6 +8,10 @@
 using std::optional;
 using std::variant;
 
+namespace Ast::Nodes {
+    class NodeBase;
+}
+
 namespace Sem {
     struct ExprValue {
         bool is_const;
@@ -19,6 +23,6 @@ namespace Sem {
         Type type;
         // 0 is false, 1 is true, 2 is need to be checked
         uint8_t is_global;
-        std::unique_ptr<Ast::Nodes::NodeBase>* let_stmt;
+        Ast::Nodes::NodeBase* let_stmt = nullptr;
     };
 }

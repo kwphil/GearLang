@@ -5,6 +5,7 @@
 
 #include <gearlang/ast/stmt.hpp>
 #include <gearlang/ast/expr.hpp>
+#include <gearlang/ast/func.hpp>
 #include <gearlang/sem/type.hpp>
 
 #include <gearlang/lex.hpp>
