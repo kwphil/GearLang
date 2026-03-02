@@ -49,11 +49,45 @@ void Lexer::Stream::dump() {
     std::cout << "\n";
 }
 
-std::string Lexer::print_type(Lexer::Type ty) {
+std::string Lexer::Stream::to_string() {
+    std::string out;
+    
+    for(auto& tok : content) {
+        std::string token_type = print_type(tok.type);
+        // Making sure escape characters get rendered as regular text
+        std::string content;
+        for(auto& c : tok.content) {
+            if(c == '\n') {
+                content.push_back('\\');
+                content.push_back('n');
+                continue;
+            }
+
+            if(c == '\t') {
+                content.push_back('\\');
+                content.push_back('t');
+                continue;
+            }
+
+            content.push_back(c);
+        }
+
+        std::string curr = std::format("{{{}, {}, {}}}\n", 
+            content, 
+            tok.line, 
+            token_type
+        );
+
+        out += curr;
+    }
+
+    return out;
+}
+
+const char* Lexer::print_type(Lexer::Type ty) {
     using namespace Lexer; // Just to clean a little
 
     switch(ty) {
-        case(Type::Invalid): return "Invalid";
         case(Type::BraceClose): return "BraceClose";
         case(Type::BraceOpen): return "BraceOpen";
         case(Type::ParenClose): return "ParenClose";
@@ -63,7 +97,14 @@ std::string Lexer::print_type(Lexer::Type ty) {
         case(Type::StringLiteral): return "StringLiteral";
         case(Type::Keyword): return "Keyword";
         case(Type::Identifier): return "Identifier";
-        default: 
-            return std::format("Token type: {} is not printable", (int)ty);
+        case(Type::Operator): return "Operator";
+        case(Type::Ellipsis): return "Ellipsis";
+        case(Type::Comma): return "Comma";
+        case(Type::Semi): return "Semi";
+        case(Type::Caret): return "Caret";
+        case(Type::Hash): return "Hash";
+        case(Type::Equal): return "Equal";
+        case(Type::At): return "At";
+        default: return "Invalid";
     }
 }

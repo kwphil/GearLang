@@ -4,13 +4,13 @@
 #include <fstream>
 #include <format>
 
-#include <llvm/IR/InlineAsm.h>
-
 #include <gearlang/ast/base.hpp>
 #include <gearlang/lex.hpp>
 #include <gearlang/error.hpp>
 #include <gearlang/func.hpp>
 #include <gearlang/sem/analyze.hpp>
+
+#include <argparse.hpp>
 
 #define VERSION "0.1.0"
 
@@ -18,193 +18,160 @@ llvm::Function* build_runtime(Context& ctx);
 
 void run_command(const char* cmd, bool verbose);
 
-typedef struct {
-    int argc;
-    char** argv;
-    int index;
-    char* input_file;
-    const char* output_file;
-    bool output_object;
-    bool output_llvm;
-    bool verbose;
-} compopt_t;
-
-void compopt_setup(compopt_t** compopt, int argc, char** argv) {
-    *compopt = new compopt_t {
-        argc, argv, 0, nullptr, "a.out", false, false, false
-    };
-}
-
-void parse_output(compopt_t* compopt);
-
-void match_flags(compopt_t* compopt);
+#define RUN_STEP(note, code) \
+    if(verbose) std::cout << note << "..." << std::endl; \
+    { code } \
+    if(verbose) std::cout << "done\n";                   
 
 int main(int argc, char** argv) {
-    if(argc < 2) {
-        std::cerr << "Argument not provided correctly.";
+    argparse::ArgumentParser program("gearlang", VERSION);
+
+    program.add_description("Gearlang compiler");
+
+    program.add_argument("input")
+        .help("Input source file");
+
+    program.add_argument("-o", "--output")
+        .help("Output executable file")
+        .default_value(std::string("a.out"));
+
+    program.add_argument("-G", "--object")
+        .help("Emit object file")
+        .default_value(false)
+        .implicit_value(true);
+
+    program.add_argument("-S", "--emit-llvm")
+        .help("Emit LLVM IR file")
+        .default_value(false)
+        .implicit_value(true);
+
+    program.add_argument("-v", "--verbose")
+        .help("Enable verbose output")
+        .default_value(false)
+        .implicit_value(true);
+
+    program.add_argument("--version")
+        .help("Print version information")
+        .default_value(false)
+        .implicit_value(true);
+    
+    program.add_argument("--dump-tokens")
+        .help("Print token output")
+        .default_value(false)
+        .implicit_value(true);
+
+    try {
+        program.parse_args(argc, argv);
+    }
+    catch (const std::runtime_error& err) {
+        std::cerr << err.what() << "\n";
+        std::cerr << program;
         return EXIT_FAILURE;
     }
 
-    compopt_t* compopt;
-
-    compopt_setup(&compopt, argc, argv);
-    
-    parse_output(compopt);
-
-    if(!compopt->input_file) {
-        std::cerr << "No input file provided\n";
-        exit(-1);
+    if (program.get<bool>("--version")) {
+        std::cout << VERSION << "\n";
+        return EXIT_SUCCESS;
     }
 
-    Error::setup_error_manager(argv[1]);
-    std::string source_path(argv[1]);
-    if(compopt->verbose) std::cout << "tokenizing... ";
-    auto tokens = Lexer::tokenize(source_path);
-    if(compopt->verbose) std::cout << "done\n";
+    std::string input_file  = program.get<std::string>("input");
+    std::string output_file = program.get<std::string>("--output");
+    bool verbose            = program.get<bool>("--verbose");
+    bool output_object      = program.get<bool>("--object");
+    bool output_llvm        = program.get<bool>("--emit-llvm");
+    bool dump_tokens        = program.get<bool>("--dump-tokens");
 
-    if(compopt->verbose) std::cout << "parsing... ";
-    auto root = Ast::Program::parse(tokens);
-    if(compopt->verbose) std::cout << "done\n";
+    if (input_file.empty()) {
+        std::cerr << "No input file provided\n";
+        return EXIT_FAILURE;
+    }
+
+    Error::setup_error_manager(input_file.c_str());
+
+    Lexer::Stream tokens;
+    Ast::Program root;
+    
+    RUN_STEP("tokenizing",
+        tokens = Lexer::tokenize(input_file);
+    );
+
+    if(dump_tokens) {
+        std::cout << tokens.to_string() << std::endl;
+        return EXIT_SUCCESS;
+    }
+
+    RUN_STEP("parsing",
+        root = Ast::Program::parse(tokens);
+    );
 
     Sem::Analyzer analyzer;
-    analyzer.analyze(root.content);
+
+    RUN_STEP("analyzing",
+        analyzer.analyze(root.content);
+    );
 
     Context ctx;
 
-    if(compopt->verbose) std::cout << "generating... ";
+    RUN_STEP("generating", {
+        ctx.current_fn = build_runtime(ctx);
+        root.generate(ctx);
 
-    ctx.current_fn = build_runtime(ctx);
-    root.generate(ctx);
+        if(ctx.main_entry) {
+            llvm::BasicBlock* main = *ctx.main_entry;
+            ctx.builder.CreateBr(main);
+            ctx.builder.SetInsertPoint(main);
+        }
 
-    // Return main
-    // Set to main_fn if it exists
-    // Otherwise the global_entry already exists
-    if(ctx.main_entry) {
-        llvm::BasicBlock* main = *ctx.main_entry;
+        ctx.builder.CreateRet(
+            llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(ctx.llvmCtx),
+                EXIT_SUCCESS
+            )
+        );
+    });
 
-        // While we're here, jump to the main_entry rq
-        ctx.builder.CreateBr(main);
+    std::string output;
 
-        ctx.builder.SetInsertPoint(main);
-    }
-    
-    ctx.builder.CreateRet(
-        llvm::ConstantInt::get(
-            llvm::Type::getInt32Ty(ctx.llvmCtx), 
-            EXIT_SUCCESS
-        )
+    RUN_STEP("rendering", 
+        output = ctx.render();    
     );
-    
-    ctx.builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx.llvmCtx), EXIT_SUCCESS));
 
-    if(compopt->verbose) std::cout << "done\n";
+    run_command("mkdir -p build", verbose);
 
-    if(compopt->verbose) std::cout << "rendering...";
-    std::string output = ctx.render();
-    if(compopt->verbose) std::cout << "done\n";
-
-    if(compopt->verbose) std::cout << "writing llvm file...\n";
-    run_command("mkdir -p build", compopt->verbose);
     std::ofstream out_file("build/build.llvm");
     out_file << output;
     out_file.close();
-    if(compopt->verbose) std::cout << "done\n";
 
-    if(compopt->verbose) std::cout << "building... \n";
-    run_command("llvm-as build/build.llvm -o build/build.bc", compopt->verbose);
-    if(compopt->output_llvm) { run_command("mv build/build.llvm build.llvm", compopt->verbose); goto cleanup; }
-    run_command("llc build/build.bc -filetype=obj -o build/build.o", compopt->verbose);
-    if(compopt->output_object) { run_command("mv build/build.o build.o", compopt->verbose); goto cleanup; }
-    { // Force cc out of scope so goto cleanup works
-        std::string cc = 
-            std::format(
-                "cc build/build.o -o {}", 
-                compopt->output_file
-            );
-        run_command(cc.c_str(), compopt->verbose);
+    run_command("llvm-as build/build.llvm -o build/build.bc", verbose);
+
+    if(output_llvm) {
+        run_command("mv build/build.llvm build.llvm", verbose);
+        goto cleanup;
     }
 
-    if(compopt->verbose) std::cout << "Built successfully!\n";
+    run_command("llc build/build.bc -filetype=obj -o build/build.o", verbose);
+
+    if(output_object) {
+        run_command("mv build/build.o build.o", verbose);
+        goto cleanup;
+    }
+
+    {
+        std::string cc =
+            std::format("cc build/build.o -o {}", output_file);
+        run_command(cc.c_str(), verbose);
+    }
+
+    if(verbose) std::cout << "Built successfully!\n";
 
 cleanup:
-    if(compopt->verbose) std::cout << "Cleanup...\n";
-    run_command("rm build/build*", compopt->verbose);
-
-    delete compopt;
+    if(verbose) std::cout << "Cleanup...\n";
+    run_command("rm build/build*", verbose);
 
     return EXIT_SUCCESS;
 }
 
-void parse_output(compopt_t* compopt) {
-    int i = 1;
-    for(; i < compopt->argc; i++) {
-        char* curr_tok = compopt->argv[i];
-
-        if(curr_tok[0] != '-') { // no - indicates no flags or options (aka file)
-            compopt->input_file = curr_tok;
-        }
-
-        if(strcmp(curr_tok, "--verbose") == 0) {
-            compopt->verbose = true;
-            continue;
-        }
-
-        if(strcmp(curr_tok, "--version") == 0) {
-            std::cout << VERSION << "\n";
-
-            exit(EXIT_SUCCESS);
-        }
-
-        if(strcmp(curr_tok, "--object") == 0) {
-            compopt->output_object = true;
-            continue;
-        }
-
-        if(strcmp(curr_tok, "--output") == 0) {
-            i++;
-            compopt->output_file = curr_tok;
-            continue;
-        }
-
-        if(strcmp(curr_tok, "--emit-llvm") == 0) {
-            compopt->output_llvm = true;
-            continue;
-        }
-
-        if(curr_tok[0] == '-' && curr_tok[1] != '-') {
-            bool set_output_file = false;
-            compopt->index = i;
-
-            match_flags(compopt);
-
-            if(set_output_file) {
-                i++;
-                compopt->output_file = compopt->argv[i];
-            }
-        }
-    }
-
-    compopt->index = i;
-}
-
-void run_command(const char* cmd, bool verbose) {
-    if(verbose) std::cout << "> " << cmd << "\n";
-    if(std::system(cmd)) exit(1);
-}
-
-void match_flags(compopt_t* compopt) {
-    // Skip the dash
-    char* curr_tok = compopt->argv[compopt->index];
-    for(size_t i = 1; i < strlen(curr_tok); i++) {
-        switch(curr_tok[i]) {
-            case('G'): compopt->output_object = true; break;
-            case('S'): compopt->output_llvm = true; break;
-            case('v'): compopt->verbose = true; break;
-            case('o'): 
-                compopt->index++;
-                compopt->output_file = compopt->argv[compopt->index];
-            break;
-            default: std::cerr << "Unknown option: " << curr_tok[i] << '\n'; exit(1);
-        }
-    }
+void run_command(const char* cmd, bool verbose) { 
+    if(verbose) std::cout << "> " << cmd << "\n"; 
+    if(std::system(cmd)) exit(1); 
 }

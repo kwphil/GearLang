@@ -45,6 +45,7 @@ enum class Type {
     BraceOpen,
     BraceClose,
     Ellipsis,
+    Equal,
     Comma,
     Semi,
     Caret,
@@ -52,7 +53,7 @@ enum class Type {
     At
 };
 
-std::string print_type(Type ty);
+const char* print_type(Type ty);
 
 /// @brief Classify a token based on its content and ending character type
 /// @param content Content of the token
@@ -104,6 +105,8 @@ public:
 
     /// @brief Dumps the remaining unparsed text
     void dump();
+    /// @brief Converts all output into a string, format as { content, line, type }
+    std::string to_string();
 };
 
 /// @brief Tokenize a source file into a token stream
