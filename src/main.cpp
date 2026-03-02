@@ -10,7 +10,7 @@
 #include <gearlang/func.hpp>
 #include <gearlang/sem/analyze.hpp>
 
-#include <argparse.hpp>
+#include <argparse/argparse.hpp>
 
 #define VERSION "0.1.0"
 

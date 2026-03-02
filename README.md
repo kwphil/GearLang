@@ -45,6 +45,13 @@ fn main {
 }
 ```
 
+## Building
+
+```sh
+cmake src
+make -j$(nproc)
+```
+
 ## Dependencies
 
 * [llvm](github.com/llvm/llvm-project)
