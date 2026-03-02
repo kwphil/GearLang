@@ -25,6 +25,8 @@
       * [ ] Emit object file
       * [ ] Target-specific formats
     * [X] `-S,--emit-llvm`
+    * [ ] `--dump-ast`
+    * [ ] `--dump-tokens`
     * [ ] `-O,--opt-level`
     * [X] `-o,--output`
     * [ ] `--target`
@@ -111,8 +113,10 @@
 * [ ] **Tooling**
   * [ ] Debug symbols
   * [ ] Source maps
-  * [ ] Compiler tests
-    * [ ] Lexer tests
-    * [ ] Parser tests
-    * [ ] Codegen tests
+  * [ ] Test suite
+    * [ ] Documentation for adding tests
+    * [ ] Lexer
+    * [ ] Ast
+    * [ ] Analyzer
+    * [ ] Generator 
   * [ ] Fuzzing

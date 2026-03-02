@@ -1,0 +1,23 @@
+{
+    "type": "lexer",
+    "return": 0,
+    "match": [
+        [ "a", 1, "Identifier" ],
+        [ "=", 1, "Equal" ],
+        [ "+", 1, "Operator" ],
+        [ "3", 1, "IntegerLiteral" ],
+        [ ";", 1, "Semi" ],
+        [ "b", 2, "Identifier" ],
+        [ "=", 2, "Equal" ],
+        [ "b", 2, "Identifier" ],
+        [ "+", 2, "Operator" ],
+        [ "7", 2, "IntegerLiteral" ],
+        [ ";", 2, "Semi" ],
+        [ "c", 3, "Identifier" ],
+        [ "=", 3, "Operator" ],
+        [ "c", 3, "Identifier" ],
+        [ "+", 3, "Operator" ], 
+        [ "8", 3, "IntegerLiteral" ],
+        [ ";", 3, "Semi" ]
+    ]
+}

@@ -152,6 +152,7 @@ Lexer::Type Lexer::classify(std::string& content, CharType state)
 
         case CharType::Sym:
             if (content == ",") return Type::Comma;
+            if (content == "=") return Type::Equal;
             if (operators.find(content) != operators.end())
                 return Type::Operator;
             return Type::Invalid;
