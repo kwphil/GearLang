@@ -7,31 +7,43 @@
 #include <gearlang/lex.hpp>
 #include <gearlang/error.hpp>
 
-std::unique_ptr<Ast::Nodes::Expr> Ast::Nodes::Expr::parse(Lexer::Stream& s) {
+using namespace Ast::Nodes;
+using std::string;
+using std::unique_ptr;
+
+unique_ptr<Expr> Expr::parse(Lexer::Stream& s) {
     return parseExpr(s);
 }
 
-std::unique_ptr<Ast::Nodes::ExprLitInt> Ast::Nodes::ExprLitInt::parse(Lexer::Stream& s) 
+unique_ptr<ExprLitInt> ExprLitInt::parse(Lexer::Stream& s) 
 { return std::make_unique<ExprLitInt>((uint64_t)std::stoi(s.pop()->content), s.peek()->line); }
 
-std::unique_ptr<Ast::Nodes::ExprLitFloat> Ast::Nodes::ExprLitFloat::parse(Lexer::Stream& s) { 
+string ExprLitInt::to_string() { return std::format("{{ ExprLitInt value={} }}", value); }
+
+unique_ptr<ExprLitFloat> ExprLitFloat::parse(Lexer::Stream& s) { 
     double val = std::stod(s.pop()->content);
 
-    return std::make_unique<Ast::Nodes::ExprLitFloat>(val, s.peek()->line); 
+    return std::make_unique<ExprLitFloat>(val, s.peek()->line); 
 }
 
-std::unique_ptr<Ast::Nodes::ExprLitString> Ast::Nodes::ExprLitString::parse(Lexer::Stream& s) {
-    std::unique_ptr<Lexer::Token> t = s.pop();
+string ExprLitFloat::to_string() { return std::format("{{ ExprLitFloat value={} }}", value); }
+
+unique_ptr<ExprLitString> ExprLitString::parse(Lexer::Stream& s) {
+    unique_ptr<Lexer::Token> t = s.pop();
 
     return std::make_unique<ExprLitString>(t->content, t->line);
 }
 
-std::unique_ptr<Ast::Nodes::ExprVar> Ast::Nodes::ExprVar::parse(const Lexer::Token& token) { 
+string ExprLitString::to_string() { return std::format("{{ ExprLitString string={} }}", string); }
+
+unique_ptr<ExprVar> ExprVar::parse(const Lexer::Token& token) { 
     return std::make_unique<ExprVar>(token.content, token.line);
 }
 
-std::unique_ptr<Ast::Nodes::ExprAssign>
-Ast::Nodes::ExprAssign::parse(const Lexer::Token& token, Lexer::Stream& s) {
+string ExprVar::to_string() { return std::format("{{ ExprVar name={} }}", name); }
+
+unique_ptr<ExprAssign>
+ExprAssign::parse(const Lexer::Token& token, Lexer::Stream& s) {
     int line_number = token.line;
 
     s.expect("=", line_number);
@@ -40,7 +52,11 @@ Ast::Nodes::ExprAssign::parse(const Lexer::Token& token, Lexer::Stream& s) {
     return std::make_unique<ExprAssign>(token.content, std::move(expr), line_number);
 }
 
-Ast::Nodes::pExpr Ast::Nodes::Expr::parseExpr(Lexer::Stream& s) {
+string ExprAssign::to_string() { 
+    return std::format("{{ ExprAssign var={}, expr={} }}", name, expr->to_string()); 
+}
+
+pExpr Expr::parseExpr(Lexer::Stream& s) {
     pExpr left = parseTerm(s);
     
     //no operator 
@@ -62,7 +78,13 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseExpr(Lexer::Stream& s) {
     return std::make_unique<ExprOp>(type, std::move(left), std::move(right), s.peek()->line);
 }
 
-Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s) {
+string ExprOp::to_string() {
+    return std::format("{{ ExprOp type={}, left={}, right={} }}", 
+        (int)type, left->to_string(), right->to_string()
+    );
+}
+
+pExpr Expr::parseTerm(Lexer::Stream& s) {
     int line_number = s.peek()->line;
 
     if (s.peek()->content == "(") {
@@ -108,7 +130,7 @@ Ast::Nodes::pExpr Ast::Nodes::Expr::parseTerm(Lexer::Stream& s) {
     );
 }
 
-std::unique_ptr<Ast::Nodes::ExprCall> Ast::Nodes::ExprCall::parse(
+unique_ptr<ExprCall> ExprCall::parse(
     const Lexer::Token& tok,
     Lexer::Stream& s
 ) {
@@ -132,12 +154,26 @@ std::unique_ptr<Ast::Nodes::ExprCall> Ast::Nodes::ExprCall::parse(
     return std::make_unique<ExprCall>(nm, args, line_number);
 }
 
-std::unique_ptr<Ast::Nodes::ExprAddress> Ast::Nodes::ExprAddress::parse(Lexer::Stream& s) {
+string ExprCall::to_string() {
+    string args_str;
+
+    for(auto& n : args) {
+        args_str += n->to_string();
+    }
+
+    return std::format("{{ ExprCall callee={}, args={} }}", callee, args_str);
+}
+
+unique_ptr<ExprAddress> ExprAddress::parse(Lexer::Stream& s) {
     s.expect("#", s.peek()->line);
     return std::make_unique<ExprAddress>(s.pop()->content, s.peek()->line);
 }
 
-std::unique_ptr<Ast::Nodes::ExprDeref> Ast::Nodes::ExprDeref::parse(Lexer::Stream& s) {
+string ExprAddress::to_string() { return std::format("{{ ExprAddress name={} }}", name); }
+
+unique_ptr<ExprDeref> ExprDeref::parse(Lexer::Stream& s) {
     s.expect("@", s.peek()->line);
     return std::make_unique<ExprDeref>(s.pop()->content, s.peek()->line);
 }
+
+string ExprDeref::to_string() { return std::format("{{ ExprDeref name={} }}", name); }

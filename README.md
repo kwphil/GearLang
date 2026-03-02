@@ -18,7 +18,7 @@ Optional arguments:
   -h, --help       shows help message and exits 
   -v, --version    prints version information and exits 
   -o, --output     Output executable file [nargs=0..1] [default: "a.out"]
-  -G, --object     Emit object file 
+  -c, --object     Emit object file 
   -S, --emit-llvm  Emit LLVM IR file 
   -v, --verbose    Enable verbose output 
   --version        Print version information 

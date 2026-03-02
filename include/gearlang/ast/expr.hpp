@@ -64,6 +64,7 @@ namespace Ast::Nodes {
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         unique_ptr<Value> generate(Context& ctx) override;
+        virtual std::string to_string() override;
     };
 
     /// @brief Template base class for literal expressions
@@ -91,6 +92,7 @@ namespace Ast::Nodes {
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         virtual unique_ptr<Value> generate(Context& ctx) override;
+        virtual std::string to_string() override;
     };
 
     /// @brief Expression node for floating-point literals
@@ -104,6 +106,7 @@ namespace Ast::Nodes {
         
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         virtual unique_ptr<Value> generate(Context& ctx) override;
+        virtual std::string to_string() override;
     };
 
     /// @brief Expression node for C-strings 
@@ -117,6 +120,7 @@ namespace Ast::Nodes {
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         virtual unique_ptr<Value> generate(Context& ctx) override;
+        virtual std::string to_string() override;
     };
 
     /// @brief Expression node for variable references
@@ -134,6 +138,7 @@ namespace Ast::Nodes {
         static std::unique_ptr<ExprVar> parse(const Lexer::Token& name);
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         unique_ptr<Value> generate(Context& ctx) override;
+        virtual std::string to_string() override;
     };
 
     /// @brief Expression node for variable assignments
@@ -153,6 +158,7 @@ namespace Ast::Nodes {
         static std::unique_ptr<ExprAssign> parse(const Lexer::Token& name, Lexer::Stream& s);
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         unique_ptr<Value> generate(Context& ctx) override;
+        virtual std::string to_string() override;
     };
 
     class ExprCall : public Expr {
@@ -177,6 +183,7 @@ namespace Ast::Nodes {
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         unique_ptr<Value> generate(Context& ctx) override;
+        virtual std::string to_string() override;
     };
 
     /// @brief Expression node for referencing variables
@@ -195,6 +202,7 @@ namespace Ast::Nodes {
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         unique_ptr<Value> generate(Context& ctx) override;
+        virtual std::string to_string() override;
     };
 
     /// @brief Expression node for the variable to dereference
@@ -213,6 +221,7 @@ namespace Ast::Nodes {
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         unique_ptr<Value> generate(Context& ctx) override;
+        virtual std::string to_string() override;
     };
 
     /// @brief Expression node for blocks of nodes
@@ -231,5 +240,6 @@ namespace Ast::Nodes {
         // Will probably return the return variable
         // Will stay void until I get Function to return non-void
         unique_ptr<Value> generate(Context& ctx) override;
+        virtual std::string to_string() override;
     };
 }

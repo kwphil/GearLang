@@ -27,6 +27,7 @@ namespace Ast::Nodes {
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         unique_ptr<Value> generate(Context& ctx) override { return nullptr; } 
+        virtual std::string to_string() override;
     };
 
     /// @brief Node for function definitions
@@ -60,6 +61,7 @@ namespace Ast::Nodes {
         virtual void analyze(Sem::Analyzer& analyzer) override;
         // This has no use for generating code, so this always returns nullptr
         void generate(Context& ctx) override;
+        virtual std::string to_string() override;
     };
 
     class ExternFn : public Stmt {
@@ -91,5 +93,6 @@ namespace Ast::Nodes {
         virtual void analyze(Sem::Analyzer& analyzer) override;
         // This has no use for generating code, so this always returns nullptr
         void generate(Context& ctx) override;
+        virtual std::string to_string() override;
     };
 }

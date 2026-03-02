@@ -1,6 +1,7 @@
 #include <memory>
 #include <deque>
 #include <tuple>
+#include <format>
 
 #include <gearlang/ast/stmt.hpp>
 #include <gearlang/ast/expr.hpp>
@@ -20,6 +21,12 @@ unique_ptr<Argument> Argument::parse(Lexer::Stream& s) {
     Sem::Type* ty = new Sem::Type(s); 
 
     return std::make_unique<Argument>(arg, ty, s.peek()->line);
+}
+
+string Argument::to_string() { 
+    return std::format("{{ Argument, name={}, ty={} }}",
+        name, ty->dump()
+    ); 
 }
 
 // Helper function for parsing function headers
@@ -60,7 +67,18 @@ Function::parse(Lexer::Stream& s) {
     return std::make_unique<Function>(name, ty, std::move(args), std::move(block), is_variadic, line_number);
 }
 
-#include <iostream>
+string Function::to_string() {
+    string args_s;
+    
+    for(auto& arg : args) {
+        args_s += arg->to_string();
+    }
+
+    return std::format(
+        "{{ Function name={}, ty={}, args={}, block={}, is_variadic={} }}",
+        name, ty.dump(), args_s, block->to_string(), is_variadic
+    );
+}
 
 std::unique_ptr<ExternFn> ExternFn::parse(Lexer::Stream& s) {
     int line_number = s.peek()->line;
@@ -71,7 +89,7 @@ std::unique_ptr<ExternFn> ExternFn::parse(Lexer::Stream& s) {
     
     if(s.peek()->type == Lexer::Type::StringLiteral) {
         // Using strcmp because my strings have NULLs
-        // that screw everything up with std::string::operator==
+        // that screw everything up with string::operator==
         if(strcmp(s.peek()->content.c_str(), "C") == 0) {
             no_mangle = true;
             s.pop();
@@ -96,6 +114,19 @@ after_extern:
     args = parse_function_args(s, line_number, false, is_variadic);
 
     return std::make_unique<ExternFn>(name, ty, args, is_variadic, no_mangle, line_number);
+}
+
+string ExternFn::to_string() {
+    string args_s;
+    
+    for(auto& arg : args) {
+        args_s += arg->to_string();
+    }
+
+    return std::format(
+        "{{ Function name={}, ty={}, args={}, is_variadic={}, no_mangle={} }}",
+        callee, ty.dump(), args_s, is_variadic, no_mangle
+    );
 }
 
 // PRIVATE FUNCTIONS

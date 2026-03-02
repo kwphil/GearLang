@@ -54,6 +54,8 @@ namespace Ast::Nodes {
 
         virtual void analyze(Sem::Analyzer& analyzer) override;
         void generate(Context& ctx) override;
+
+        virtual std::string to_string() override;
     };
 
     /// @brief If/Else
@@ -75,6 +77,8 @@ namespace Ast::Nodes {
 
         virtual void analyze(Sem::Analyzer& analyzer) override;
         void generate(Context& ctx);
+
+        virtual std::string to_string() override;
     };
 
     /// @brief Node for variable declarations
@@ -99,6 +103,7 @@ namespace Ast::Nodes {
         std::string get_name() { return target; }
         void generate(Context& ctx) override;
         void analyze(Sem::Analyzer& analyzer) override; 
+        virtual std::string to_string() override;
     };
 
     /// @brief Node for return statements
@@ -115,5 +120,6 @@ namespace Ast::Nodes {
 
         virtual void analyze(Sem::Analyzer& analyzer) override;
         void generate(Context& ctx) override;
+        virtual std::string to_string() override;
     };
 }

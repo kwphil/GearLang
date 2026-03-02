@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
         .help("Output executable file")
         .default_value(std::string("a.out"));
 
-    program.add_argument("-G", "--object")
+    program.add_argument("-c", "--object")
         .help("Emit object file")
         .default_value(false)
         .implicit_value(true);
@@ -56,7 +56,12 @@ int main(int argc, char** argv) {
         .implicit_value(true);
     
     program.add_argument("--dump-tokens")
-        .help("Print token output")
+        .help("Print token output. Used for debugging the compiler")
+        .default_value(false)
+        .implicit_value(true);
+
+    program.add_argument("--dump-ast")
+        .help("Print the AST output. Used for debugging the compiler")
         .default_value(false)
         .implicit_value(true);
 
@@ -80,6 +85,7 @@ int main(int argc, char** argv) {
     bool output_object      = program.get<bool>("--object");
     bool output_llvm        = program.get<bool>("--emit-llvm");
     bool dump_tokens        = program.get<bool>("--dump-tokens");
+    bool dump_ast           = program.get<bool>("--dump-ast");
 
     if (input_file.empty()) {
         std::cerr << "No input file provided\n";
@@ -103,6 +109,11 @@ int main(int argc, char** argv) {
     RUN_STEP("parsing",
         root = Ast::Program::parse(tokens);
     );
+
+    if(dump_ast) {
+        std::cout << root.to_string() << std::endl;
+        return EXIT_SUCCESS;
+    }
 
     Sem::Analyzer analyzer;
 
