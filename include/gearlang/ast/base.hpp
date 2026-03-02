@@ -20,6 +20,10 @@ namespace Ast::Nodes {
         /// @param s The lexer stream to parse from
         /// @return A unique pointer to the parsed node
         static std::unique_ptr<NodeBase> parse(Lexer::Stream& s);
+
+        /// @brief Parses the node into a string
+        /// @return A string representation of the node
+        virtual std::string to_string() = 0;
     };
 };
 
@@ -35,7 +39,7 @@ namespace Ast {
         
     public:
         static Program parse(Lexer::Stream& s);
-
         void generate(Context& ctx);
+        std::string to_string();
     };
 }

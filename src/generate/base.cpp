@@ -188,8 +188,6 @@ void Ast::Nodes::Else::generate(Context& ctx) {
     ctx.builder.SetInsertPoint(then_block);
 }
 
-#include <iostream>
-
 void generate_node(Ast::Nodes::NodeBase* node, Context& ctx) {
     using namespace Ast::Nodes;
     
