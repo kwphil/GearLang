@@ -56,6 +56,16 @@ string ExprAssign::to_string() {
     return std::format("{{ ExprAssign var={}, expr={} }}", name, expr->to_string()); 
 }
 
+ExprOp::Type match_op(string content) {
+    using enum ExprOp::Type;
+    
+    if(content == "==") return Eq;
+    if(content == "!=") return Ne;
+    if(content == ">=") return Ge;
+    if(content == "<=") return Le;
+    throw std::runtime_error("Unknown type");
+}
+
 pExpr Expr::parseExpr(Lexer::Stream& s) {
     pExpr left = parseTerm(s);
     
@@ -65,13 +75,18 @@ pExpr Expr::parseExpr(Lexer::Stream& s) {
 
     
     ExprOp::Type type;
-    switch(s.pop()->content[0])
+    switch(s.peek()->content[0])
     {
         case '+': type = ExprOp::Type::Add; break;
         case '-': type = ExprOp::Type::Sub; break;
         case '*': type = ExprOp::Type::Mul; break;
         case '/': type = ExprOp::Type::Div; break;
+        case '<': type = ExprOp::Type::Lt; break;
+        case '>': type = ExprOp::Type::Gt; break;
+        default: type = match_op(s.peek()->content);
     }
+
+    s.pop();
 
     pExpr right = parseTerm(s);
 

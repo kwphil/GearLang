@@ -29,13 +29,13 @@ fn main: argc i32, argv char^ {
     let x = 0;
     let y = 14;
 
-    if(higher) {
+    if(higher == 5) {
         x = higher + 1;
     } else {
         higher = 14;
     }
 
-    printf("Hello, World! %d\n", x);
+    printf("Hello, World! %d, %d\n", x, higher);
     return foo(x, y);
 }
 

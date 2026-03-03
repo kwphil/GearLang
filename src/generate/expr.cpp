@@ -19,6 +19,9 @@ llvm::Value* get_var(NodeBase* let) {
     return try_cast<NodeBase, Argument>(let)->var;
 }
 
+#define CREATE_OP(method, name) \
+    out = ctx.builder.method(lhs->ir, rhs->ir, name)
+
 // Generates both sides of the expression, and stores them in temporary values
 // Matches through each operation and stores the output as a temp
 // Returns the temporary variable
@@ -29,10 +32,17 @@ unique_ptr<Value> Ast::Nodes::ExprOp::generate(Context& ctx) {
 
     if(ty->is_float()) {
         switch(type) {
-            case Add: out = ctx.builder.CreateFAdd(lhs->ir, rhs->ir, "faddtmp"); break;
-            case Sub: out = ctx.builder.CreateFSub(lhs->ir, rhs->ir, "fsubtmp"); break;
-            case Mul: out = ctx.builder.CreateFMul(lhs->ir, rhs->ir, "fmultmp"); break;
-            case Div: out = ctx.builder.CreateFDiv(lhs->ir, rhs->ir, "fdivtmp"); break;
+            case Add: CREATE_OP(CreateFAdd, "faddtmp"); break;
+            case Sub: CREATE_OP(CreateFSub, "fsubtmp"); break;
+            case Mul: CREATE_OP(CreateFMul, "fmultmp"); break;
+            case Div: CREATE_OP(CreateFDiv, "fdivtmp"); break;
+
+            case Eq: CREATE_OP(CreateFCmpOEQ, "feqtmp"); break;
+            case Ne: CREATE_OP(CreateFCmpONE, "fnetmp"); break;
+            case Gt: CREATE_OP(CreateFCmpOGT, "fgttmp"); break;
+            case Lt: CREATE_OP(CreateFCmpOLT, "flttmp"); break;
+            case Ge: CREATE_OP(CreateFCmpOGE, "fgetmp"); break;
+            case Le: CREATE_OP(CreateFCmpOLE, "fletmp"); break;
         }
     } else {
         switch (type) {
@@ -40,6 +50,13 @@ unique_ptr<Value> Ast::Nodes::ExprOp::generate(Context& ctx) {
             case Sub: out = ctx.builder.CreateSub(lhs->ir, rhs->ir, "isubtmp"); break;
             case Mul: out = ctx.builder.CreateMul(lhs->ir, rhs->ir, "imultmp"); break;
             case Div: out = ctx.builder.CreateSDiv(lhs->ir, rhs->ir, "idivtmp"); break;
+
+            case Eq: CREATE_OP(CreateICmpEQ, "feqtmp"); break;
+            case Ne: CREATE_OP(CreateICmpNE, "fnetmp"); break;
+            case Gt: CREATE_OP(CreateICmpSGT, "fgttmp"); break;
+            case Lt: CREATE_OP(CreateICmpSLT, "flttmp"); break;
+            case Ge: CREATE_OP(CreateICmpSGE, "fgetmp"); break;
+            case Le: CREATE_OP(CreateICmpSLE, "fletmp"); break;
         }
     }
 

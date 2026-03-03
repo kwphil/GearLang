@@ -15,7 +15,7 @@
 #define VERSION "0.1.0"
 
 llvm::Function* build_runtime(Context& ctx);
-
+void init_program(argparse::ArgumentParser& program);
 void run_command(const char* cmd, bool verbose);
 
 #define RUN_STEP(note, code) \
@@ -26,44 +26,7 @@ void run_command(const char* cmd, bool verbose);
 int main(int argc, char** argv) {
     argparse::ArgumentParser program("gearlang", VERSION);
 
-    program.add_description("Gearlang compiler");
-
-    program.add_argument("input")
-        .help("Input source file");
-
-    program.add_argument("-o", "--output")
-        .help("Output executable file")
-        .default_value(std::string("a.out"));
-
-    program.add_argument("-c", "--object")
-        .help("Emit object file")
-        .default_value(false)
-        .implicit_value(true);
-
-    program.add_argument("-S", "--emit-llvm")
-        .help("Emit LLVM IR file")
-        .default_value(false)
-        .implicit_value(true);
-
-    program.add_argument("-v", "--verbose")
-        .help("Enable verbose output")
-        .default_value(false)
-        .implicit_value(true);
-
-    program.add_argument("--version")
-        .help("Print version information")
-        .default_value(false)
-        .implicit_value(true);
-    
-    program.add_argument("--dump-tokens")
-        .help("Print token output. Used for debugging the compiler")
-        .default_value(false)
-        .implicit_value(true);
-
-    program.add_argument("--dump-ast")
-        .help("Print the AST output. Used for debugging the compiler")
-        .default_value(false)
-        .implicit_value(true);
+    init_program(program);
 
     try {
         program.parse_args(argc, argv);
@@ -72,11 +35,6 @@ int main(int argc, char** argv) {
         std::cerr << err.what() << "\n";
         std::cerr << program;
         return EXIT_FAILURE;
-    }
-
-    if (program.get<bool>("--version")) {
-        std::cout << VERSION << "\n";
-        return EXIT_SUCCESS;
     }
 
     std::string input_file  = program.get<std::string>("input");
