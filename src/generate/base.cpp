@@ -23,12 +23,16 @@
 // If in the global scope, it creates a global variable
 void Ast::Nodes::Let::generate(Context& ctx) {
     Expr* rvalue = dynamic_cast<Expr*>(expr.value().get());
-    unique_ptr<Value> initVal = rvalue->generate(ctx);
+    unique_ptr<Value> initVal;
+
+    if(rvalue) {
+        initVal = rvalue->generate(ctx);
+    }
 
     if (is_global) {
         // Creating a placeholder and then assigning the value
         llvm::Constant* placeholder = 
-            llvm::Constant::getNullValue(initVal->ty);
+            llvm::Constant::getNullValue(ty->to_llvm(ctx));
         
         // Create the variable
         llvm::GlobalVariable* var = new llvm::GlobalVariable(
@@ -40,7 +44,9 @@ void Ast::Nodes::Let::generate(Context& ctx) {
             target
         );
 
-        ctx.builder.CreateStore(initVal->ir, var);
+        if(rvalue) {
+            ctx.builder.CreateStore(initVal->ir, var);
+        }
 
         this->var = var;
 
@@ -49,11 +55,13 @@ void Ast::Nodes::Let::generate(Context& ctx) {
 
     llvm::Function* fn = ctx.current_fn;
     llvm::AllocaInst* alloca =
-        ctx.create_entry_block(fn, target, initVal->ir->getType());
+        ctx.create_entry_block(fn, target, ty->to_llvm(ctx));
 
     var = alloca;
 
-    ctx.builder.CreateStore(initVal->ir, alloca);
+    if(rvalue) {
+        ctx.builder.CreateStore(initVal->ir, alloca);
+    }
 }
 
 // Creates a new scope, generates all the expressions inside the block,

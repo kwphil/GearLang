@@ -18,6 +18,7 @@ using std::optional;
 
 Type::PrimType Type::parse_primitive(std::string& s) {
     if (s == "void") return PrimType::Void;
+    if (s == "bool") return PrimType::Bool;
     if (s == "char") return PrimType::Char;
     if (s == "i8")   return PrimType::I8;
     if (s == "i16")  return PrimType::I16;
@@ -105,6 +106,7 @@ Type Type::deref() {
 
 llvm::Type* Type::primitive_to_llvm(PrimType ty, Context& ctx) {
     switch (ty) {
+        case PrimType::Bool: return llvm::Type::getInt1Ty(ctx.llvmCtx);
         case PrimType::Char: // Same as i8
         case PrimType::I8: return llvm::Type::getInt8Ty(ctx.llvmCtx);
         case PrimType::I16: return llvm::Type::getInt16Ty(ctx.llvmCtx);
@@ -179,6 +181,7 @@ std::string Type::dump() {
     using enum PrimType;
     switch(prim_type) {
         case(Void): prim = "void"; break;
+        case(Bool): prim = "bool"; break;
         case(Char): prim = "char"; break;
         case(I8): prim = "i8"; break;
         case(I16): prim = "i16"; break;
