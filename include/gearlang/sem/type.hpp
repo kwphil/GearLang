@@ -62,7 +62,7 @@ namespace Sem {
 
     private:
         PrimType prim_type = PrimType::Void;
-        std::optional<NonPrimitive> non_prim;
+        unsigned int pointer;
 
         static PrimType parse_primitive(std::string& s);
         static PrimType parse_primitive(Lexer::Stream& s);
@@ -71,14 +71,14 @@ namespace Sem {
     public:
         Type() = default;
         Type(Lexer::Stream& s);
-        Type(PrimType prim_type, NonPrimitive non_prim) 
-        : prim_type(prim_type), non_prim(non_prim) { } 
+        Type(PrimType prim_type, int pointer) 
+        : prim_type(prim_type), pointer(pointer) { } 
         /// @brief Builds the type with a constant string
         /// @param s the string
         constexpr explicit Type(const char* s); 
 
         /// @brief Checks if the type is a primitive
-        bool is_primitive() const { return !non_prim.has_value(); }
+        bool is_primitive() const { return !pointer; }
         /// @brief Checks if the type is a pointer
         bool is_pointer_ty() const;
         /// @brief How many pointers stacked on top of eachother. T& would return 1, T&& = 2, ...
@@ -108,7 +108,6 @@ namespace Sem {
         std::string dump();
     };
 
-    // Define constexpr
     constexpr Type::Type(const char* s) {
         std::string str = s;
 
@@ -125,9 +124,7 @@ namespace Sem {
             std::string prim_str = str.substr(0, str.size()-1);
             prim_type = parse_primitive(prim_str);
 
-            non_prim = {
-                { 0, count, static_cast<int>(prim_type) }
-            };
+            pointer = count;
 
             return;
         }

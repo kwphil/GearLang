@@ -80,7 +80,6 @@ std::unique_ptr<Function>
 Function::parse(Lexer::Stream& s) {
     int line_number = s.peek()->line;
     bool is_variadic;
-    bool no_mangle;
 
     s.expect("fn", line_number);
 

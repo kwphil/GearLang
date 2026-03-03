@@ -68,29 +68,9 @@ Type::PrimType Type::parse_primitive(Lexer::Stream& s) {
    ============================ */
 
 Type::NonPrimitive Type::parse_nonprimitive(Lexer::Stream& s, PrimType prim_type) {
-    // Currently only pointer types are supported: T&
-    // Encoding: [0, <count>, <PrimType>]
-    // 0 = pointer tag
-
-    if (s.peek()->type == Lexer::Type::Caret) {
-        // How many pointers?
-        int count = 0;
-        while(s.has()) {
-            if(s.peek()->type != Lexer::Type::Caret) break;
-
-            s.pop();
-            count++;
-        }
-
-        NonPrimitive ret;
-        ret.reserve(3);
-
-        ret = { 0, count, static_cast<int>(prim_type) };
-        return ret;
-    }
 
     throw std::runtime_error(
-        std::format("Unknown non-primitive type: {}", (int)prim_type));
+        std::format("Unknown non-primitive type: {}", s.peek()->content));
 }
 
 /* ============================
@@ -101,10 +81,14 @@ Type::Type(Lexer::Stream& s) {
     auto tok = s.peek();
 
     prim_type = parse_primitive(s);
+    pointer = 0;
 
-    // Pointer type
     if (s.peek()->type == Lexer::Type::Caret) {
-        non_prim = parse_nonprimitive(s, prim_type);
+        while (s.peek()->type == Lexer::Type::Caret) {
+            s.pop();
+            pointer++;
+        }
+
         return;
     }
 
@@ -123,12 +107,9 @@ Type Type::ref() {
 }
 
 Type Type::deref() {
-    NonPrimitive new_np = non_prim.value();
+    assert(pointer != 0);
 
-    assert(new_np.at(0) == 0);
-    new_np.at(1)-=1;
-
-    return Type(prim_type, new_np);
+    return Type(prim_type, pointer-1);
 }
 
 /* ============================
@@ -155,21 +136,15 @@ llvm::Type* Type::to_llvm(Context& ctx) const {
         return primitive_to_llvm(prim_type, ctx);
     }
 
-    // Non-primitive lowering
-    const auto& np = non_prim.value();
-
     // Pointer
-    if (np[0] == 0) {
+    if (pointer) {
         llvm::Type* base;
 
-        if(np[1] > 1) {
+        if(pointer > 1) {
             // If pointers are stacked we don't truly care about what goes below the next
             base = llvm::PointerType::getUnqual(ctx.llvmCtx);
         } else {
-            base = primitive_to_llvm(
-                static_cast<PrimType>(np[2]),
-                ctx
-            );
+            base = primitive_to_llvm(prim_type, ctx);
         }
 
         return llvm::PointerType::get(base, 0);
@@ -181,14 +156,11 @@ llvm::Type* Type::to_llvm(Context& ctx) const {
 llvm::Type* Type::get_underlying_type(Context& ctx) const {
     if (!is_pointer_ty()) return nullptr;
 
-    if(non_prim->at(1) > 1) {
+    if(pointer > 1) {
         return llvm::PointerType::getUnqual(ctx.llvmCtx);
     }
 
-    return primitive_to_llvm(
-        static_cast<PrimType>(non_prim->at(2)),
-        ctx
-    );
+    return primitive_to_llvm(prim_type, ctx);
 }
 
 /* ============================
@@ -196,14 +168,13 @@ llvm::Type* Type::get_underlying_type(Context& ctx) const {
    ============================ */
 
 bool Type::is_pointer_ty() const {
-    return non_prim.has_value() && non_prim->at(0) == 0;
+    return pointer;
 }
 
 int Type::pointer_level() const {
     if(!is_pointer_ty()) return -1;
-    if(non_prim->at(0)) return -2;
 
-    return non_prim->at(1);
+    return pointer;
 }
 
 std::string Type::dump() {
@@ -225,8 +196,8 @@ std::string Type::dump() {
     if(is_primitive()) return prim;
 
     std::string s = "";
-    for(int i = 0; i < non_prim.value().at(1); i++)
-        s.push_back('&');
+    for(unsigned int i = 0; i < pointer; i++)
+        s.push_back('^');
 
     s.append(prim);
     return s;
