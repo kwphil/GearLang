@@ -59,8 +59,8 @@
 * [ ] **Semantic Analysis**
   * [x] Symbol table
   * [x] Scope resolution
-  * [ ] Type checking
-  * [ ] Implicit casts
+  * [X] Type checking
+  * [X] Implicit casts
   * [ ] Function signature validation
   * [ ] Unreachable code detection
 * [ ] **Code Generation**

@@ -89,6 +89,8 @@ namespace Sem {
         Type deref();
         /// @brief Checks if the type is an fxx type
         bool is_float() const;
+        /// @brief Checks if the type is an ixx type
+        bool is_int() const;
 
         /// @brief Converts the type to an llvm Type
         /// @param ctx The global context (GearLang context, not llvm)
@@ -105,12 +107,18 @@ namespace Sem {
         /// @return the returning type
         static llvm::Type* primitive_to_llvm(PrimType ty, Context& ctx);
 
+        /// @brief String representation of the type
         std::string dump();
+
+        /// @brief Checks if another type is compatible with this one
+        bool is_compatible(Type& other) { return is_compatible(static_cast<Type&&>(other)); }
+        bool is_compatible(Type&& other);
     };
 
     constexpr Type::Type(const char* s) {
         std::string str = s;
 
+        pointer = 0;
         if(str.back() == '^') {
             int count = 1;
             int i;

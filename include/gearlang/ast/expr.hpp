@@ -59,6 +59,9 @@ namespace Ast::Nodes {
         /// @brief Wraps the type as an optional for better debugging. Note that this should be called AFTER analyze()
         /// @returns an optional type
         optional<Sem::Type> get_type() { if(!ty) return std::nullopt; return *ty; }
+        /// @brief Sets the type
+        /// @param ty the type to replace the current type
+        void set_type(Sem::Type ty) { this->ty = std::make_unique<Sem::Type>(ty); }
 
         Expr(int line_number, Sem::Type* ty = nullptr) : NodeBase(line_number), ty(ty) {}
 

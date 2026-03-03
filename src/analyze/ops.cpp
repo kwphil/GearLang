@@ -52,5 +52,8 @@ unique_ptr<ExprValue> ExprOp::analyze(Analyzer& analyzer) {
         ty = std::make_unique<Sem::Type>(lhs->ty);
     }
 
+    // Implicit cast
+    right->set_type(lhs->ty);
+
     return std::make_unique<ExprValue>(lhs->is_const && rhs->is_const, lhs->ty);
 }

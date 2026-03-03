@@ -44,75 +44,6 @@ using namespace Sem;
 using std::optional;
 
 /* ============================
-   Primitive parsing
-   ============================ */
-
-Type::PrimType Type::parse_primitive(std::string& s) {
-    if (s == "void") return PrimType::Void;
-    if (s == "bool") return PrimType::Bool;
-    if (s == "char") return PrimType::Char;
-    if (s == "i8")   return PrimType::I8;
-    if (s == "i16")  return PrimType::I16;
-    if (s == "i32")  return PrimType::I32;
-    if (s == "f32")  return PrimType::F32;
-    if (s == "f64")  return PrimType::F64;
-    return PrimType::Invalid;
-}
-
-Type::PrimType Type::parse_primitive(Lexer::Stream& s) {
-    return parse_primitive(s.pop()->content);
-}
-
-/* ============================
-   Non-primitive parsing
-   ============================ */
-
-Type::NonPrimitive Type::parse_nonprimitive(Lexer::Stream& s, PrimType prim_type) {
-
-    throw std::runtime_error(
-        std::format("Unknown non-primitive type: {}", s.peek()->content));
-}
-
-/* ============================
-   Construction
-   ============================ */
-
-Type::Type(Lexer::Stream& s) {
-    auto tok = s.peek();
-
-    prim_type = parse_primitive(s);
-    pointer = 0;
-
-    if (s.peek()->type == Lexer::Type::Caret) {
-        while (s.peek()->type == Lexer::Type::Caret) {
-            s.pop();
-            pointer++;
-        }
-
-        return;
-    }
-
-    if (prim_type == PrimType::Invalid) {
-        Error::throw_error(
-            tok->line,
-            tok->content.c_str(),
-            "Unknown type",
-            Error::ErrorCodes::UNKNOWN_TYPE
-        );
-    }
-}
-
-Type Type::ref() {
-    return Type(std::format("{}^", dump()).c_str());
-}
-
-Type Type::deref() {
-    assert(pointer != 0);
-
-    return Type(prim_type, pointer-1);
-}
-
-/* ============================
    LLVM lowering
    ============================ */
 
@@ -212,4 +143,19 @@ bool Type::is_float() const {
         case(F64): return true;
         default: return false;
     }
+}
+
+bool Type::is_int() const {
+    if(!is_primitive()) return false;
+
+    if(prim_type >= PrimType::Char && prim_type <= PrimType::I32) return true;
+    return false;
+}
+
+bool Type::is_compatible(Type&& other) {
+    if(is_pointer_ty() && other.is_pointer_ty()) return true;
+    if(is_float() && other.is_float()) return true;
+    if(is_int() && other.is_int()) return true;
+
+    return false;
 }

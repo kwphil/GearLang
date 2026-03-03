@@ -63,6 +63,7 @@ set(GEARLANG_LEX
 set(GEARLANG_SEM
     sem/analyze.cpp
     sem/type.cpp
+    sem/type_parse.cpp
 )
 
 set(GEARLANG_ANALYZE
