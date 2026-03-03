@@ -104,9 +104,9 @@ std::string Lexer::Stream::to_string() {
             content.push_back(c);
         }
 
-        std::string curr = std::format("{{{}, {}, {}}}\n", 
+        std::string curr = std::format("[\"{}\", {}, \"{}\"],\n", 
             content, 
-            tok.line, 
+            tok.span.line, 
             token_type
         );
 

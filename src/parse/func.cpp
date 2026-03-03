@@ -52,7 +52,7 @@ unique_ptr<Argument> Argument::parse(Lexer::Stream& s) {
     string arg = s.pop()->content;
     Sem::Type* ty = new Sem::Type(s); 
 
-    return std::make_unique<Argument>(arg, ty, s.peek()->line);
+    return std::make_unique<Argument>(arg, ty, s.peek()->span.line);
 }
 
 string Argument::to_string() { 
@@ -78,7 +78,7 @@ deque<unique_ptr<Argument>> parse_function_args(
 
 std::unique_ptr<Function>
 Function::parse(Lexer::Stream& s) {
-    int line_number = s.peek()->line;
+    int line_number = s.peek()->span.line;
     bool is_variadic;
 
     s.expect("fn", line_number);
@@ -112,7 +112,7 @@ string Function::to_string() {
 }
 
 std::unique_ptr<ExternFn> ExternFn::parse(Lexer::Stream& s) {
-    int line_number = s.peek()->line;
+    int line_number = s.peek()->span.line;
     bool is_variadic;
     bool no_mangle = false;
     

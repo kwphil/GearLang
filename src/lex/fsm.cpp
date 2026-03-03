@@ -57,7 +57,9 @@ Lexer::Stream Lexer::tokenize(std::string& source_path)
     Stream out;
 
     char c;
-    uint32_t line = 1;
+    size_t line = 1;
+    size_t col = 0;
+    size_t len = 0;
     CharType state_new, state_old = CharType::Invalid;
     Token tok{};
 
@@ -65,6 +67,9 @@ Lexer::Stream Lexer::tokenize(std::string& source_path)
     bool is_comment = false;
 
     while (file.get(c)) {
+        len++;
+        col++;
+
         if(c == '\\') {
             file.get(c);
             tok.content.push_back(get_escape(c));
@@ -91,11 +96,14 @@ Lexer::Stream Lexer::tokenize(std::string& source_path)
                 (!is_comment || is_string))
             {
                 tok.type = classify(tok.content, state_old);
-                tok.line = line;
+                tok.span = 
+                tok.span = { .line = line, .col = col, .len = len };
                 out.content.push_back(tok);
                 tok = Token{};
+                len = 0;
             } else {
                 tok.content.clear();
+                len = 0;
             }
         }
 
@@ -117,6 +125,7 @@ Lexer::Stream Lexer::tokenize(std::string& source_path)
         if (c == '\n')
         {
             line++;
+            col = 0;
             is_comment = false;
         }
 
@@ -131,7 +140,8 @@ Lexer::Stream Lexer::tokenize(std::string& source_path)
         (!is_comment || is_string))
     {
         tok.type = classify(tok.content, state_old);
-        tok.line = line;
+        tok.span = { .line=line, .col=col, .len=len };
+        len = 0;
         out.content.push_back(tok);
     }
 

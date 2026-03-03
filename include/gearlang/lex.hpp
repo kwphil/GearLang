@@ -41,6 +41,13 @@ SOFTWARE.
 /// @brief Lexer namespace
 namespace Lexer {
 
+/// @brief span metadata for tokens
+struct Span {
+    size_t line;
+    size_t col;
+    size_t len;
+};
+
 /// @brief Character types used during lexing
 enum class CharType {
     Invalid,
@@ -98,8 +105,8 @@ class Token {
 public:
     /// @brief Construct a new Token object
     std::string content;
-    /// @brief Line number where the token is located
-    uint32_t line;
+    /// @brief The span metadata of the token
+    Span span;
     /// @brief Column number where the token starts
     Type type;
 };
