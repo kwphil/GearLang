@@ -89,7 +89,7 @@ Type::Type(Lexer::Stream& s) {
 
     if (prim_type == PrimType::Invalid) {
         Error::throw_error(
-            tok->line,
+            tok->span.line,
             tok->content.c_str(),
             "Unknown type",
             Error::ErrorCodes::UNKNOWN_TYPE
