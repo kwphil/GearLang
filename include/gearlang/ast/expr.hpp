@@ -55,7 +55,7 @@ namespace Ast::Nodes {
     class ExprOp : public Expr {
     public:
         /// @brief Type of binary operation
-        enum Type { Add, Sub, Mul, Div } type;
+        enum Type { Add, Sub, Mul, Div, Gt, Lt, Ge, Le, Eq, Ne } type;
         /// @brief operands
         std::unique_ptr<Expr> left, right;
 

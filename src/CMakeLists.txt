@@ -16,28 +16,53 @@ set(CMAKE_BUILD_TYPE Debug)
 
 find_package(LLVM REQUIRED CONFIG)
 
-add_executable(gearlang
+set(GEARLANG_CORE
     main.cpp
-    lex.cpp
     ctx.cpp
     error.cpp
-    fsm.cpp
     func.cpp
     startup.cpp
+)
+
+set(GEARLANG_LEX
+    lex/char.cpp
+    lex/fsm.cpp
+    lex/lex.cpp
+)
+
+set(GEARLANG_SEM
     sem/analyze.cpp
     sem/type.cpp
+)
+
+set(GEARLANG_ANALYZE
     analyze/vars.cpp
     analyze/literal.cpp
     analyze/stmt.cpp
     analyze/ops.cpp
     analyze/expr.cpp
+)
+
+set(GEARLANG_GENERATE
     generate/base.cpp
     generate/expr.cpp
     generate/literal.cpp
     generate/func.cpp
+)
+
+set(GEARLANG_PARSE
     parse/base.cpp
     parse/expr.cpp
     parse/func.cpp
+)
+
+add_executable(gearlang
+    ${GEARLANG_CORE}
+    ${GEARLANG_LEX}
+    ${GEARLANG_SEM}
+    ${GEARLANG_ANALYZE}
+    ${GEARLANG_GENERATE}
+    ${GEARLANG_PARSE}
 )
 
 target_include_directories(gearlang PRIVATE 
