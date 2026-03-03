@@ -55,10 +55,10 @@ unique_ptr<Value> Ast::Nodes::ExprLitInt::generate(Context& ctx) {
 unique_ptr<Value> Ast::Nodes::ExprLitFloat::generate(Context& ctx) {
     return std::make_unique<Value>(
         llvm::ConstantFP::get(
-            llvm::Type::getDoubleTy(ctx.llvmCtx),
+            ty->to_llvm(ctx),
             this->value
         ),
-        llvm::Type::getDoubleTy(ctx.llvmCtx),
+        ty->to_llvm(ctx),
         false
     );
 };

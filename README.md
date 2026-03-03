@@ -23,6 +23,7 @@ Optional arguments:
   -v, --verbose    Enable verbose output 
   --version        Print version information 
   --dump-tokens    Print token output
+  --dump-ast       Print AST output
 ```
 
 ## Examples

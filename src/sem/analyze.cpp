@@ -113,5 +113,6 @@ bool Analyzer::is_global_scope() {
     return active_scopes.size() == 1;
 }
 
-// TODO
-bool Analyzer::type_is_compatible(Type lhs, Type rhs) { return true; }
+bool Analyzer::type_is_compatible(Type lhs, Type rhs) {
+    return lhs.is_compatible(rhs);
+}
