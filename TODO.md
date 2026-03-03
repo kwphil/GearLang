@@ -25,14 +25,15 @@
       * [ ] Emit object file
       * [ ] Target-specific formats
     * [X] `-S,--emit-llvm`
-    * [ ] `--dump-ast`
-    * [ ] `--dump-tokens`
+    * [X] `--dump-ast`
+    * [X] `--dump-tokens`
+    * [ ] `--dump-analyzer`
     * [ ] `-O,--opt-level`
     * [X] `-o,--output`
     * [ ] `--target`
   * [x] Graceful Error Handling
     * [x] Structured error types
-    * [ ] Error codes
+    * [X] Error codes
     * [ ] Error recovery strategy
 * [ ] **Lexer**
   * [x] Basic functionality
@@ -81,7 +82,7 @@
     * [ ] Tail-call optimization hooks
   * [ ] Variables
     * [x] Variable variable types
-    * [ ] Implicit matching
+    * [X] Implicit matching
     * [ ] Lifetime tracking
     * [ ] Stack vs heap allocation
   * [ ] Memory
@@ -100,16 +101,12 @@
     * [ ] Common Name Mangling
     * [ ] Extern "C++" support
     * [ ] Simple class interop
-  * [ ] Platform ABIs
-    * [X] x86_64 System V
-    * [ ] Windows x64
 * [ ] **Optimizer**
   * [ ] Constant folding
   * [ ] Dead code elimination
   * [ ] Common subexpression elimination
   * [ ] Inlining
   * [ ] Control-flow graph generation
-  * [ ] SSA form (optional)
 * [ ] **Tooling**
   * [ ] Debug symbols
   * [ ] Source maps
