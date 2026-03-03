@@ -88,6 +88,8 @@ namespace Ast::Nodes {
         std::string target;
         /// @brief The expression for the variable's initial value
         optional<pExpr> expr;
+        /// @brief The type of the variable
+        unique_ptr<Sem::Type> ty;
     public:
         /// @brief The LLVM variable
         llvm::Value* var;
@@ -95,12 +97,13 @@ namespace Ast::Nodes {
         /// @brief If the variable is to be generated as a global
         bool is_global = false;
 
-        Let(std::string& target, optional<pExpr> expr, int line_number)
-        : Stmt(line_number), target(target), expr(std::move(expr)) {}
+        Let(std::string& target, optional<pExpr> expr, unique_ptr<Sem::Type> ty, int line_number)
+        : Stmt(line_number), target(target), expr(std::move(expr)), ty(std::move(ty)) {}
 
         static std::unique_ptr<Let> parse(Lexer::Stream& s);
 
         std::string get_name() { return target; }
+        Sem::Type get_type() { return *ty; }
         void generate(Context& ctx) override;
         void analyze(Sem::Analyzer& analyzer) override; 
         virtual std::string to_string() override;

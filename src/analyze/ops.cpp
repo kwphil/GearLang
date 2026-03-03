@@ -13,7 +13,12 @@ unique_ptr<ExprValue> ExprOp::analyze(Analyzer& analyzer) {
         throw std::runtime_error("Bad type");
     }
 
-    ty = std::make_unique<Sem::Type>(lhs->ty);
+    // Checking for boolean operators
+    if(type >= Type::Gt) {
+        ty = std::make_unique<Sem::Type>("bool");
+    } else {
+        ty = std::make_unique<Sem::Type>(lhs->ty);
+    }
 
     return std::make_unique<ExprValue>(lhs->is_const && rhs->is_const, lhs->ty);
 }

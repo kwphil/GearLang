@@ -94,7 +94,7 @@ pExpr Expr::parseExpr(Lexer::Stream& s) {
 }
 
 string ExprOp::to_string() {
-    return std::format("{{ ExprOp type={}, left={}, right={} }}", 
+    return std::format("{{ ExprOp type={} left={} right={} }}", 
         (int)type, left->to_string(), right->to_string()
     );
 }

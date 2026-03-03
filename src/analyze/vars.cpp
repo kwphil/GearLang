@@ -16,18 +16,20 @@ using namespace Sem;
 
 void Let::analyze(Analyzer& analyzer) {
     unique_ptr<ExprValue> rvalue;
-    Type ty;
 
-    ty = Type("void"); // TODO: Walk through the program and find the type if no rvalue is provided
-
-    if(expr.has_value()) {
+    if(expr.value()) {
         unique_ptr<ExprValue> rvalue = expr.value()->analyze(analyzer);
-        ty = expr.value()->get_type().value(); 
+        Type rvalue_ty = expr.value()->get_type().value();
+        
+        if(!ty) 
+            ty = std::make_unique<Type>(rvalue_ty); 
+
+        if(!analyzer.type_is_compatible(*ty, rvalue_ty)) throw std::runtime_error("dfsa");
     }
 
     Variable var = {
         .name=target,
-        .type=ty,
+        .type=*ty,
         .is_global=static_cast<uint8_t>(analyzer.is_global_scope()*2),
         .let_stmt=this
     };

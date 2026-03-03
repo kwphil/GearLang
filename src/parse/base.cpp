@@ -20,15 +20,25 @@ unique_ptr<Let> Let::parse(Lexer::Stream& s) {
     
     s.expect("let", line_number);
     string target = s.pop()->content;
-    s.expect("=", line_number);
-    unique_ptr<Expr> expr = Expr::parse(s);
+    unique_ptr<Sem::Type> ty;
 
-    return std::make_unique<Let>(target, std::move(expr), line_number);
+    if(s.peek()->content[0] == ':') {
+        s.pop();
+        ty = std::make_unique<Sem::Type>(s);
+    }
+
+    unique_ptr<Expr> expr;
+    if(!ty || s.peek()->type == Lexer::Type::Equal) {
+        s.expect("=", line_number);
+        expr = Expr::parse(s);
+    }
+
+    return std::make_unique<Let>(target, std::move(expr), std::move(ty), line_number);
 }
 
 string Let::to_string() {
     return std::format(
-        "{{ let target={}, expr={} }}",
+        "{{ let target={} expr={} }}",
         target, expr.value()->to_string()
     );
 }

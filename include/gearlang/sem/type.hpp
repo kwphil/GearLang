@@ -15,6 +15,7 @@ namespace Sem {
         /// @brief Primitive types
         enum class PrimType {
             Void,
+            Bool,
             Char,
             I8,
             I16,
