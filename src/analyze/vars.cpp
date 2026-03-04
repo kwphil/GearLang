@@ -45,14 +45,12 @@ SOFTWARE.
 using namespace Ast::Nodes;
 using namespace Sem;
 
-#include <iostream>
-
 void Let::analyze(Analyzer& analyzer) {
     unique_ptr<ExprValue> rvalue;
 
-    if(expr.value()) {
-        unique_ptr<ExprValue> rvalue = expr.value()->analyze(analyzer);
-        Type rvalue_ty = expr.value()->get_type().value();
+    if(expr) {
+        unique_ptr<ExprValue> rvalue = expr->analyze(analyzer);
+        Type rvalue_ty = expr->get_type().value();
         
         if(!ty) 
             ty = std::make_unique<Type>(rvalue_ty); 
