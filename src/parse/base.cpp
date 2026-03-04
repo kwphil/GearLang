@@ -74,7 +74,7 @@ unique_ptr<Let> Let::parse(Lexer::Stream& s) {
 string Let::to_string() {
     return std::format(
         "{{ let target={} expr={} }}",
-        target, expr.value()->to_string()
+        target, expr->to_string()
     );
 }
 

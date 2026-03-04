@@ -119,7 +119,7 @@ namespace Ast::Nodes {
         /// @brief The target variable name
         std::string target;
         /// @brief The expression for the variable's initial value
-        optional<pExpr> expr;
+        pExpr expr;
         /// @brief The type of the variable
         unique_ptr<Sem::Type> ty;
     public:
@@ -129,7 +129,7 @@ namespace Ast::Nodes {
         /// @brief If the variable is to be generated as a global
         bool is_global = false;
 
-        Let(std::string& target, optional<pExpr> expr, unique_ptr<Sem::Type> ty, Span span)
+        Let(std::string& target, pExpr expr, unique_ptr<Sem::Type> ty, Span span)
         : Stmt(span), target(target), expr(std::move(expr)), ty(std::move(ty)) {}
 
         static std::unique_ptr<Let> parse(Lexer::Stream& s);
