@@ -133,14 +133,6 @@ void Ast::Nodes::If::generate(Context& ctx) {
 
     // Generate condition
     Expr* cond_expr = dynamic_cast<Expr*>(cond.get());
-    if(!cond_expr) {
-        Error::throw_error(
-            line_number,
-            "if",
-            "Expected rvalue",
-            Error::ErrorCodes::INVALID_AST
-        );
-    }
     unique_ptr<Value> condVal = cond_expr->generate(ctx);
 
     // Convert to boolean: cond != 0
@@ -180,14 +172,6 @@ void Ast::Nodes::Else::generate(Context& ctx) {
 
     // Generate condition
     Expr* cond_expr = dynamic_cast<Expr*>(cond.get());
-    if(!cond_expr) {
-        Error::throw_error(
-            line_number,
-            "else",
-            "Expected an rvalue but received an lvalue",
-            Error::ErrorCodes::INVALID_AST
-        );
-    }
     unique_ptr<Value> condVal = cond_expr->generate(ctx);
 
     // Convert to boolean: cond != 0
@@ -213,14 +197,6 @@ void Ast::Nodes::Else::generate(Context& ctx) {
     // else
     ctx.builder.SetInsertPoint(else_block);
     Expr* else_expr2 = dynamic_cast<Expr*>(expr.get());
-    if(!else_expr2) {
-        Error::throw_error(
-            line_number,
-            "",
-            "Expected rvalue",
-            Error::ErrorCodes::INVALID_AST
-        );
-    }
     else_expr2->generate(ctx);
     ctx.builder.CreateBr(then_block);
 

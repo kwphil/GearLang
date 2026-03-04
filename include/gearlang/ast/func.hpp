@@ -52,8 +52,8 @@ namespace Ast::Nodes {
         /// @brief the argument converted to llvm
         llvm::Value* var;
 
-        Argument(string name, Sem::Type* ty, int line_number)
-        : Expr(line_number, ty), name(name) { }
+        Argument(string name, Sem::Type* ty, Span span)
+        : Expr(span, ty), name(name) { }
 
         static unique_ptr<Argument> parse(Lexer::Stream& s);
 
@@ -83,9 +83,9 @@ namespace Ast::Nodes {
             deque<unique_ptr<Argument>>&& args, 
             unique_ptr<NodeBase> block, 
             bool is_variadic,
-            int line_number
+            Span span
         ) : 
-            Stmt(line_number), name(name), ty(ty), args(std::move(args)),
+            Stmt(span), name(name), ty(ty), args(std::move(args)),
             block(std::move(block)), is_variadic(is_variadic) { } 
 
         static unique_ptr<Function> parse(Lexer::Stream& s);
@@ -116,8 +116,8 @@ namespace Ast::Nodes {
             deque<unique_ptr<Argument>>& args, 
             bool is_variadic,
             bool no_mangle,
-            int line_number
-        ) : Stmt(line_number), callee(callee), ty(ty), args(std::move(args)), 
+            Span span
+        ) : Stmt(span), callee(callee), ty(ty), args(std::move(args)), 
             is_variadic(is_variadic), no_mangle(no_mangle) { }
 
         static unique_ptr<ExternFn> parse(Lexer::Stream& s);

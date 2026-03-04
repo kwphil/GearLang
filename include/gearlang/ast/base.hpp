@@ -43,9 +43,9 @@ namespace Ast::Nodes {
     class NodeBase {
     public:
         /// @brief The line number in the source code where the node appears
-        const int line_number;
+        const Span span_meta;
 
-        NodeBase(int line_number) : line_number(line_number) {}
+        NodeBase(Span span) : span_meta(span) {}
         virtual ~NodeBase() = default;
 
         /// @brief Parses a node from the lexer stream

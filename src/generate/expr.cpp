@@ -100,15 +100,8 @@ unique_ptr<Value> Ast::Nodes::ExprOp::generate(Context& ctx) {
         );
     }
 
-    Error::throw_error(
-        line_number,
-        "",
-        "Invalid ExprOp",
-        Error::ErrorCodes::INVALID_AST
-    );
+    assert(false && "You shouldn't be here!!");
 }
-
-#include <iostream>
 
 // Looks up the name of the variable
 // If the variable doesn't exist, it throws an error and quits
@@ -153,15 +146,6 @@ unique_ptr<Value> Ast::Nodes::ExprAssign::generate(Context& ctx) {
 
     Expr* expr2 = dynamic_cast<Expr*>(expr.get());
     
-    if(!expr2) {
-        Error::throw_error(
-            line_number,
-            "",
-            "Expected rvalue",
-            Error::ErrorCodes::INVALID_AST
-        );
-    }
-    
     unique_ptr<Value> value = expr2->generate(ctx);
 
     ctx.builder.CreateStore(value->ir, var);
@@ -173,15 +157,6 @@ unique_ptr<Value> Ast::Nodes::ExprAssign::generate(Context& ctx) {
 // Parses the expressions for each argument and calls it
 unique_ptr<Value> Ast::Nodes::ExprCall::generate(Context& ctx) {
     llvm::Function* func = ctx.module->getFunction(callee);
-
-    if(!func) {
-        Error::throw_error(
-            line_number,
-            callee.c_str(),
-            "Unknown function",
-            Error::ErrorCodes::FUNCTION_NOT_DEFINED
-        );
-    }
 
     std::vector<llvm::Value*> arg_values;
     
@@ -241,27 +216,9 @@ llvm::Value* deref(
 unique_ptr<Value> Ast::Nodes::ExprDeref::generate(Context& ctx) {
     llvm::Value* var = get_var(let);
 
-    if(!var) {
-        Error::throw_error(
-            line_number,
-            name.c_str(),
-            "Tried to dereference a variable that wasn't declared",
-            Error::ErrorCodes::VARIABLE_NOT_DEFINED
-        );
-    }
-
     // Load the variable twice and return
     // Once to get the pointer
     // Twice to get the dereferenced data
-
-    if(!ty->pointer_level()) {
-        Error::throw_error(
-            line_number,
-            var->getName().str().c_str(),
-            "Expected a pointer type",
-            Error::ErrorCodes::BAD_TYPE
-        );
-    }
 
     llvm::Value* load = deref(
         ctx,
@@ -269,7 +226,7 @@ unique_ptr<Value> Ast::Nodes::ExprDeref::generate(Context& ctx) {
         ty->to_llvm(ctx),
         var->getName().str(),
         ".load",
-        line_number
+        span_meta.line
     );
 
     llvm::Value* deref_var = deref(
@@ -278,7 +235,7 @@ unique_ptr<Value> Ast::Nodes::ExprDeref::generate(Context& ctx) {
         ty->to_llvm(ctx),
         var->getName().str(),
         ".deref",
-        line_number
+        span_meta.line
     );
 
     return std::make_unique<Value>(

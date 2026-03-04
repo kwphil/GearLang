@@ -38,15 +38,9 @@ SOFTWARE.
 #include <source_location>
 #include <memory>
 
-/// @brief Lexer namespace
-namespace Lexer {
+#include "etc.hpp"
 
-/// @brief span metadata for tokens
-struct Span {
-    size_t line;
-    size_t col;
-    size_t len;
-};
+namespace Lexer {
 
 /// @brief Character types used during lexing
 enum class CharType {
@@ -137,10 +131,7 @@ public:
     /// @brief Expect the next token to match a specific content
     /// @param should Expected token content
     /// @param line_number Line expected for the error
-    void expect(
-        const char* should, 
-        int line_number
-    );
+    void expect(const char* should, Span const& span);
 
     /// @brief Dumps the remaining unparsed text
     void dump();

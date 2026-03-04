@@ -55,7 +55,7 @@ namespace Ast::Nodes {
     /// @brief Base class for statements (i.e. functions, ifs and others)
     class Stmt : public NodeBase {
     public:
-        Stmt(int line_number) : NodeBase(line_number) { }
+        Stmt(Span span) : NodeBase(span) { }
 
         /// @brief For the semantic analyzer
         /// @param analyzer The analyzer object
@@ -75,8 +75,8 @@ namespace Ast::Nodes {
         std::unique_ptr<NodeBase> expr;
 
     public:
-        If(std::unique_ptr<NodeBase> expr, pExpr cond, int line_number)
-        : Stmt(line_number), cond(std::move(cond)), expr(std::move(expr)) { }
+        If(std::unique_ptr<NodeBase> expr, pExpr cond, Span span)
+        : Stmt(span), cond(std::move(cond)), expr(std::move(expr)) { }
 
         If(If&&) = default;
         If& operator=(If&&) = default;
@@ -129,8 +129,8 @@ namespace Ast::Nodes {
         /// @brief If the variable is to be generated as a global
         bool is_global = false;
 
-        Let(std::string& target, optional<pExpr> expr, unique_ptr<Sem::Type> ty, int line_number)
-        : Stmt(line_number), target(target), expr(std::move(expr)), ty(std::move(ty)) {}
+        Let(std::string& target, optional<pExpr> expr, unique_ptr<Sem::Type> ty, Span span)
+        : Stmt(span), target(target), expr(std::move(expr)), ty(std::move(ty)) {}
 
         static std::unique_ptr<Let> parse(Lexer::Stream& s);
 
@@ -148,8 +148,8 @@ namespace Ast::Nodes {
         pExpr expr;
     
     public:
-        Return(std::unique_ptr<Expr> expr, int line_number)
-        : Stmt(line_number), expr(std::move(expr)) {}
+        Return(std::unique_ptr<Expr> expr, Span span)
+        : Stmt(span), expr(std::move(expr)) {}
 
         static std::unique_ptr<Return> parse(Lexer::Stream& s);
 

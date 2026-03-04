@@ -57,93 +57,138 @@ Lexer::Stream Lexer::tokenize(std::string& source_path)
     Stream out;
 
     char c;
-    size_t line = 1;
-    size_t col = 0;
-    size_t len = 0;
-    CharType state_new, state_old = CharType::Invalid;
+
+    size_t index = 0;  
+    size_t line  = 1;
+    size_t col   = 1;
+
+    CharType state_old = CharType::Invalid;
     Token tok{};
 
-    bool is_string = false;
+    // Token start metadata
+    size_t token_start_index = 0;
+    size_t token_start_line  = 1;
+    size_t token_start_col   = 1;
+
+    bool is_string  = false;
     bool is_comment = false;
 
-    while (file.get(c)) {
-        len++;
-        col++;
+    auto flush = [&](size_t end_index)
+    {
+        if (tok.content.empty())
+            return;
 
-        if(c == '\\') {
-            file.get(c);
-            tok.content.push_back(get_escape(c));
-            continue;
-        } 
-        
-        state_new = getCharType(c);
-        // state transition -> token boundary
-        // Forces a single char token to stay that way
-        if ((!is_string) &&
-            (state_new != state_old ||
-             is_single_char_token(state_new) ||
-             is_single_char_token(state_old)))
+        if (state_old == CharType::Invalid ||
+            state_old == CharType::Format)
         {
-            // allow identifiers like "num1"
-            if (state_new == CharType::Num &&
-                state_old == CharType::Alpha)
-                goto transition_cancel;
+            tok.content.clear();
+            return;
+        }
 
-            if (tok.content == "//") is_comment = true;
+        if (is_comment && !is_string)
+        {
+            tok.content.clear();
+            return;
+        }
 
-            if (state_old != CharType::Invalid &&
-                state_old != CharType::Format &&
-                (!is_comment || is_string))
+        tok.type = classify(tok.content, state_old);
+        tok.span = {
+            .line  = token_start_line,
+            .col   = token_start_col,
+            .start = token_start_index,
+            .end   = end_index
+        };
+
+        out.content.push_back(tok);
+        tok = Token{};
+    };
+
+    while (file.get(c))
+    {
+        CharType state_new = getCharType(c);
+
+        // determine if this character causes a token boundary
+        bool boundary =
+            !is_string &&
+            (
+                state_new != state_old ||
+                is_single_char_token(state_new) ||
+                is_single_char_token(state_old)
+            );
+
+        // allow identifiers like "num1"
+        if (!is_string &&
+            state_old == CharType::Alpha &&
+            state_new == CharType::Num)
+        {
+            boundary = false;
+        }
+
+        if (boundary)
+        {
+            flush(index);
+        }
+
+        if (tok.content.empty() &&
+            state_new != CharType::Format)
+        {
+            token_start_index = index;
+            token_start_line  = line;
+            token_start_col   = col;
+        }
+
+        if (is_string && c == '\\')
+        {
+            char next;
+            if (file.get(next))
             {
-                tok.type = classify(tok.content, state_old);
-                tok.span = 
-                tok.span = { .line = line, .col = col, .len = len };
-                out.content.push_back(tok);
-                tok = Token{};
-                len = 0;
-            } else {
-                tok.content.clear();
-                len = 0;
-            }
-        }
+                tok.content.push_back(get_escape(next));
 
-    transition_cancel:
+                index++;
+                col++;
 
-        if (state_new == CharType::Quote) {
-            if(is_string) {
-                tok.content = tok.content.substr(1); // Removing the quote
-                tok.content += '\0'; // NULL terminated
-                is_string = !is_string;
                 state_old = state_new;
-                continue; // Prevent last quote from being added 
-                          // by skipping the iteration
+                continue;
             }
-
-            is_string = !is_string;
         }
+
+        if (state_new == CharType::Quote)
+        {
+            is_string = !is_string;
+
+            state_old = state_new;
+            index++;
+            col++;
+            continue;
+        }
+
+        if (!is_string && tok.content == "/" && c == '/')
+        {
+            is_comment = true;
+        }
+
+        if (!is_comment || is_string)
+        {
+            tok.content.push_back(c);
+        }
+
+        state_old = state_new;
+
+        index++;
 
         if (c == '\n')
         {
             line++;
-            col = 0;
+            col = 1;
             is_comment = false;
         }
-
-        tok.content += c;
-        state_old = state_new;
+        else
+        {
+            col++;
+        }
     }
 
-    // flush final token if file didn't end with a transition
-    if (!tok.content.empty() &&
-        state_old != CharType::Format &&
-        state_old != CharType::Invalid &&
-        (!is_comment || is_string))
-    {
-        tok.type = classify(tok.content, state_old);
-        tok.span = { .line=line, .col=col, .len=len };
-        len = 0;
-        out.content.push_back(tok);
-    }
+    flush(index);
 
     return out;
 }

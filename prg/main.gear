@@ -30,7 +30,7 @@ fn main: argc i32, argv char^ {
     let y = 14;
 
     let check: bool; 
-    check = higher == 5;
+    check higher == 5;
 
     if(check) {
         x = higher + 1;

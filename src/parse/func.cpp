@@ -52,7 +52,7 @@ unique_ptr<Argument> Argument::parse(Lexer::Stream& s) {
     string arg = s.pop()->content;
     Sem::Type* ty = new Sem::Type(s); 
 
-    return std::make_unique<Argument>(arg, ty, s.peek()->span.line);
+    return std::make_unique<Argument>(arg, ty, s.peek()->span);
 }
 
 string Argument::to_string() { 
@@ -65,37 +65,37 @@ string Argument::to_string() {
 // Returns the type (returns Ast::Type::NonPrimitive, ... if non-primitive)
 // Returns the name of the function
 std::tuple<Sem::Type, string> 
-parse_function_header(Lexer::Stream& s, int line_number);
+parse_function_header(Lexer::Stream& s, Span& span);
 
 // Helper function
 // Parses the arguments for a function
 deque<unique_ptr<Argument>> parse_function_args(
     Lexer::Stream& s, 
-    int line_number,
+    Span& span,
     bool requires_names,
     bool& is_variadic
 );
 
 std::unique_ptr<Function>
 Function::parse(Lexer::Stream& s) {
-    int line_number = s.peek()->span.line;
+    Span span = s.peek()->span;
     bool is_variadic;
 
-    s.expect("fn", line_number);
+    s.expect("fn", span);
 
     Sem::Type ty;
     string name;
     deque<unique_ptr<Argument>> args;
 
-    auto header = parse_function_header(s, line_number);
+    auto header = parse_function_header(s, span);
 
     ty = std::get<0>(header);
     name = std::get<1>(header);
 
-    args = parse_function_args(s, line_number, true, is_variadic);
+    args = parse_function_args(s, span, true, is_variadic);
 
     auto block = NodeBase::parse(s);
-    return std::make_unique<Function>(name, ty, std::move(args), std::move(block), is_variadic, line_number);
+    return std::make_unique<Function>(name, ty, std::move(args), std::move(block), is_variadic, span);
 }
 
 string Function::to_string() {
@@ -112,11 +112,11 @@ string Function::to_string() {
 }
 
 std::unique_ptr<ExternFn> ExternFn::parse(Lexer::Stream& s) {
-    int line_number = s.peek()->span.line;
+    Span span = s.peek()->span;
     bool is_variadic;
     bool no_mangle = false;
     
-    s.expect("extern", line_number);
+    s.expect("extern", span);
     
     if(s.peek()->type == Lexer::Type::StringLiteral) {
         // Using strcmp because my strings have NULLs
@@ -131,20 +131,20 @@ std::unique_ptr<ExternFn> ExternFn::parse(Lexer::Stream& s) {
     }
 after_extern:
 
-    s.expect("fn", line_number);
+    s.expect("fn", span);
 
     Sem::Type ty;
     string name;
     deque<unique_ptr<Argument>> args;
 
-    auto header = parse_function_header(s, line_number);
+    auto header = parse_function_header(s, span);
 
     ty = std::get<0>(header);
     name = std::get<1>(header);
 
-    args = parse_function_args(s, line_number, false, is_variadic);
+    args = parse_function_args(s, span, false, is_variadic);
 
-    return std::make_unique<ExternFn>(name, ty, args, is_variadic, no_mangle, line_number);
+    return std::make_unique<ExternFn>(name, ty, args, is_variadic, no_mangle, span);
 }
 
 string ExternFn::to_string() {
@@ -164,7 +164,7 @@ string ExternFn::to_string() {
 
 
 std::tuple<Sem::Type, string> 
-parse_function_header(Lexer::Stream& s, int line_number) {
+parse_function_header(Lexer::Stream& s, Span& span) {
     // Skipping over the current token, is there a parameter list or a block? 
     // If there is not, then there is a type included
     Sem::Type ty;
@@ -181,7 +181,7 @@ parse_function_header(Lexer::Stream& s, int line_number) {
 
 deque<unique_ptr<Argument>> parse_function_args(
     Lexer::Stream& s, 
-    int line_number,
+    Span& span,
     bool requires_names, // TODO: Implement this
     bool& is_variadic
 ) {
@@ -200,8 +200,7 @@ deque<unique_ptr<Argument>> parse_function_args(
     while (true) {
         if (!s.has()) {
             Error::throw_error(
-                line_number,
-                "",
+                span,
                 "Unexpected EOF parsing args for function",
                 Error::ErrorCodes::UNEXPECTED_EOF
             );
@@ -216,7 +215,7 @@ deque<unique_ptr<Argument>> parse_function_args(
         args.push_back(Argument::parse(s));
         
         if (s.peek()->content == "{" || s.peek()->content == ";") break;
-        s.expect(",", line_number);
+        s.expect(",", span);
     }
 
     return args;
