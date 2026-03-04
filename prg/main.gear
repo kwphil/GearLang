@@ -1,5 +1,5 @@
 // External function
-extern "C" fn printf: s char^, ...;
+extern("C") fn printf(s char^, ...);
 
 //simple assignment
 let a = 3;
@@ -16,18 +16,19 @@ let complex = a - (b - 1); // should be 6 = 10 - ((3 + 2) - 1)
 //higher order operators
 let higher = (complex / 3) * 2; // should be 4 = (6 / 3) * 2
 
-fn i32 foo: 
+fn foo(
     _a i32, 
-    _b i32 
+    _b i32,
+) returns i32
 {
     return _a + _b;
 }
 
 higher = higher + 1;
 
-fn main: argc i32, argv char^ {
+fn main(argc i32, argv char^) {
     let x = 0;
-    let y: i32 = "hi";
+    let y: i32 = 3;
 
     let check: bool; 
     check = higher == 5;

@@ -1,7 +1,5 @@
 # Syntax
 
-GearLang adds a lot to the syntax, which while intuitive, needs to be clarified.
-
 ## Declarations
 
 ### Variables
@@ -11,19 +9,17 @@ A simple `let` indicates a declarations
 ```gear
 // Initializing
 let a = 0;
-// No initializing
-let a;
-// Same thing with explicit types
+// No initializing with explicit types
 let a: i32 = 0;
 let a: i32;
+// This doesn't work:
+let a;
 ```
 
 ### Functions
 
-Functions are changed quite a bit
-
 ```
-[extern] fn [ret type] <name> [: (<arg name> <arg type>, )]
+[extern[("<Language>")]] fn <name> [(<arg name> <arg type>, )]
 ```
 
 The last comma is not required, but allowed

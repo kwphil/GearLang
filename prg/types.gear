@@ -12,12 +12,12 @@ let ptr = #deref;
 // Strings
 let c = "Hello, World!";
 
-fn f64 float: d f64, e char^ {
+fn float(d f64, e char^) returns f64 {
     return d + 1.0;
 }
 
 // Returning pointers
-fn char^ str {
+fn str returns char^ {
     return "Hello, World! %f";
 }
 

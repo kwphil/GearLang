@@ -1,28 +1,54 @@
-* [ ] **Build docs**
+* [ ] Documentation
   * [x] README
     * [x] Project overview
     * [x] Build instructions
     * [x] Supported platforms
-  * [ ] Usage
-    * [ ] CLI invocation patterns
-    * [ ] Input/output conventions
-    * [ ] Exit codes
-    * [ ] Environment variables
+  * [ ] User Guide
+    * [ ] Installation
+    * [ ] CLI usage
+      * [ ] Invocation patterns
+      * [ ] Flags & options
+      * [ ] Input/output conventions
+      * [ ] Exit codes
+      * [ ] Environment variables
+    * [ ] Language basics
+    * [ ] Standard library overview
+    * [ ] FFI / C interop
+    * [ ] Build modes (debug/release)
   * [ ] Examples
-    * [ ] Control flow examples
+    * [ ] Hello world
+    * [ ] Control flow
     * [ ] Functions & parameters
-    * [X] Interop with C
-  * [ ] System
+    * [ ] Structs / types
+    * [x] Interop with C
+    * [ ] Larger sample program
+  * [ ] Compiler Internals
     * [ ] Architecture overview
-    * [X] Compiler pipeline (Lexer -> Parser -> LLVM)
+    * [x] Compiler pipeline (Lexer → Parser → LLVM)
+    * [ ] AST structure
+    * [ ] Type system design
     * [ ] Error model
-    * [ ] Design constraints & non-goals
+    * [ ] Code generation strategy
+    * [ ] Optimization passes
+    * [ ] Design constraints
+    * [ ] Non-goals
+  * [ ] Contributor Guide
+    * [ ] Project layout
+    * [ ] How to build locally
+    * [ ] How to run tests
+    * [ ] Code style guidelines
+    * [ ] Adding a new language feature
+  * [ ] Language Reference
+    * [ ] Grammar (EBNF)
+    * [ ] Type rules
+    * [ ] Operator precedence table
+    * [ ] Memory model
 * [ ] **Frontend**
   * [ ] Compiler options
     * [x] `--verbose`
     * [x] `--version`
-    * [X] `-G,--object`
-      * [ ] Emit object file
+    * [X] `-c,--object`
+      * [x] Emit object file
       * [ ] Target-specific formats
     * [X] `-S,--emit-llvm`
     * [X] `--dump-ast`
