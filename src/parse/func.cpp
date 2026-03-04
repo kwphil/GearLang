@@ -62,18 +62,25 @@ string Argument::to_string() {
 }
 
 // Helper function for parsing function headers
-// Returns the type (returns Ast::Type::NonPrimitive, ... if non-primitive)
+// Returns the type 
 // Returns the name of the function
-std::tuple<Sem::Type, string> 
-parse_function_header(Lexer::Stream& s, Span& span);
+// Returns the arguments
+std::tuple<Sem::Type, string, deque<unique_ptr<Argument>>> 
+parse_function_header(
+    Lexer::Stream& s, 
+    Span& span,
+    bool requires_names,
+    bool& is_variadic
+);
 
 // Helper function
 // Parses the arguments for a function
 deque<unique_ptr<Argument>> parse_function_args(
     Lexer::Stream& s, 
     Span& span,
-    bool requires_names,
-    bool& is_variadic
+    bool requires_names, // TODO: Implement this
+    bool& is_variadic,
+    Sem::Type& ty
 );
 
 std::unique_ptr<Function>
@@ -87,12 +94,11 @@ Function::parse(Lexer::Stream& s) {
     string name;
     deque<unique_ptr<Argument>> args;
 
-    auto header = parse_function_header(s, span);
+    auto header = parse_function_header(s, span, false, is_variadic);
 
     ty = std::get<0>(header);
     name = std::get<1>(header);
-
-    args = parse_function_args(s, span, true, is_variadic);
+    args = std::move(std::get<2>(header));
 
     auto block = NodeBase::parse(s);
     return std::make_unique<Function>(name, ty, std::move(args), std::move(block), is_variadic, span);
@@ -118,12 +124,27 @@ std::unique_ptr<ExternFn> ExternFn::parse(Lexer::Stream& s) {
     
     s.expect("extern", span);
     
-    if(s.peek()->type == Lexer::Type::StringLiteral) {
+    if(s.peek()->type == Lexer::Type::ParenOpen) {
+        s.pop();
+
+        unique_ptr<Lexer::Token> tok = s.pop();
+        const char* str = tok->content.c_str();
+
+        if(tok->type != Lexer::Type::StringLiteral) {
+            Error::throw_error(
+                tok->span,
+                std::format("Expected a StringLiteral, received {}", 
+                    Lexer::print_type(tok->type)
+                ).c_str(),
+                Error::ErrorCodes::UNEXPECTED_TOKEN
+            );
+        }
+
         // Using strcmp because my strings have NULLs
         // that screw everything up with string::operator==
-        if(strcmp(s.peek()->content.c_str(), "C") == 0) {
+        if(strcmp(str, "C") == 0) {
             no_mangle = true;
-            s.pop();
+            s.expect(")", s.peek()->span);
             goto after_extern;
         } 
 
@@ -137,12 +158,11 @@ after_extern:
     string name;
     deque<unique_ptr<Argument>> args;
 
-    auto header = parse_function_header(s, span);
+    auto header = parse_function_header(s, span, false, is_variadic);
 
     ty = std::get<0>(header);
     name = std::get<1>(header);
-
-    args = parse_function_args(s, span, false, is_variadic);
+    args = std::move(std::get<2>(header));
 
     return std::make_unique<ExternFn>(name, ty, args, is_variadic, no_mangle, span);
 }
@@ -163,36 +183,37 @@ string ExternFn::to_string() {
 // PRIVATE FUNCTIONS
 
 
-std::tuple<Sem::Type, string> 
-parse_function_header(Lexer::Stream& s, Span& span) {
-    // Skipping over the current token, is there a parameter list or a block? 
-    // If there is not, then there is a type included
+std::tuple<Sem::Type, string, deque<unique_ptr<Argument>>> 
+parse_function_header(
+    Lexer::Stream& s, 
+    Span& span,
+    bool requires_names,
+    bool& is_variadic
+) {
     Sem::Type ty;
-    
-    auto t = s.peek();
-    if(s.next()->content != ":" && s.next()->type != Lexer::Type::BraceOpen) {
-        ty = Sem::Type(s);
-    }
-
     std::string name = s.pop()->content;
 
-    return { ty, name };
+    deque<unique_ptr<Argument>> args =
+        parse_function_args(s, span, requires_names, is_variadic, ty);
+
+    return { ty, name, std::move(args) };
 }
 
 deque<unique_ptr<Argument>> parse_function_args(
     Lexer::Stream& s, 
     Span& span,
     bool requires_names, // TODO: Implement this
-    bool& is_variadic
+    bool& is_variadic,
+    Sem::Type& ty
 ) {
     is_variadic = false;
 
     // No arguments
-    if (s.peek()->content != ":") {
+    if (s.peek()->content != "(") {
         return { };
     }
 
-    // Consume ':'
+    // Consume '('
     s.pop();
 
     deque<unique_ptr<Argument>> args;
@@ -214,8 +235,18 @@ deque<unique_ptr<Argument>> parse_function_args(
         
         args.push_back(Argument::parse(s));
         
-        if (s.peek()->content == "{" || s.peek()->content == ";") break;
-        s.expect(",", span);
+        if (s.peek()->content == ")") break;
+        s.expect(",", s.peek()->span);
+        // One more to allow an optional final comma
+        if(s.peek()->content == ")") break;
+    }
+    
+    s.pop(); // )
+
+    ty = Sem::Type("void");
+    if(s.peek()->content == "returns") {
+        s.pop();
+        ty = Sem::Type(s);
     }
 
     return args;
