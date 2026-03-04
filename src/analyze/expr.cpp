@@ -46,8 +46,7 @@ unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
 
     if(!ref.has_value()) {
         Error::throw_error(
-            line_number,
-            callee.c_str(),
+            span_meta,
             "Function not defined",
             Error::ErrorCodes::FUNCTION_NOT_DEFINED
         );
@@ -79,8 +78,7 @@ unique_ptr<ExprValue> ExprAddress::analyze(Analyzer& analyzer) {
 
     if(!lookup.has_value()) {
         Error::throw_error(
-            line_number,
-            std::format("#{}", name).c_str(),
+            span_meta,
             "Variable not defined",
             Error::ErrorCodes::VARIABLE_NOT_DEFINED
         );
@@ -99,8 +97,7 @@ unique_ptr<ExprValue> ExprDeref::analyze(Analyzer& analyzer) {
 
     if(!lookup.has_value()) {
         Error::throw_error(
-            line_number,
-            std::format("@{}", name).c_str(),
+            span_meta,
             "Variable not defined",
             Error::ErrorCodes::VARIABLE_NOT_DEFINED
         );

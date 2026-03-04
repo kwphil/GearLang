@@ -74,8 +74,7 @@ unique_ptr<ExprValue> ExprVar::analyze(Analyzer& analyzer) {
 
     if(!var_wrap.has_value()) {
         Error::throw_error(
-            line_number,
-            name.c_str(),
+            span_meta,
             "Unknown variable",
             Error::ErrorCodes::VARIABLE_NOT_DEFINED
         );
@@ -94,8 +93,7 @@ unique_ptr<ExprValue> ExprAssign::analyze(Analyzer& analyzer) {
 
     if(!var_wrap.has_value()) {
         Error::throw_error(
-            line_number,
-            name.c_str(),
+            span_meta,
             "Unknown variable",
             Error::ErrorCodes::VARIABLE_NOT_DEFINED
         );

@@ -59,13 +59,12 @@ std::unique_ptr<Lexer::Token> Lexer::Stream::pop() {
 
 void Lexer::Stream::expect(
     const char* should,
-    int line_number
+    Span const& span
 ) {
     auto is = pop()->content;
     if (is != should) {
         Error::throw_error(
-            line_number,
-            is.c_str(),
+            span,
             std::format(
                 "Parser found an error. Expected `{}` but received `{}`",
                 should, is

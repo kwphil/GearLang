@@ -47,15 +47,19 @@ unique_ptr<Expr> Expr::parse(Lexer::Stream& s) {
     return parseExpr(s);
 }
 
-unique_ptr<ExprLitInt> ExprLitInt::parse(Lexer::Stream& s) 
-{ return std::make_unique<ExprLitInt>((uint64_t)std::stoi(s.pop()->content), s.peek()->span.line); }
+unique_ptr<ExprLitInt> ExprLitInt::parse(Lexer::Stream& s) { 
+    auto tok = *s.pop();
+
+    return std::make_unique<ExprLitInt>((uint64_t)std::stoi(tok.content), tok.span); 
+}
 
 string ExprLitInt::to_string() { return std::format("{{ ExprLitInt value={} }}", value); }
 
 unique_ptr<ExprLitFloat> ExprLitFloat::parse(Lexer::Stream& s) { 
-    double val = std::stod(s.pop()->content);
+    auto tok = *s.pop();
+    double val = std::stod(tok.content);
 
-    return std::make_unique<ExprLitFloat>(val, s.peek()->span.line); 
+    return std::make_unique<ExprLitFloat>(val, tok.span); 
 }
 
 string ExprLitFloat::to_string() { return std::format("{{ ExprLitFloat value={} }}", value); }
@@ -63,25 +67,26 @@ string ExprLitFloat::to_string() { return std::format("{{ ExprLitFloat value={} 
 unique_ptr<ExprLitString> ExprLitString::parse(Lexer::Stream& s) {
     unique_ptr<Lexer::Token> t = s.pop();
 
-    return std::make_unique<ExprLitString>(t->content, t->span.line);
+    return std::make_unique<ExprLitString>(t->content, t->span);
 }
 
 string ExprLitString::to_string() { return std::format("{{ ExprLitString string={} }}", string); }
 
 unique_ptr<ExprVar> ExprVar::parse(const Lexer::Token& token) { 
-    return std::make_unique<ExprVar>(token.content, token.span.line);
+    return std::make_unique<ExprVar>(token.content, token.span);
 }
 
 string ExprVar::to_string() { return std::format("{{ ExprVar name={} }}", name); }
 
 unique_ptr<ExprAssign>
 ExprAssign::parse(const Lexer::Token& token, Lexer::Stream& s) {
-    int line_number = token.span.line;
+    Span span = token.span;
 
-    s.expect("=", line_number);
+    s.expect("=", span);
     pExpr expr = Expr::parse(s);
 
-    return std::make_unique<ExprAssign>(token.content, std::move(expr), line_number);
+    span.end = expr->span_meta.end;
+    return std::make_unique<ExprAssign>(token.content, std::move(expr), span);
 }
 
 string ExprAssign::to_string() { 
@@ -122,7 +127,10 @@ pExpr Expr::parseExpr(Lexer::Stream& s) {
 
     pExpr right = parseTerm(s);
 
-    return std::make_unique<ExprOp>(type, std::move(left), std::move(right), s.peek()->span.line);
+    Span span = left->span_meta;
+    span.end = right->span_meta.end;
+
+    return std::make_unique<ExprOp>(type, std::move(left), std::move(right), span);
 }
 
 string ExprOp::to_string() {
@@ -132,12 +140,12 @@ string ExprOp::to_string() {
 }
 
 pExpr Expr::parseTerm(Lexer::Stream& s) {
-    int line_number = s.peek()->span.line;
+    Span span = s.peek()->span;
 
     if (s.peek()->content == "(") {
-        s.expect("(", line_number);
+        s.expect("(", span);
         auto expr = parseExpr(s);
-        s.expect(")", line_number);
+        s.expect(")", span);
         return expr;
     }
 
@@ -170,8 +178,7 @@ pExpr Expr::parseTerm(Lexer::Stream& s) {
     std::string error_msg = std::format("Unexpect token: {} (type={})", lit.content, (int)lit.type);
     
     Error::throw_error(
-        line_number,
-        lit.content.c_str(),
+        span,
         "Unexpected token.",
         Error::ErrorCodes::UNEXPECTED_TOKEN
     );
@@ -181,24 +188,24 @@ unique_ptr<ExprCall> ExprCall::parse(
     const Lexer::Token& tok,
     Lexer::Stream& s
 ) {
-    int line_number = tok.span.line;
+    Span span = tok.span;
     std::string nm = tok.content;
     std::vector<pExpr> args;
 
-    s.expect("(", line_number);
+    s.expect("(", span);
     
     while(s.peek()->type != Lexer::Type::ParenClose) {
         args.push_back(Expr::parse(s));
 
         // Looking for the ) the loop will end anyway
         if(s.peek()->type != Lexer::Type::ParenClose) {
-            s.expect(",", line_number);
+            s.expect(",", span);
         }
     }
 
-    s.expect(")", line_number);
+    s.expect(")", span);
 
-    return std::make_unique<ExprCall>(nm, args, line_number);
+    return std::make_unique<ExprCall>(nm, args, span);
 }
 
 string ExprCall::to_string() {
@@ -212,15 +219,23 @@ string ExprCall::to_string() {
 }
 
 unique_ptr<ExprAddress> ExprAddress::parse(Lexer::Stream& s) {
-    s.expect("#", s.peek()->span.line);
-    return std::make_unique<ExprAddress>(s.pop()->content, s.peek()->span.line);
+    Span span = s.peek()->span;
+
+    s.expect("#", span);
+
+    auto tok = s.pop();
+    span.end = tok->span.end;
+    return std::make_unique<ExprAddress>(tok->content, span);
 }
 
 string ExprAddress::to_string() { return std::format("{{ ExprAddress name={} }}", name); }
 
 unique_ptr<ExprDeref> ExprDeref::parse(Lexer::Stream& s) {
-    s.expect("@", s.peek()->span.line);
-    return std::make_unique<ExprDeref>(s.pop()->content, s.peek()->span.line);
+    Span span = s.peek()->span;
+
+    s.expect("@", span);
+    span.start -= 1;
+    return std::make_unique<ExprDeref>(s.pop()->content, span);
 }
 
 string ExprDeref::to_string() { return std::format("{{ ExprDeref name={} }}", name); }

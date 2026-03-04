@@ -35,6 +35,7 @@ SOFTWARE.
 #include <string>
 #include <fstream>
 #include <vector>
+#include "etc.hpp"
 
 namespace Error {
     enum class ErrorCodes {
@@ -49,18 +50,14 @@ namespace Error {
         BAD_TYPE,
     };
 
-    /// @brief throws an error at a line. noreturn just to suppress warning about no func return.
-    /// @param line_number the line to throw an error
-    /// @param search_for will highlight a specific section of text. If it fails, it will search `leniency` lines down for it. If it still doesn't work, it will just not highlight anything. Pass "" to disable the feature
+    /// @brief throws an error based on a span. 
+    /// @param span the span to throw at
     /// @param err a specific message to throw
-    /// @param leniency the number of lines to search through in case search_for fails
-    /// @param code the error code to throw. .
+    /// @param code the error code to throw
     [[noreturn]] void throw_error (
-        int line_number, 
-        const char* search_for, 
+        Span const& span,
         const char* err,
-        ErrorCodes code,
-        unsigned int leniency = 5
+        ErrorCodes code
     );
 
     /// @brief Sets up the error management system

@@ -48,9 +48,9 @@ using std::unique_ptr;
 using std::string;
 
 unique_ptr<Let> Let::parse(Lexer::Stream& s) {
-    int line_number = s.peek()->span.line;
+    Span start_span = s.peek()->span;
     
-    s.expect("let", line_number);
+    s.expect("let", start_span);
     string target = s.pop()->content;
     unique_ptr<Sem::Type> ty;
 
@@ -61,11 +61,14 @@ unique_ptr<Let> Let::parse(Lexer::Stream& s) {
 
     unique_ptr<Expr> expr;
     if(!ty || s.peek()->type == Lexer::Type::Equal) {
-        s.expect("=", line_number);
+        s.expect("=", start_span);
         expr = Expr::parse(s);
     }
 
-    return std::make_unique<Let>(target, std::move(expr), std::move(ty), line_number);
+    Span new_span = start_span;
+    new_span.end = s.peek()->span.end;
+
+    return std::make_unique<Let>(target, std::move(expr), std::move(ty), new_span);
 }
 
 string Let::to_string() {
@@ -76,10 +79,10 @@ string Let::to_string() {
 }
 
 unique_ptr<ExprBlock> ExprBlock::parse(Lexer::Stream& s) {
-    int line_number = s.peek()->span.line;
+    Span start_span = s.peek()->span;
     std::vector<unique_ptr<NodeBase>> nodes;
 
-    s.expect("{", line_number);
+    s.expect("{", start_span);
     unique_ptr<Lexer::Token> t = s.peek();
     int brace_count = 1;
     while(s.has()) {
@@ -96,9 +99,10 @@ unique_ptr<ExprBlock> ExprBlock::parse(Lexer::Stream& s) {
         t = s.peek();
     }
 
-    s.pop(); // To remove the last }
+    Span new_span = start_span;
+    start_span.end = s.pop()->span.end; // Remove the }
 
-    return std::make_unique<ExprBlock>(std::move(nodes), line_number);
+    return std::make_unique<ExprBlock>(std::move(nodes), new_span);
 }
 
 string ExprBlock::to_string() {
@@ -118,12 +122,11 @@ string ExprBlock::to_string() {
 unique_ptr<NodeBase> NodeBase::parse(Lexer::Stream& s) {
     unique_ptr<NodeBase> out;
     unique_ptr<Lexer::Token> curr = s.peek();
-    int line_number = curr->span.line;
+    Span span = curr->span;
 
     if(!s.has()) {
         Error::throw_error(
-            line_number,
-            "",
+            span,
             "Unexpected EOF",
             Error::ErrorCodes::UNEXPECTED_EOF
         );
@@ -146,29 +149,31 @@ unique_ptr<NodeBase> NodeBase::parse(Lexer::Stream& s) {
     else if (curr->content == "return") out = Return::parse(s);
     else if (curr->content == "extern") out = ExternFn::parse(s);
     else                                out = Expr::parse(s);
-    s.expect(";", s.peek()->span.line);
+    s.expect(";", s.peek()->span);
 
     return out;
 }
 
 unique_ptr<Return> Return::parse(Lexer::Stream& s) {
-    int line_number = s.peek()->span.line;
+    Span span = s.peek()->span;
     
-    s.expect("return", line_number);
+    s.expect("return", span);
     unique_ptr<Expr> expr = Expr::parse(s);
 
-    return std::make_unique<Return>(std::move(expr), line_number);
+    span.end = expr->span_meta.end;
+    return std::make_unique<Return>(std::move(expr), span);
 }
 
 string Return::to_string() { return std::format("{{ Return expr={} }}", expr->to_string()); }
 
 unique_ptr<If> If::parse(Lexer::Stream& s) {
-    int line_number = s.peek()->span.line; // Get it here on the line of the if statement itself
-    s.expect("if", line_number);
+    Span span = s.peek()->span; // Get it here on the line of the if statement itself
+    s.expect("if", span);
     pExpr cond = Expr::parse(s);
     unique_ptr<NodeBase> expr = NodeBase::parse(s);
 
-    return std::make_unique<If>(std::move(expr), std::move(cond), line_number);
+    span.end = expr->span_meta.end;
+    return std::make_unique<If>(std::move(expr), std::move(cond), span);
 }
 
 string If::to_string() {
@@ -179,8 +184,8 @@ unique_ptr<Else> Else::parse(
     unique_ptr<If> if_expr,
     Lexer::Stream& s
 ) {
-    int line_number = s.peek()->span.line;
-    s.expect("else", line_number);
+    Span span = s.peek()->span;
+    s.expect("else", span);
     unique_ptr<NodeBase> expr = NodeBase::parse(s);
 
     return std::make_unique<Else>(std::move(expr), std::move(*if_expr));

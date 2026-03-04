@@ -49,3 +49,11 @@ inline To* cast_from_uptr(std::unique_ptr<From>* from) {
 
     return try_cast<From, To>(underlying);
 }
+
+/// @brief span metadata for tokens
+struct Span {
+    size_t line;
+    size_t col;
+    size_t start;
+    size_t end;
+};
