@@ -31,6 +31,7 @@ SOFTWARE.
 */
 
 #include <optional>
+#include <format>
 
 #include <gearlang/sem/analyze.hpp>
 #include <gearlang/sem/val.hpp>
@@ -56,7 +57,16 @@ void Let::analyze(Analyzer& analyzer) {
         if(!ty) 
             ty = std::make_unique<Type>(rvalue_ty); 
 
-        if(!analyzer.type_is_compatible(*ty, rvalue_ty)) throw std::runtime_error("dfsa");
+        if(!analyzer.type_is_compatible(*ty, rvalue_ty)) {
+            Error::throw_error(
+                span_meta,
+                std::format(
+                    "Type mismatch: {} is not compatible with type {}",
+                    ty->dump(), rvalue_ty.dump()
+                ).c_str(),
+                Error::ErrorCodes::BAD_TYPE
+            );
+        }
     }
 
     Variable var = {

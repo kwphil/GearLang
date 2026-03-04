@@ -45,7 +45,7 @@
       * [ ] ANSI support
       * [ ] Disable color flag
     * [ ] Context-binded error handling
-      * [ ] Line/column tracking
+      * [X] Line/column tracking
       * [ ] Source snippet highlighting
   * [ ] Unicode handling
   * [ ] Keyword vs identifier disambiguation
@@ -53,9 +53,9 @@
   * [x] Expression parsing
   * [x] Statement parsing
   * [ ] Error recovery
-  * [ ] AST generation
+  * [X] AST generation
     * [x] Typed AST
-    * [ ] Source span metadata
+    * [x] Source span metadata
 * [ ] **Semantic Analysis**
   * [x] Symbol table
   * [x] Scope resolution
@@ -81,10 +81,13 @@
     * [X] Recursion
     * [ ] Tail-call optimization hooks
   * [ ] Variables
+    * [X] Basic types
+    * [X] Pointers
+    * [ ] Structs
+    * [ ] Generics
     * [x] Variable variable types
     * [X] Implicit matching
-    * [ ] Lifetime tracking
-    * [ ] Stack vs heap allocation
+    * [ ] Stack vs heap allocation (Needs to be worked)
   * [ ] Memory
     * [ ] Stack frame layout
     * [ ] Alignment rules

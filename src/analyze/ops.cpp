@@ -33,6 +33,9 @@ SOFTWARE.
 #include <gearlang/ast/expr.hpp>
 #include <gearlang/sem/val.hpp>
 #include <gearlang/sem/analyze.hpp>
+#include <gearlang/error.hpp>
+
+#include <format>
 
 using namespace Ast::Nodes;
 using namespace Sem;
@@ -42,7 +45,14 @@ unique_ptr<ExprValue> ExprOp::analyze(Analyzer& analyzer) {
     unique_ptr<ExprValue> rhs = right->analyze(analyzer);
 
     if(!analyzer.type_is_compatible(lhs->ty, rhs->ty)) {
-        throw std::runtime_error("Bad type");
+        Error::throw_error(
+            span_meta,
+            std::format(
+                "Types do not match. lhs: {}, rhs: {}",
+                left->get_type()->dump(), right->get_type()->dump()
+            ).c_str(),
+            Error::ErrorCodes::BAD_TYPE
+        );
     }
 
     // Checking for boolean operators
