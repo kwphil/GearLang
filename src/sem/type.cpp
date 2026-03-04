@@ -126,11 +126,10 @@ std::string Type::dump() {
 
     if(is_primitive()) return prim;
 
-    std::string s = "";
-    for(unsigned int i = 0; i < pointer; i++)
+    std::string s = prim;
+    for(unsigned int i = 1; i < pointer; i++)
         s.push_back('^');
 
-    s.append(prim);
     return s;
 }
 
