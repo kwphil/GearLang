@@ -7,16 +7,16 @@
     * [ ] Installation
     * [ ] CLI usage
       * [ ] Invocation patterns
-      * [ ] Flags & options
+      * [x] Flags & options
       * [ ] Input/output conventions
       * [ ] Exit codes
       * [ ] Environment variables
     * [ ] Language basics
     * [ ] Standard library overview
-    * [ ] FFI / C interop
+    * [x] FFI / C interop
     * [ ] Build modes (debug/release)
   * [ ] Examples
-    * [ ] Hello world
+    * [x] Hello world
     * [ ] Control flow
     * [ ] Functions & parameters
     * [ ] Structs / types
