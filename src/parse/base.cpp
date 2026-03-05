@@ -76,54 +76,13 @@ unique_ptr<NodeBase> NodeBase::parse(Lexer::Stream& s) {
     else if (curr->content == "let")    out = Let::parse(s);
     else if (curr->content == "return") out = Return::parse(s);
     else if (curr->content == "extern") out = ExternFn::parse(s);
+    else if (curr->content == "struct") out = Struct::parse(s);
     else                                out = Expr::parse(s);
     s.expect(";", s.peek()->span);
 
     return out;
 }
 
-unique_ptr<Return> Return::parse(Lexer::Stream& s) {
-    Span span = s.peek()->span;
-    
-    s.expect("return", span);
-    unique_ptr<Expr> expr = Expr::parse(s);
-
-    span.end = expr->span_meta.end;
-    return std::make_unique<Return>(std::move(expr), span);
-}
-
-string Return::to_string() { return std::format("{{ Return expr={} }}", expr->to_string()); }
-
-unique_ptr<If> If::parse(Lexer::Stream& s) {
-    Span span = s.peek()->span; // Get it here on the line of the if statement itself
-    s.expect("if", span);
-    pExpr cond = Expr::parse(s);
-    unique_ptr<NodeBase> expr = NodeBase::parse(s);
-
-    span.end = expr->span_meta.end;
-    return std::make_unique<If>(std::move(expr), std::move(cond), span);
-}
-
-string If::to_string() {
-    return std::format("{{ if cond={} expr={} }}", cond->to_string(), expr->to_string());
-}
-
-unique_ptr<Else> Else::parse(
-    unique_ptr<If> if_expr,
-    Lexer::Stream& s
-) {
-    Span span = s.peek()->span;
-    s.expect("else", span);
-    unique_ptr<NodeBase> expr = NodeBase::parse(s);
-
-    return std::make_unique<Else>(std::move(expr), std::move(*if_expr));
-}
-
-string Else::to_string() {
-    return std::format("{{ else cond={} exprtrue={} exprfalse={} }}",
-        cond->to_string(), expr->to_string(), else_expr->to_string()
-    );
-}
 
 Ast::Program Ast::Program::parse(Lexer::Stream& s) {
     Program that = Program();

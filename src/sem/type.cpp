@@ -35,13 +35,10 @@ SOFTWARE.
 #include <gearlang/lex.hpp>
 #include <gearlang/error.hpp>
 
-#include <format>
-
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Type.h>
 
 using namespace Sem;
-using std::optional;
 
 /* ============================
    LLVM lowering

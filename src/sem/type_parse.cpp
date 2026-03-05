@@ -59,21 +59,33 @@ Type::PrimType Type::parse_primitive(Lexer::Stream& s) {
 }
 
 /* ============================
-   Non-primitive parsing
-   ============================ */
-
-Type::NonPrimitive Type::parse_nonprimitive(Lexer::Stream& s, PrimType prim_type) {
-
-    throw std::runtime_error(
-        std::format("Unknown non-primitive type: {}", s.peek()->content));
-}
-
-/* ============================
    Construction
    ============================ */
 
 Type::Type(Lexer::Stream& s) {
     auto tok = s.peek();
+
+    if(s.peek()->content == "struct") {
+        s.pop();
+
+        // If there is a name provided that's not our problem
+        if(s.peek()->type == Lexer::Type::Identifier) s.pop();
+
+        s.expect("{");
+
+        while(s.peek()->type != Lexer::Type::BraceClose) {
+            pair<string, Type> arg;
+
+            arg.first = s.pop()->content;
+            arg.second = Type(s);
+
+            struct_type->push_back(arg);
+        }
+
+        s.pop(); // }
+        
+        return;
+    }
 
     prim_type = parse_primitive(s);
     pointer = 0;

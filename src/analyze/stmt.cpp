@@ -35,10 +35,12 @@ SOFTWARE.
 #include <gearlang/sem/analyze.hpp>
 #include <gearlang/etc.hpp>
 
-#include <iostream>
-
 using namespace Ast::Nodes;
 using namespace Sem;
+
+void Struct::analyze(Analyzer& analyzer) {
+    
+}
 
 void If::analyze(Analyzer& analyzer) {
     analyze_nodebase(&expr, analyzer);

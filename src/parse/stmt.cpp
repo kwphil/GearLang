@@ -45,17 +45,15 @@ using std::vector;
 using std::pair;
 
 unique_ptr<Struct> Struct::parse(Lexer::Stream& s) {
-    s.expect("struct");
-    std::string name = s.pop()->content;
+    Span span = s.peek()->span;
+    string name = s.next()->content;
+    Sem::Type ty(s);
 
-    s.expect("{");
-    
-    vector<pair<string, Type>> args;
-    while(s.peek()->type != Lexer::Type::BraceClose) {
-        pair<string
-    }
+    return std::make_unique<Struct>(name, ty, span);
+}
 
-    s.pop();
+std::string Struct::to_string() {
+    return "struct (need to implement)";
 }
 
 unique_ptr<Let> Let::parse(Lexer::Stream& s) {
@@ -128,4 +126,47 @@ string ExprBlock::to_string() {
     out += " }";
 
     return out;
+}
+
+unique_ptr<Return> Return::parse(Lexer::Stream& s) {
+    Span span = s.peek()->span;
+    
+    s.expect("return", span);
+    unique_ptr<Expr> expr = Expr::parse(s);
+
+    span.end = expr->span_meta.end;
+    return std::make_unique<Return>(std::move(expr), span);
+}
+
+string Return::to_string() { return std::format("{{ Return expr={} }}", expr->to_string()); }
+
+unique_ptr<If> If::parse(Lexer::Stream& s) {
+    Span span = s.peek()->span; // Get it here on the line of the if statement itself
+    s.expect("if", span);
+    pExpr cond = Expr::parse(s);
+    unique_ptr<NodeBase> expr = NodeBase::parse(s);
+
+    span.end = expr->span_meta.end;
+    return std::make_unique<If>(std::move(expr), std::move(cond), span);
+}
+
+string If::to_string() {
+    return std::format("{{ if cond={} expr={} }}", cond->to_string(), expr->to_string());
+}
+
+unique_ptr<Else> Else::parse(
+    unique_ptr<If> if_expr,
+    Lexer::Stream& s
+) {
+    Span span = s.peek()->span;
+    s.expect("else", span);
+    unique_ptr<NodeBase> expr = NodeBase::parse(s);
+
+    return std::make_unique<Else>(std::move(expr), std::move(*if_expr));
+}
+
+string Else::to_string() {
+    return std::format("{{ else cond={} exprtrue={} exprfalse={} }}",
+        cond->to_string(), expr->to_string(), else_expr->to_string()
+    );
 }

@@ -34,12 +34,17 @@ SOFTWARE.
 
 #include <string>
 #include <vector>
-#include <optional>
+#include <memory>
 
 #include <llvm/IR/Type.h>
 
 #include "../ctx.hpp"
 #include "../lex.hpp"
+
+using std::vector;
+using std::string;
+using std::pair;
+using std::shared_ptr;
 
 namespace Sem {
     class Type {
@@ -57,16 +62,16 @@ namespace Sem {
             Invalid
         };
 
-        /// @brief Non primitive types (WARNING: DO NOT USE DIRECTLY)
-        using NonPrimitive = std::vector<int>;
-
+        using Struct = vector<pair<string, Type>>; 
     private:
-        PrimType prim_type = PrimType::Void;
+        static vector<shared_ptr<Struct>> struct_list;
+
+        PrimType prim_type = PrimType::Invalid;
+        shared_ptr<Struct> struct_type;
         unsigned int pointer;
 
         static PrimType parse_primitive(std::string& s);
         static PrimType parse_primitive(Lexer::Stream& s);
-        static NonPrimitive parse_nonprimitive(Lexer::Stream& s, PrimType prim_type);
 
     public:
         Type() = default;
@@ -75,13 +80,21 @@ namespace Sem {
         : prim_type(prim_type), pointer(pointer) { } 
         /// @brief Builds the type with a constant string
         /// @param s the string
-        constexpr explicit Type(const char* s); 
-
-        /// @brief Checks if the type is a primitive
-        bool is_primitive() const { return !pointer; }
+        constexpr explicit Type(const char* s);
+        /// @brief Builds the type from a list of pairs of strings and Types, creating a struct
+        Type(Struct s)
+        : struct_type(std::make_shared<Struct>(s)) 
+        { struct_list.push_back(struct_type); }
+        
+        /// @brief Checks if the type is a primitive (no pointer)
+        bool is_primitive() const { return !(pointer || struct_type); }
+        /// @brief Checks if the type is a primitive (does not account for pointers)
+        bool is_underlying_primitive() const { return !struct_type; }
+        /// @brief Checks if the type is a struct type (does not account for pointers)
+        bool is_struct() const { return struct_type.get(); }
         /// @brief Checks if the type is a pointer
         bool is_pointer_ty() const;
-        /// @brief How many pointers stacked on top of eachother. T& would return 1, T&& = 2, ...
+        /// @brief How many pointers stacked on top of eachother. T^ would return 1, T^^ = 2, ...
         int pointer_level() const;
         /// @brief Wraps a pointer type around the current type and returns it
         Type ref();

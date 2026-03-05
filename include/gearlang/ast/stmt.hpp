@@ -34,6 +34,7 @@ SOFTWARE.
 
 #include <memory>
 #include <optional>
+#include <string>
 
 #include <gearlang/ctx.hpp>
 #include <gearlang/lex.hpp>
@@ -43,6 +44,8 @@ SOFTWARE.
 
 using std::optional;
 using std::pair;
+using std::string;
+using std::vector;
 using Sem::Type;
 
 namespace Sem {
@@ -75,14 +78,15 @@ namespace Ast::Nodes {
 
         /// @brief The name of the struct
         string name;
-        /// @brief the arguments of the struct
-        vector<Arg> args;
+        /// @brief the struct data
+        Type ty;
 
     public:
-        Struct(string name, Span span, vector<std::pair<string, Sem::Type>> args)
-        : Stmt(span), name(name), args(std::move(args)) { }
+        Struct(string name, Sem::Type ty, Span span)
+        : Stmt(span), name(name), ty(ty) { }
 
         static unique_ptr<Struct> parse(Lexer::Stream& s);
+        virtual std::string to_string() override;
         virtual void analyze(Sem::Analyzer& analyzer) override;
         virtual void generate(Context& ctx) override;
     };
