@@ -42,6 +42,8 @@ SOFTWARE.
 #include "expr.hpp"
 
 using std::optional;
+using std::pair;
+using Sem::Type;
 
 namespace Sem {
     class Analyzer;
@@ -66,23 +68,42 @@ namespace Ast::Nodes {
         virtual void generate(Context& ctx) = 0;
     };
 
+    /// @brief Node for defining structs
+    class Struct : public Stmt {
+    private:
+        using Arg = pair<string, Type>;
+
+        /// @brief The name of the struct
+        string name;
+        /// @brief the arguments of the struct
+        vector<Arg> args;
+
+    public:
+        Struct(string name, Span span, vector<std::pair<string, Sem::Type>> args)
+        : Stmt(span), name(name), args(std::move(args)) { }
+
+        static unique_ptr<Struct> parse(Lexer::Stream& s);
+        virtual void analyze(Sem::Analyzer& analyzer) override;
+        virtual void generate(Context& ctx) override;
+    };
+
     /// @brief Node for if statements
     class If : public Stmt {
     protected:
         /// @brief The condition expression
         pExpr cond;
         /// @brief The expression to execute if the condition is true
-        std::unique_ptr<NodeBase> expr;
+        unique_ptr<NodeBase> expr;
 
     public:
-        If(std::unique_ptr<NodeBase> expr, pExpr cond, Span span)
+        If(unique_ptr<NodeBase> expr, pExpr cond, Span span)
         : Stmt(span), cond(std::move(cond)), expr(std::move(expr)) { }
 
         If(If&&) = default;
         If& operator=(If&&) = default;
         If(const If&) = delete;
 
-        static std::unique_ptr<If> parse(Lexer::Stream& s);
+        static unique_ptr<If> parse(Lexer::Stream& s);
 
         virtual void analyze(Sem::Analyzer& analyzer) override;
         void generate(Context& ctx) override;

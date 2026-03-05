@@ -132,6 +132,9 @@ public:
     /// @param should Expected token content
     /// @param line_number Line expected for the error
     void expect(const char* should, Span const& span);
+    /// @brief Expect the next token to match a specific content
+    /// @param should Expected token content
+    void expect(const char* should) { return expect(should, this->peek()->span); };
 
     /// @brief Dumps the remaining unparsed text
     void dump();
