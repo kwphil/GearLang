@@ -56,7 +56,7 @@ unique_ptr<Argument> Argument::parse(Lexer::Stream& s) {
 }
 
 string Argument::to_string() { 
-    return std::format("{{ Argument, name={}, ty={} }}",
+    return std::format("{{ \"type\":\"Argument\", \"name\":\"{}\", \"ty\":\"{}\" }}",
         name, ty->dump()
     ); 
 }
@@ -109,10 +109,14 @@ string Function::to_string() {
     
     for(auto& arg : args) {
         args_s += arg->to_string();
+        args_s += ", ";
     }
 
+    args_s = args_s.substr(0, args_s.size()-2);
+
     return std::format(
-        "{{ Function name={}, ty={}, args={}, block={}, is_variadic={} }}",
+        "{{ \"type\":\"Function\", \"name\":\"{}\", \"ty\":\"{}\", "
+        "\"args\":[{}], \"block\":{}, \"is_variadic\":{} }}",
         name, ty.dump(), args_s, block->to_string(), is_variadic
     );
 }
@@ -172,10 +176,13 @@ string ExternFn::to_string() {
     
     for(auto& arg : args) {
         args_s += arg->to_string();
+        args_s += ", ";
     }
 
+    args_s = args_s.substr(0, args_s.size()-2);
+
     return std::format(
-        "{{ Function name={}, ty={}, args={}, is_variadic={}, no_mangle={} }}",
+        "{{ \"type\":\"ExternFn\", \"name\":\"{}\", \"ty\":\"{}\", \"args\":[{}], \"is_variadic\":{}, \"no_mangle\":{} }}",
         callee, ty.dump(), args_s, is_variadic, no_mangle
     );
 }

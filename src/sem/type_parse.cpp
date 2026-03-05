@@ -64,14 +64,17 @@ Type::PrimType Type::parse_primitive(Lexer::Stream& s) {
 
 Type::Type(Lexer::Stream& s) {
     auto tok = s.peek();
+    pointer = 0;
 
     if(s.peek()->content == "struct") {
+        string name = "unnamed_struct";
         s.pop();
 
-        // If there is a name provided that's not our problem
-        if(s.peek()->type == Lexer::Type::Identifier) s.pop();
+        if(s.peek()->type == Lexer::Type::Identifier) name=s.pop()->content;
 
         s.expect("{");
+
+        struct_type = std::make_shared<Struct>();
 
         while(s.peek()->type != Lexer::Type::BraceClose) {
             pair<string, Type> arg;
@@ -79,16 +82,27 @@ Type::Type(Lexer::Stream& s) {
             arg.first = s.pop()->content;
             arg.second = Type(s);
 
+            s.expect(";");
+
             struct_type->push_back(arg);
         }
 
         s.pop(); // }
         
+        struct_list.insert({ name, struct_type });
         return;
     }
 
+    // First see if there's a defined struct
+    auto _struct = struct_list.find(s.peek()->content);
+    if(_struct != struct_list.end()) {
+        struct_type = _struct->second;
+        s.pop();
+        return;
+    }
+
+    // Then attempt to parse as a primitive/pointer
     prim_type = parse_primitive(s);
-    pointer = 0;
 
     if (s.peek()->type == Lexer::Type::Caret) {
         while (s.peek()->type == Lexer::Type::Caret) {
