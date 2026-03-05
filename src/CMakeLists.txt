@@ -43,6 +43,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
 set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(LLVM REQUIRED CONFIG)
 
@@ -85,6 +86,7 @@ set(GEARLANG_PARSE
     parse/base.cpp
     parse/expr.cpp
     parse/func.cpp
+    parse/stmt.cpp
 )
 
 add_executable(gearlang
@@ -100,8 +102,6 @@ target_include_directories(gearlang PRIVATE
     ${LLVM_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
-
-target_compile_definitions(gearlang PRIVATE ${LLVM_DEFINITIONS})
 
 llvm_map_components_to_libnames(LLVM_LIBS
     core
