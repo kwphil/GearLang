@@ -94,12 +94,14 @@ Ast::Program Ast::Program::parse(Lexer::Stream& s) {
 }
 
 std::string Ast::Program::to_string() {
-    std::string out;
+    std::string out = "[";
     
     for(auto& n : content) {
         out += n->to_string();
-        out += '\n';
+        out += ",\n";
     }   
+
+    out[out.size()-2] = ']';
 
     return out;
 }

@@ -46,6 +46,7 @@ using std::pair;
 
 unique_ptr<Struct> Struct::parse(Lexer::Stream& s) {
     Span span = s.peek()->span;
+
     string name = s.next()->content;
     Sem::Type ty(s);
 
@@ -82,8 +83,8 @@ unique_ptr<Let> Let::parse(Lexer::Stream& s) {
 
 string Let::to_string() {
     return std::format(
-        "{{ let target={} expr={} }}",
-        target, expr->to_string()
+        "{{ \"type\":\"Let\", \"target\":\"{}\", \"expr\":{} }}",
+        target, expr ? expr->to_string() : "null"
     );
 }
 
@@ -115,15 +116,15 @@ unique_ptr<ExprBlock> ExprBlock::parse(Lexer::Stream& s) {
 }
 
 string ExprBlock::to_string() {
-    string out = "{ ExprBlock ";
+    string out = "{ \"type\":\"ExprBlock\", \"nodes\":[";
 
     for(auto& n : nodes) {
-        out += " { ";
         out += n->to_string();
-        out += " } ";
+        out += ",";
     }
 
-    out += " }";
+    out.pop_back();
+    out += "]}";
 
     return out;
 }
@@ -138,7 +139,7 @@ unique_ptr<Return> Return::parse(Lexer::Stream& s) {
     return std::make_unique<Return>(std::move(expr), span);
 }
 
-string Return::to_string() { return std::format("{{ Return expr={} }}", expr->to_string()); }
+string Return::to_string() { return std::format("{{ \"type\":\"Return\", \"expr\":{} }}", expr->to_string()); }
 
 unique_ptr<If> If::parse(Lexer::Stream& s) {
     Span span = s.peek()->span; // Get it here on the line of the if statement itself
@@ -151,7 +152,7 @@ unique_ptr<If> If::parse(Lexer::Stream& s) {
 }
 
 string If::to_string() {
-    return std::format("{{ if cond={} expr={} }}", cond->to_string(), expr->to_string());
+    return std::format("{{ \"type\":\"If\", \"cond\"={}, \"expr\"={} }}", cond->to_string(), expr->to_string());
 }
 
 unique_ptr<Else> Else::parse(
@@ -166,7 +167,7 @@ unique_ptr<Else> Else::parse(
 }
 
 string Else::to_string() {
-    return std::format("{{ else cond={} exprtrue={} exprfalse={} }}",
+    return std::format("{{ \"type\":\"Else\", \"cond\":{}, \"exprtrue\":{}, \"exprfalse\":{} }}",
         cond->to_string(), expr->to_string(), else_expr->to_string()
     );
 }

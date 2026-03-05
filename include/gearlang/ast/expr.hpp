@@ -160,7 +160,7 @@ namespace Ast::Nodes {
 
     /// @brief Expression node for variable references
     class ExprVar : public Expr {
-    private:
+    protected:
         /// @brief The variable name
         const std::string name;
         /// @brief the Let statement this references
@@ -170,9 +170,27 @@ namespace Ast::Nodes {
         ExprVar(const std::string& name, Span span)
         : Expr(span), name(name) {};
 
-        static std::unique_ptr<ExprVar> parse(const Lexer::Token& name);
+        static std::unique_ptr<ExprVar> parse(const Lexer::Token& name, Lexer::Stream& s);
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         unique_ptr<Value> generate(Context& ctx) override;
+        virtual std::string to_string() override;
+    };
+
+    /// @brief s.x, s.y, etc.
+    class ExprStructParam : public ExprVar {
+    private:
+        /// @brief the struct name
+        string struct_name;
+        /// @brief The Struct type this uses
+        shared_ptr<Sem::Type> ty;
+    
+    public:
+        ExprStructParam(string struct_name, string param_name, Span span)
+        : ExprVar(param_name, span), struct_name(struct_name) { }
+
+        static std::unique_ptr<ExprStructParam> parse(const Lexer::Token& name, Lexer::Stream& s);
+        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override {}
+        unique_ptr<Value> generate(Context& ctx) override {}
         virtual std::string to_string() override;
     };
 

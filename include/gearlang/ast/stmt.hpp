@@ -88,7 +88,7 @@ namespace Ast::Nodes {
         static unique_ptr<Struct> parse(Lexer::Stream& s);
         virtual std::string to_string() override;
         virtual void analyze(Sem::Analyzer& analyzer) override;
-        virtual void generate(Context& ctx) override;
+        virtual void generate(Context& ctx) override { } // Nothing to do here!
     };
 
     /// @brief Node for if statements

@@ -40,9 +40,25 @@ SOFTWARE.
 
 using namespace Sem;
 
+unordered_map<string, shared_ptr<Type::Struct>> Type::struct_list = { };
+
 /* ============================
    LLVM lowering
    ============================ */
+
+llvm::Type* Type::struct_to_llvm(Struct& obj, Context& ctx, string name) {
+    // gather the types together and convert
+    vector<llvm::Type*> tys;
+    tys.reserve(obj.size());
+    
+    for(auto& param : obj) {
+        tys.push_back(param.second.to_llvm(ctx));
+    }
+
+    return name != ""
+        ? llvm::StructType::create(tys, name)
+        : llvm::StructType::create(tys);
+}
 
 llvm::Type* Type::primitive_to_llvm(PrimType ty, Context& ctx) {
     switch (ty) {
@@ -64,6 +80,9 @@ llvm::Type* Type::to_llvm(Context& ctx) const {
         return primitive_to_llvm(prim_type, ctx);
     }
 
+    if (!is_pointer_ty() && is_struct()) 
+        return struct_to_llvm(*struct_type, ctx);
+
     // Pointer
     if (pointer) {
         llvm::Type* base;
@@ -72,7 +91,7 @@ llvm::Type* Type::to_llvm(Context& ctx) const {
             // If pointers are stacked we don't truly care about what goes below the next
             base = llvm::PointerType::getUnqual(ctx.llvmCtx);
         } else {
-            base = primitive_to_llvm(prim_type, ctx);
+            base = underlying_to_llvm(ctx);
         }
 
         return llvm::PointerType::get(base, 0);

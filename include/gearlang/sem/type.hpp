@@ -35,6 +35,7 @@ SOFTWARE.
 #include <string>
 #include <vector>
 #include <memory>
+#include <unordered_map>
 
 #include <llvm/IR/Type.h>
 
@@ -45,6 +46,7 @@ using std::vector;
 using std::string;
 using std::pair;
 using std::shared_ptr;
+using std::unordered_map;
 
 namespace Sem {
     class Type {
@@ -64,7 +66,7 @@ namespace Sem {
 
         using Struct = vector<pair<string, Type>>; 
     private:
-        static vector<shared_ptr<Struct>> struct_list;
+        static unordered_map<string, shared_ptr<Struct>> struct_list;
 
         PrimType prim_type = PrimType::Invalid;
         shared_ptr<Struct> struct_type;
@@ -73,6 +75,13 @@ namespace Sem {
         static PrimType parse_primitive(std::string& s);
         static PrimType parse_primitive(Lexer::Stream& s);
 
+        /// @brief Parses the underlying type into an llvm type. 
+        /// @param ctx the global context (GearLang)
+        /// @returns the llvm type
+        inline llvm::Type* underlying_to_llvm(Context& ctx) const {
+            if(struct_type) return struct_to_llvm(*struct_type, ctx);
+            return primitive_to_llvm(prim_type, ctx);
+        }
     public:
         Type() = default;
         Type(Lexer::Stream& s);
@@ -82,9 +91,11 @@ namespace Sem {
         /// @param s the string
         constexpr explicit Type(const char* s);
         /// @brief Builds the type from a list of pairs of strings and Types, creating a struct
-        Type(Struct s)
+        /// @param s the struct object
+        /// @param name the name of the struct
+        Type(Struct s, string name="unnamed_struct")
         : struct_type(std::make_shared<Struct>(s)) 
-        { struct_list.push_back(struct_type); }
+        { struct_list.insert({ name, struct_type }); }
         
         /// @brief Checks if the type is a primitive (no pointer)
         bool is_primitive() const { return !(pointer || struct_type); }
@@ -119,6 +130,13 @@ namespace Sem {
         /// @param ctx the global context (GearLang context, not llvm)
         /// @return the returning type
         static llvm::Type* primitive_to_llvm(PrimType ty, Context& ctx);
+
+        /// @brief Converts a Struct type into an llvm struct
+        /// @param obj The struct to convert
+        /// @param ctx the global context (GearLang, not llvm)
+        /// @return the returning type
+        static llvm::Type* struct_to_llvm(Struct& obj, Context& ctx, string name="");
+        static llvm::Type* struct_to_llvm(Struct&& obj, Context& ctx, string name="") { return struct_to_llvm(obj, ctx, name); }
 
         /// @brief String representation of the type
         std::string dump();
