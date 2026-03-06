@@ -141,24 +141,37 @@ int Type::pointer_level() const {
 }
 
 std::string Type::dump() {
-    std::string prim;
+    std::string s;
+
+    if(is_struct()) {
+        for(auto& entry : struct_list) {
+            if(entry.second == struct_type) {
+                s = entry.first;
+                goto pointer_dump;
+            }
+        }
+
+        s = "invalid";
+        goto pointer_dump;
+    }
 
     using enum PrimType;
     switch(prim_type) {
-        case(Void): prim = "void"; break;
-        case(Bool): prim = "bool"; break;
-        case(Char): prim = "char"; break;
-        case(I8): prim = "i8"; break;
-        case(I16): prim = "i16"; break;
-        case(I32): prim = "i32"; break;
-        case(F32): prim = "f32"; break;
-        case(F64): prim = "f64"; break;
-        default: prim = "invalid"; break; 
+        case(Void): s = "void"; break;
+        case(Bool): s = "bool"; break;
+        case(Char): s = "char"; break;
+        case(I8): s = "i8"; break;
+        case(I16): s = "i16"; break;
+        case(I32): s = "i32"; break;
+        case(F32): s = "f32"; break;
+        case(F64): s = "f64"; break;
+        default: s = "invalid"; break; 
     }
 
-    if(is_primitive()) return prim;
+    if(is_primitive()) return s;
 
-    std::string s = prim;
+pointer_dump:
+    if(!is_pointer_ty()) return s;
     for(unsigned int i = 1; i < pointer; i++)
         s.push_back('^');
 
@@ -187,6 +200,7 @@ bool Type::is_compatible(Type&& other) {
     if(is_pointer_ty() && other.is_pointer_ty()) return true;
     if(is_float() && other.is_float()) return true;
     if(is_int() && other.is_int()) return true;
+    if(struct_type == other.struct_type) return true;
 
     return false;
 }

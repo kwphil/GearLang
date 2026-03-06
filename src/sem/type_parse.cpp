@@ -98,12 +98,12 @@ Type::Type(Lexer::Stream& s) {
     if(_struct != struct_list.end()) {
         struct_type = _struct->second;
         s.pop();
-        return;
+        goto pointer_parse;
     }
 
-    // Then attempt to parse as a primitive/pointer
     prim_type = parse_primitive(s);
 
+pointer_parse:
     if (s.peek()->type == Lexer::Type::Caret) {
         while (s.peek()->type == Lexer::Type::Caret) {
             s.pop();
@@ -113,7 +113,7 @@ Type::Type(Lexer::Stream& s) {
         return;
     }
 
-    if (prim_type == PrimType::Invalid) {
+    if (prim_type == PrimType::Invalid && !struct_type) {
         Error::throw_error(
             tok->span,
             "Unknown type",
