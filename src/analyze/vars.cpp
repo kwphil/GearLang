@@ -127,3 +127,35 @@ unique_ptr<ExprValue> Argument::analyze(Analyzer& analyzer) {
 
     return nullptr;
 }
+
+void Struct::analyze(Sem::Analyzer& analyzer) {
+    Variable v = { .name=name, .type=ty, .is_global=true, .let_stmt=this };
+    analyzer.add_variable(name, v);
+}
+
+unique_ptr<ExprValue> ExprStructParam::analyze(Sem::Analyzer& analyzer) {
+    optional<Variable> v = analyzer.decl_lookup(struct_name);
+
+    if(!v) {
+        Error::throw_error(
+            span_meta,
+            "Tried to access a struct that doesn't exist!",
+            Error::ErrorCodes::VARIABLE_NOT_DEFINED
+        );
+    }
+
+    let = v->let_stmt;
+    ty = std::make_unique<Type>(v->type);
+    index = ty->struct_parameter_index(name);
+
+    if(index < 0) {
+        Error::throw_error(
+            span_meta,
+            std::format(
+                "Struct: {} has no member: {}",
+                struct_name, name
+            ).c_str(),
+            Error::ErrorCodes::VARIABLE_NOT_DEFINED
+        );
+    }
+}
