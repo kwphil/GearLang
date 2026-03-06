@@ -46,18 +46,31 @@ unordered_map<string, shared_ptr<Type::Struct>> Type::struct_list = { };
    LLVM lowering
    ============================ */
 
-llvm::Type* Type::struct_to_llvm(Struct& obj, Context& ctx, string name) {
+static unordered_map<string, llvm::StructType*> struct_type_list_name;
+static unordered_map<Type const*, llvm::StructType*> struct_type_list_sem;
+
+llvm::Type* Type::struct_to_llvm(Type& obj, Context& ctx, string name) {
     // gather the types together and convert
     vector<llvm::Type*> tys;
-    tys.reserve(obj.size());
+    tys.reserve(obj.struct_type->size());
     
-    for(auto& param : obj) {
+    for(auto& param : *obj.struct_type) {
         tys.push_back(param.second.to_llvm(ctx));
     }
 
-    return name != ""
-        ? llvm::StructType::create(tys, name)
-        : llvm::StructType::create(tys);
+    llvm::StructType* ty = llvm::StructType::create(tys, name);
+
+    struct_type_list_name.insert({ name, ty });
+    struct_type_list_sem.insert({ &obj, ty });
+    return ty;
+}
+
+llvm::Type* Type::get_llvm_struct(string name, Struct& obj) {
+    return struct_type_list_name.find(name)->second;
+}
+
+llvm::Type* Type::get_llvm_struct() const {
+    return struct_type_list_sem.find(this)->second;
 }
 
 llvm::Type* Type::primitive_to_llvm(PrimType ty, Context& ctx) {
@@ -81,7 +94,7 @@ llvm::Type* Type::to_llvm(Context& ctx) const {
     }
 
     if (!is_pointer_ty() && is_struct()) 
-        return struct_to_llvm(*struct_type, ctx);
+        return get_llvm_struct();
 
     // Pointer
     if (pointer) {
@@ -173,4 +186,19 @@ bool Type::is_compatible(Type&& other) {
     if(is_int() && other.is_int()) return true;
 
     return false;
+}
+
+int Type::struct_parameter_index(string name) {
+    if(!is_struct()) {
+        throw std::logic_error("Expected a struct type");
+    }
+
+    for(int i = 0; i < struct_type->size(); i++) {
+        pair<string, Type>& curr = struct_type->at(i);
+        if(name == curr.first) {
+            return i;
+        }
+    }
+
+    return -1;
 }

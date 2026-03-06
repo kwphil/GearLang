@@ -79,7 +79,7 @@ namespace Sem {
         /// @param ctx the global context (GearLang)
         /// @returns the llvm type
         inline llvm::Type* underlying_to_llvm(Context& ctx) const {
-            if(struct_type) return struct_to_llvm(*struct_type, ctx);
+            if(struct_type) return get_llvm_struct();
             return primitive_to_llvm(prim_type, ctx);
         }
     public:
@@ -115,6 +115,11 @@ namespace Sem {
         bool is_float() const;
         /// @brief Checks if the type is an ixx type
         bool is_int() const;
+        /// @brief Gets the index of a variable in a struct by name.
+        /// @param name the name of the parameter
+        /// @returns -1 if the the parameter doesn't exist, otherwise the index of the parameter
+        /// @throws std::logic_error if type is not a struct 
+        int struct_parameter_index(string name);
 
         /// @brief Converts the type to an llvm Type
         /// @param ctx The global context (GearLang context, not llvm)
@@ -125,18 +130,27 @@ namespace Sem {
         /// @return The returning type
         llvm::Type* get_underlying_type(Context& ctx) const;
 
+        /// @brief Checks the type of a parameter at a given index.
+        /// @param index The index
+        inline Type struct_param_ty(int index) {
+            return struct_type->at(index).second;
+        }
+
         /// @brief Takes a primitive and converts it directly to an llvm type
         /// @param ty the type to convert
         /// @param ctx the global context (GearLang context, not llvm)
         /// @return the returning type
         static llvm::Type* primitive_to_llvm(PrimType ty, Context& ctx);
 
-        /// @brief Converts a Struct type into an llvm struct
+        /// @brief Converts a Struct type into an llvm type. Use this when defining a struct
         /// @param obj The struct to convert
         /// @param ctx the global context (GearLang, not llvm)
         /// @return the returning type
-        static llvm::Type* struct_to_llvm(Struct& obj, Context& ctx, string name="");
-        static llvm::Type* struct_to_llvm(Struct&& obj, Context& ctx, string name="") { return struct_to_llvm(obj, ctx, name); }
+        static llvm::Type* struct_to_llvm(Type& obj, Context& ctx, string name);
+
+        /// @brief Get an already translated struct
+        static llvm::Type* get_llvm_struct(string name, Struct& obj);
+        llvm::Type* get_llvm_struct() const;
 
         /// @brief String representation of the type
         std::string dump();

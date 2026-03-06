@@ -57,7 +57,7 @@ llvm::Value* get_var(NodeBase* let) {
 // Generates both sides of the expression, and stores them in temporary values
 // Matches through each operation and stores the output as a temp
 // Returns the temporary variable
-unique_ptr<Value> Ast::Nodes::ExprOp::generate(Context& ctx) {
+unique_ptr<Value> ExprOp::generate(Context& ctx) {
     unique_ptr<Value> lhs = left->generate(ctx);
     unique_ptr<Value> rhs = right->generate(ctx);
     llvm::Value* out;
@@ -106,7 +106,7 @@ unique_ptr<Value> Ast::Nodes::ExprOp::generate(Context& ctx) {
 // Looks up the name of the variable
 // If the variable doesn't exist, it throws an error and quits
 // Otherwise Checks if it is a global and returns it
-unique_ptr<Value> Ast::Nodes::ExprVar::generate(Context& ctx) {
+unique_ptr<Value> ExprVar::generate(Context& ctx) {
     // Link to the declaration statement
     llvm::Value* var = get_var(let);
 
@@ -139,9 +139,24 @@ unique_ptr<Value> Ast::Nodes::ExprVar::generate(Context& ctx) {
     );
 }
 
+unique_ptr<Value> ExprStructParam::generate(Context& ctx) {
+    llvm::Value* param_ptr = ctx.builder.CreateStructGEP(
+        ty->get_llvm_struct(), get_var(let), index
+    );
+
+    Sem::Type param_ty = ty->struct_param_ty(index);
+    llvm::Value* var = ctx.builder.CreateLoad(param_ty.to_llvm(ctx), param_ptr);
+
+    std::make_unique<Value>(
+        var,
+        param_ty.to_llvm(ctx),
+        param_ty.pointer_level()
+    );
+}
+
 // Assigns a value to a variable, and stores the value in the variable's alloca
 // If the variable doesn't exist, it throws an error and quits
-unique_ptr<Value> Ast::Nodes::ExprAssign::generate(Context& ctx) {
+unique_ptr<Value> ExprAssign::generate(Context& ctx) {
     llvm::Value* var = get_var(let);
 
     Expr* expr2 = dynamic_cast<Expr*>(expr.get());
@@ -155,7 +170,7 @@ unique_ptr<Value> Ast::Nodes::ExprAssign::generate(Context& ctx) {
 
 // Gets the function by name, and creates a call for it
 // Parses the expressions for each argument and calls it
-unique_ptr<Value> Ast::Nodes::ExprCall::generate(Context& ctx) {
+unique_ptr<Value> ExprCall::generate(Context& ctx) {
     llvm::Function* func = ctx.module->getFunction(callee);
 
     std::vector<llvm::Value*> arg_values;
@@ -178,7 +193,7 @@ unique_ptr<Value> Ast::Nodes::ExprCall::generate(Context& ctx) {
     );
 }
 
-unique_ptr<Value> Ast::Nodes::ExprAddress::generate(Context& ctx) {
+unique_ptr<Value> ExprAddress::generate(Context& ctx) {
     // Just return the value because everything is allocated
     // TODO: Later I might optimize this to locate which variables
     // have to alloca and optimize ones that don't out
@@ -213,7 +228,7 @@ llvm::Value* deref(
     );
 }
 
-unique_ptr<Value> Ast::Nodes::ExprDeref::generate(Context& ctx) {
+unique_ptr<Value> ExprDeref::generate(Context& ctx) {
     llvm::Value* var = get_var(let);
 
     // Load the variable twice and return

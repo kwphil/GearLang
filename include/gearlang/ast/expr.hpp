@@ -42,6 +42,7 @@ SOFTWARE.
 #include <gearlang/sem/type.hpp>
 
 using std::unique_ptr;
+using std::weak_ptr;
 
 namespace Sem {
     class Analyzer;
@@ -181,16 +182,16 @@ namespace Ast::Nodes {
     private:
         /// @brief the struct name
         string struct_name;
-        /// @brief The Struct type this uses
-        shared_ptr<Sem::Type> ty;
+        /// @brief the index of the param
+        int index;
     
     public:
         ExprStructParam(string struct_name, string param_name, Span span)
         : ExprVar(param_name, span), struct_name(struct_name) { }
 
         static std::unique_ptr<ExprStructParam> parse(const Lexer::Token& name, Lexer::Stream& s);
-        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override {}
-        unique_ptr<Value> generate(Context& ctx) override {}
+        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
+        unique_ptr<Value> generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 
