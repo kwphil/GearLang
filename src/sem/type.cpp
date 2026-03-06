@@ -45,9 +45,8 @@ unordered_map<string, shared_ptr<Type::Struct>> Type::struct_list = { };
 /* ============================
    LLVM lowering
    ============================ */
-
 static unordered_map<string, llvm::StructType*> struct_type_list_name;
-static unordered_map<Type const*, llvm::StructType*> struct_type_list_sem;
+static unordered_map<Type::Struct*, llvm::StructType*> struct_type_list_sem;
 
 llvm::Type* Type::struct_to_llvm(Type& obj, Context& ctx, string name) {
     // gather the types together and convert
@@ -61,16 +60,20 @@ llvm::Type* Type::struct_to_llvm(Type& obj, Context& ctx, string name) {
     llvm::StructType* ty = llvm::StructType::create(tys, name);
 
     struct_type_list_name.insert({ name, ty });
-    struct_type_list_sem.insert({ &obj, ty });
+    struct_type_list_sem.insert({ obj.struct_type.get(), ty });
     return ty;
 }
 
 llvm::Type* Type::get_llvm_struct(string name, Struct& obj) {
-    return struct_type_list_name.find(name)->second;
+    auto it = struct_type_list_name.find(name);
+    assert(it != struct_type_list_name.end());
+    return it->second;
 }
 
 llvm::Type* Type::get_llvm_struct() const {
-    return struct_type_list_sem.find(this)->second;
+    auto it = struct_type_list_sem.find(struct_type.get());
+    assert(it != struct_type_list_sem.end());
+    return it->second;
 }
 
 llvm::Type* Type::primitive_to_llvm(PrimType ty, Context& ctx) {
@@ -193,7 +196,7 @@ int Type::struct_parameter_index(string name) {
         throw std::logic_error("Expected a struct type");
     }
 
-    for(int i = 0; i < struct_type->size(); i++) {
+    for(unsigned int i = 0; i < struct_type->size(); i++) {
         pair<string, Type>& curr = struct_type->at(i);
         if(name == curr.first) {
             return i;

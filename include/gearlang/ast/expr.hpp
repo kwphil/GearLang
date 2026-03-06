@@ -171,6 +171,10 @@ namespace Ast::Nodes {
         ExprVar(const std::string& name, Span span)
         : Expr(span), name(name) {};
 
+        /// @brief Returns the alloca or global this variable references WITHOUT loading it
+        /// @returns an AllocaInst or GlobalVariable or whatever else
+        virtual llvm::Value* access_alloca(Context& ctx);
+
         static std::unique_ptr<ExprVar> parse(const Lexer::Token& name, Lexer::Stream& s);
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         unique_ptr<Value> generate(Context& ctx) override;
@@ -189,6 +193,7 @@ namespace Ast::Nodes {
         ExprStructParam(string struct_name, string param_name, Span span)
         : ExprVar(param_name, span), struct_name(struct_name) { }
 
+        virtual llvm::Value* access_alloca(Context& ctx) override;
         static std::unique_ptr<ExprStructParam> parse(const Lexer::Token& name, Lexer::Stream& s);
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         unique_ptr<Value> generate(Context& ctx) override;
@@ -198,18 +203,18 @@ namespace Ast::Nodes {
     /// @brief Expression node for variable assignments
     class ExprAssign : public Expr {
     private:
-        /// @brief The variable name
-        const std::string name;
+        /// @brief The variable to assign
+        unique_ptr<ExprVar> var;
         /// @brief The expression to assign to the variable
         pExpr expr;
         /// @brief The Let statement this references
         NodeBase* let;
 
     public:
-        ExprAssign(const std::string& name, pExpr expr, Span span)
-        : Expr(span), name(name), expr(std::move(expr)) { }
+        ExprAssign(unique_ptr<ExprVar> var, pExpr expr, Span span)
+        : Expr(span), var(std::move(var)), expr(std::move(expr)) { }
 
-        static std::unique_ptr<ExprAssign> parse(const Lexer::Token& name, Lexer::Stream& s);
+        static std::unique_ptr<ExprAssign> parse(unique_ptr<ExprVar>, Lexer::Stream& s);
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         unique_ptr<Value> generate(Context& ctx) override;
         virtual std::string to_string() override;

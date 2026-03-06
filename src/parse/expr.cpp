@@ -102,7 +102,7 @@ string ExprVar::to_string() { return std::format("{{ \"type\":\"ExprVar\", \"nam
 unique_ptr<ExprStructParam> ExprStructParam::parse(const Lexer::Token& token, Lexer::Stream& s) {
     Span span = token.span;
     string struct_name = token.content;
-    struct_name = struct_name.substr(0, struct_name.size()-2);
+    struct_name.pop_back();
     string param_name = s.peek()->content;
     span.end = s.pop()->span.end;
     
@@ -117,18 +117,18 @@ string ExprStructParam::to_string() {
 }
 
 unique_ptr<ExprAssign>
-ExprAssign::parse(const Lexer::Token& token, Lexer::Stream& s) {
-    Span span = token.span;
+ExprAssign::parse(unique_ptr<ExprVar> var, Lexer::Stream& s) {
+    Span span = var->span_meta;
 
     s.expect("=", span);
     pExpr expr = Expr::parse(s);
 
     span.end = expr->span_meta.end;
-    return std::make_unique<ExprAssign>(token.content, std::move(expr), span);
+    return std::make_unique<ExprAssign>(std::move(var), std::move(expr), span);
 }
 
 string ExprAssign::to_string() { 
-    return std::format("{{ \"type\":\"ExprAssign\", \"var\":\"{}\", \"expr\":{} }}", name, expr->to_string()); 
+    return std::format("{{ \"type\":\"ExprAssign\", \"var\":{}, \"expr\":{} }}", var->to_string(), expr->to_string()); 
 }
 
 ExprOp::Type match_op(string content) {
@@ -202,15 +202,17 @@ pExpr Expr::parseTerm(Lexer::Stream& s) {
     s.pop();
 
     if(lit.type == Lexer::Type::Identifier) {
-        if(s.peek()->content == "=") {
-            return ExprAssign::parse(lit, s);
-        }
-
         if(s.peek()->type == Lexer::Type::ParenOpen) {
             return ExprCall::parse(lit, s);
         }
 
-        return ExprVar::parse(lit, s);
+        unique_ptr<ExprVar> var = ExprVar::parse(lit, s);
+
+        if(s.peek()->type == Lexer::Type::Equal) {
+            return ExprAssign::parse(std::move(var), s);
+        }
+
+        return var;
     }
 
     std::string error_msg = std::format("Unexpect token: {} (type={})", lit.content, (int)lit.type);

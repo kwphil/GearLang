@@ -107,28 +107,9 @@ unique_ptr<Value> ExprOp::generate(Context& ctx) {
 // If the variable doesn't exist, it throws an error and quits
 // Otherwise Checks if it is a global and returns it
 unique_ptr<Value> ExprVar::generate(Context& ctx) {
-    // Link to the declaration statement
-    llvm::Value* var = get_var(let);
-
-    if (auto* gv = llvm::dyn_cast<llvm::GlobalVariable>(var)) {
-        llvm::Value* ir = ctx.builder.CreateLoad(
-            ty->to_llvm(ctx),
-            gv,
-            name + ".load"
-        );
-
-        return std::make_unique<Value>(
-            ir,
-            ty->to_llvm(ctx),
-            ty->pointer_level()
-        );
-    }
-
-    llvm::AllocaInst* alloca = llvm::dyn_cast<llvm::AllocaInst>(var);
-
     llvm::Value* ir = ctx.builder.CreateLoad(
-        alloca->getAllocatedType(),
-        var,
+        ty->to_llvm(ctx),
+        access_alloca(ctx),
         name + ".load"
     );
 
@@ -139,31 +120,40 @@ unique_ptr<Value> ExprVar::generate(Context& ctx) {
     );
 }
 
+llvm::Value* ExprVar::access_alloca(Context& _ctx) {
+    return get_var(let);
+}
+
 unique_ptr<Value> ExprStructParam::generate(Context& ctx) {
-    llvm::Value* param_ptr = ctx.builder.CreateStructGEP(
+    Type param_ty = ty->struct_param_ty(index);
+    llvm::Type* ty_ll = param_ty.to_llvm(ctx);
+
+    llvm::Value* ir = ctx.builder.CreateLoad(ty_ll, access_alloca(ctx), struct_name + name + ".load");
+
+    return std::make_unique<Value>(
+        ir,
+        ty_ll,
+        param_ty.pointer_level()
+    );
+}
+
+llvm::Value* ExprStructParam::access_alloca(Context& ctx) {
+    return ctx.builder.CreateStructGEP(
         ty->get_llvm_struct(), get_var(let), index
     );
 
-    Sem::Type param_ty = ty->struct_param_ty(index);
-    llvm::Value* var = ctx.builder.CreateLoad(param_ty.to_llvm(ctx), param_ptr);
-
-    std::make_unique<Value>(
-        var,
-        param_ty.to_llvm(ctx),
-        param_ty.pointer_level()
-    );
 }
 
 // Assigns a value to a variable, and stores the value in the variable's alloca
 // If the variable doesn't exist, it throws an error and quits
 unique_ptr<Value> ExprAssign::generate(Context& ctx) {
-    llvm::Value* var = get_var(let);
+    llvm::Value* alloca = var->access_alloca(ctx);
 
     Expr* expr2 = dynamic_cast<Expr*>(expr.get());
     
     unique_ptr<Value> value = expr2->generate(ctx);
 
-    ctx.builder.CreateStore(value->ir, var);
+    ctx.builder.CreateStore(value->ir, alloca);
 
     return value;
 }

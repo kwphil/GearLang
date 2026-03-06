@@ -33,7 +33,6 @@ SOFTWARE.
 #include <string>
 #include <vector>
 #include <memory>
-#include <format>
 
 #include <gearlang/ast/stmt.hpp>
 #include <gearlang/ast/expr.hpp>

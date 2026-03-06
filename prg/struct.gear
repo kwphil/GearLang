@@ -6,6 +6,6 @@ struct foo {
 };
 
 let s: foo;
-x.s = 0;
+s.x = 8200;
 
-printf("%d", s);
+printf("%d", s.x);
