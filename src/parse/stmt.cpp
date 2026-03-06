@@ -42,7 +42,6 @@ using Sem::Type;
 using std::unique_ptr;
 using std::string;
 using std::vector;
-using std::pair;
 
 unique_ptr<Struct> Struct::parse(Lexer::Stream& s) {
     Span span = s.peek()->span;
@@ -54,7 +53,7 @@ unique_ptr<Struct> Struct::parse(Lexer::Stream& s) {
 }
 
 std::string Struct::to_string() {
-    return "struct (need to implement)";
+    return "{ \"type\":\"Struct\", \"name\":\"\" }";
 }
 
 unique_ptr<Let> Let::parse(Lexer::Stream& s) {

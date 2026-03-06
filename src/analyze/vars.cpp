@@ -30,7 +30,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <optional>
 #include <format>
 
 #include <gearlang/sem/analyze.hpp>
@@ -97,21 +96,10 @@ unique_ptr<ExprValue> ExprVar::analyze(Analyzer& analyzer) {
 }
 
 unique_ptr<ExprValue> ExprAssign::analyze(Analyzer& analyzer) {
-    optional<Variable> var_wrap = analyzer.decl_lookup(name);
+    var->analyze(analyzer);
+    ty = std::make_unique<Type>(var->get_type().value());
 
-    if(!var_wrap.has_value()) {
-        Error::throw_error(
-            span_meta,
-            "Unknown variable",
-            Error::ErrorCodes::VARIABLE_NOT_DEFINED
-        );
-    }
-
-    Variable var = var_wrap.value();
-
-    let = var.let_stmt;
-    ty = std::make_unique<Type>(var.type);
-
+    expr->set_type(*ty);
     return expr->analyze(analyzer);
 }
 
@@ -158,4 +146,6 @@ unique_ptr<ExprValue> ExprStructParam::analyze(Sem::Analyzer& analyzer) {
             Error::ErrorCodes::VARIABLE_NOT_DEFINED
         );
     }
+
+    return std::make_unique<ExprValue>(false, *ty);
 }

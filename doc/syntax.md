@@ -123,3 +123,27 @@ let k: i32 = @@pp;
 * Use `^` to indicate a pointer type.
 * Use `#` to get the address of a variable.
 * Use `@` to dereference a pointer; multiple `@` operators can be chained for pointer-to-pointer types.
+
+---
+
+## Structs
+
+Structs are pretty generic here.
+
+```gear
+struct s {
+  x i32;
+  y i32;
+}
+
+let foo: s;
+
+printf("%d", s.x);
+
+```
+
+**Notes:**
+
+* Use `struct` to define the struct
+* Syntax for parameters are `<name> <type>;`
+* Structs in GearLang do not require a trailing comma
