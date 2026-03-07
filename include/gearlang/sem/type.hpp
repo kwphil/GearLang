@@ -97,6 +97,17 @@ namespace Sem {
         : struct_type(std::make_shared<Struct>(s)) 
         { struct_list.insert({ name, struct_type }); }
         
+        bool operator==(Type&& other) {
+            return 
+                struct_type == other.struct_type && 
+                prim_type == other.prim_type &&
+                pointer == other.pointer;
+        }
+
+        bool operator==(const char* other) {
+            return *this == Type(other);
+        }
+
         /// @brief Checks if the type is a primitive (no pointer)
         bool is_primitive() const { return !(pointer || struct_type); }
         /// @brief Checks if the type is a primitive (does not account for pointers)

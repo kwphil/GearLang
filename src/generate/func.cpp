@@ -101,7 +101,8 @@ void Function::generate(Context& ctx) {
     generate_node(block.get(), ctx);
 
     if (!entry->getTerminator()) {
-        ctx.builder.CreateRet(
+        if(ty == "void") ctx.builder.CreateRetVoid();
+        else ctx.builder.CreateRet(
             llvm::Constant::getNullValue(
                 fn->getReturnType()
             )

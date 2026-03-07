@@ -1,5 +1,5 @@
 // Variadic args
-extern fn i32 printf: s char^, ... ;
+extern fn printf(s char^, ...);
 
 // Floats
 let a = 0.1 + 0.2;
