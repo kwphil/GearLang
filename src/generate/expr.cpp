@@ -38,6 +38,7 @@ SOFTWARE.
 #include <gearlang/ast/expr.hpp>
 #include <gearlang/ast/stmt.hpp>
 #include <gearlang/ast/func.hpp>
+#include <gearlang/ast/vars.hpp>
 
 #include <gearlang/error.hpp>
 #include <gearlang/etc.hpp>
@@ -78,10 +79,10 @@ unique_ptr<Value> ExprOp::generate(Context& ctx) {
         }
     } else {
         switch (type) {
-            case Add: out = ctx.builder.CreateAdd(lhs->ir, rhs->ir, "iaddtmp"); break;
-            case Sub: out = ctx.builder.CreateSub(lhs->ir, rhs->ir, "isubtmp"); break;
-            case Mul: out = ctx.builder.CreateMul(lhs->ir, rhs->ir, "imultmp"); break;
-            case Div: out = ctx.builder.CreateSDiv(lhs->ir, rhs->ir, "idivtmp"); break;
+            case Add: CREATE_OP(CreateAdd, "iaddtmp"); break;
+            case Sub: CREATE_OP(CreateSub, "isubtmp"); break;
+            case Mul: CREATE_OP(CreateMul, "imultmp"); break;
+            case Div: CREATE_OP(CreateSDiv, "idivtmp"); break;
 
             case Eq: CREATE_OP(CreateICmpEQ, "feqtmp"); break;
             case Ne: CREATE_OP(CreateICmpNE, "fnetmp"); break;
@@ -141,7 +142,6 @@ llvm::Value* ExprStructParam::access_alloca(Context& ctx) {
     return ctx.builder.CreateStructGEP(
         ty->get_llvm_struct(), get_var(let), index
     );
-
 }
 
 // Assigns a value to a variable, and stores the value in the variable's alloca
@@ -188,57 +188,35 @@ unique_ptr<Value> ExprAddress::generate(Context& ctx) {
     // TODO: Later I might optimize this to locate which variables
     // have to alloca and optimize ones that don't out
     return std::make_unique<Value>(
-        get_var(let),
-        ty->to_llvm(ctx),
-        ty->ref().pointer_level()
+        var->access_alloca(ctx),
+        ty->ref().to_llvm(ctx),
+        ty->pointer_level()+1
     );
 }
 
 llvm::Value* deref(
     Context& ctx, 
     llvm::Value* ptr, 
-    llvm::Type* type,
+    Sem::Type* type,
     std::string&& name,
     const char* suffix, 
     int line_number
 ) {
-    // First try if it is a global
-    if(auto* gptr = llvm::dyn_cast<llvm::GlobalVariable>(ptr)) {
-        return ctx.builder.CreateLoad(
-            type,
-            gptr,
-            name + suffix
-        );
-    }
-
     return ctx.builder.CreateLoad(
-        type,
+        type->to_llvm(ctx),
         ptr,
         name + suffix
     );
 }
 
 unique_ptr<Value> ExprDeref::generate(Context& ctx) {
-    llvm::Value* var = get_var(let);
-
-    // Load the variable twice and return
-    // Once to get the pointer
-    // Twice to get the dereferenced data
-
-    llvm::Value* load = deref(
-        ctx,
-        var,
-        ty->to_llvm(ctx),
-        var->getName().str(),
-        ".load",
-        span_meta.line
-    );
+    unique_ptr<Value> load = var->generate(ctx);
 
     llvm::Value* deref_var = deref(
         ctx,
-        load,
-        ty->to_llvm(ctx),
-        var->getName().str(),
+        load->ir,
+        ty.get(),
+        var->name.c_str(),
         ".deref",
         span_meta.line
     );

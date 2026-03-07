@@ -38,6 +38,7 @@ SOFTWARE.
 #include <gearlang/ast/stmt.hpp>
 #include <gearlang/ast/expr.hpp>
 #include <gearlang/ast/func.hpp>
+#include <gearlang/ast/vars.hpp>
 
 #include <gearlang/error.hpp>
 
@@ -52,7 +53,9 @@ void Let::analyze(Analyzer& analyzer) {
         Type rvalue_ty = expr->get_type().value();
         
         if(!ty) 
-            ty = std::make_unique<Type>(rvalue_ty); 
+            ty = std::make_unique<Type>(rvalue_ty);
+
+        ;
 
         if(!analyzer.type_is_compatible(*ty, rvalue_ty)) {
             Error::throw_error(

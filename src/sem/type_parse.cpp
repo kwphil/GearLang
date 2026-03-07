@@ -129,5 +129,7 @@ Type Type::ref() {
 Type Type::deref() {
     assert(pointer != 0);
 
-    return Type(prim_type, pointer-1);
+    Type new_type = *this;
+    new_type.pointer -= 1;
+    return new_type;
 }

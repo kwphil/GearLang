@@ -36,6 +36,7 @@ SOFTWARE.
 #include <format>
 
 #include <gearlang/ast/expr.hpp>
+#include <gearlang/ast/vars.hpp>
 #include <gearlang/lex.hpp>
 #include <gearlang/error.hpp>
 
@@ -268,17 +269,18 @@ unique_ptr<ExprAddress> ExprAddress::parse(Lexer::Stream& s) {
 
     auto tok = s.pop();
     span.end = tok->span.end;
-    return std::make_unique<ExprAddress>(tok->content, span);
+    return std::make_unique<ExprAddress>(std::move(ExprVar::parse(*tok, s)), span);
 }
 
-string ExprAddress::to_string() { return std::format("{{ \"type\":\"ExprAddress\", \"name\":{} }}", name); }
+string ExprAddress::to_string() { return std::format("{{ \"type\":\"ExprAddress\", \"var\":{} }}", var->to_string()); }
 
 unique_ptr<ExprDeref> ExprDeref::parse(Lexer::Stream& s) {
     Span span = s.peek()->span;
 
     s.expect("@", span);
-    span.start -= 1;
-    return std::make_unique<ExprDeref>(s.pop()->content, span);
+    unique_ptr<Lexer::Token> var = s.pop();
+    span.end = var->span.end;
+    return std::make_unique<ExprDeref>(std::move(ExprVar::parse(*var, s)), span);
 }
 
-string ExprDeref::to_string() { return std::format("{{ \"type\":\"ExprDeref\", \"name\":{} }}", name); }
+string ExprDeref::to_string() { return std::format("{{ \"type\":\"ExprDeref\", \"var\":{} }}", var->to_string()); }

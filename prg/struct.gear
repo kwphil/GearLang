@@ -9,11 +9,14 @@ let s: foo;
 s.x = 8200;
 s.y = 40;
 
-fn bar(s2 foo^) {
+fn bar(s2 foo^, str char^) {
     let s3 = @s2;
-    printf("%d", s3.x);
+    printf("%s: %d\n", str s3.x);
 }
 
-bar(s);
+let t: i32;
+t = 8;
 
-printf("%d", s.x);
+bar(#s);
+
+printf("in main: %d\n", s.x);

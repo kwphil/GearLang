@@ -31,6 +31,7 @@ SOFTWARE.
 */
 
 #include <gearlang/ast/expr.hpp>
+#include <gearlang/ast/vars.hpp>
 #include <gearlang/sem/analyze.hpp>
 #include <gearlang/error.hpp>
 
@@ -74,38 +75,15 @@ unique_ptr<ExprValue> ExprBlock::analyze(Analyzer& analyzer) {
 }
 
 unique_ptr<ExprValue> ExprAddress::analyze(Analyzer& analyzer) {
-    optional<Variable> lookup = analyzer.decl_lookup(name);
-
-    if(!lookup.has_value()) {
-        Error::throw_error(
-            span_meta,
-            "Variable not defined",
-            Error::ErrorCodes::VARIABLE_NOT_DEFINED
-        );
-    }
-
-    Variable var = lookup.value();
-
-    ty = std::make_unique<Type>(var.type.ref());
-    let = var.let_stmt;
+    var->analyze(analyzer);
+    ty = std::make_unique<Type>(var->get_type().value());
 
     return std::make_unique<ExprValue>(false, *ty);
 }
 
 unique_ptr<ExprValue> ExprDeref::analyze(Analyzer& analyzer) {
-    optional<Variable> lookup = analyzer.decl_lookup(name);
+    var->analyze(analyzer);
+    ty = std::make_unique<Type>(var->get_type().value());
 
-    if(!lookup.has_value()) {
-        Error::throw_error(
-            span_meta,
-            "Variable not defined",
-            Error::ErrorCodes::VARIABLE_NOT_DEFINED
-        );
-    }
-
-    Variable var = lookup.value();
-    ty = std::make_unique<Type>(var.type.deref());
-    let = var.let_stmt;
-
-    return std::make_unique<ExprValue>(false, var.type);
+    return std::make_unique<ExprValue>(false, *ty);
 }

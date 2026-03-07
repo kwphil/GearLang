@@ -143,13 +143,12 @@ int main(int argc, char** argv) {
     out_file << output;
     out_file.close();
 
-    run_command("llvm-as build/build.llvm -o build/build.bc", verbose);
-
     if(output_llvm) {
         run_command("mv build/build.llvm build.llvm", verbose);
         goto cleanup;
     }
 
+    run_command("llvm-as build/build.llvm -o build/build.bc", verbose);
     run_command("llc build/build.bc -filetype=obj -o build/build.o", verbose);
 
     if(output_object) {

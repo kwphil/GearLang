@@ -159,67 +159,6 @@ namespace Ast::Nodes {
         virtual std::string to_string() override;
     };
 
-    /// @brief Expression node for variable references
-    class ExprVar : public Expr {
-    protected:
-        /// @brief The variable name
-        const std::string name;
-        /// @brief the Let statement this references
-        NodeBase* let;
-
-    public:
-        ExprVar(const std::string& name, Span span)
-        : Expr(span), name(name) {};
-
-        /// @brief Returns the alloca or global this variable references WITHOUT loading it
-        /// @returns an AllocaInst or GlobalVariable or whatever else
-        virtual llvm::Value* access_alloca(Context& ctx);
-
-        static std::unique_ptr<ExprVar> parse(const Lexer::Token& name, Lexer::Stream& s);
-        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        unique_ptr<Value> generate(Context& ctx) override;
-        virtual std::string to_string() override;
-    };
-
-    /// @brief s.x, s.y, etc.
-    class ExprStructParam : public ExprVar {
-    private:
-        /// @brief the struct name
-        string struct_name;
-        /// @brief the index of the param
-        int index;
-    
-    public:
-        ExprStructParam(string struct_name, string param_name, Span span)
-        : ExprVar(param_name, span), struct_name(struct_name) { }
-
-        virtual llvm::Value* access_alloca(Context& ctx) override;
-        static std::unique_ptr<ExprStructParam> parse(const Lexer::Token& name, Lexer::Stream& s);
-        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        unique_ptr<Value> generate(Context& ctx) override;
-        virtual std::string to_string() override;
-    };
-
-    /// @brief Expression node for variable assignments
-    class ExprAssign : public Expr {
-    private:
-        /// @brief The variable to assign
-        unique_ptr<ExprVar> var;
-        /// @brief The expression to assign to the variable
-        pExpr expr;
-        /// @brief The Let statement this references
-        NodeBase* let;
-
-    public:
-        ExprAssign(unique_ptr<ExprVar> var, pExpr expr, Span span)
-        : Expr(span), var(std::move(var)), expr(std::move(expr)) { }
-
-        static std::unique_ptr<ExprAssign> parse(unique_ptr<ExprVar>, Lexer::Stream& s);
-        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        unique_ptr<Value> generate(Context& ctx) override;
-        virtual std::string to_string() override;
-    };
-
     class ExprCall : public Expr {
     private:
         /// @brief the arguments
@@ -239,44 +178,6 @@ namespace Ast::Nodes {
             const Lexer::Token& name,
             Lexer::Stream& s
         );
-
-        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        unique_ptr<Value> generate(Context& ctx) override;
-        virtual std::string to_string() override;
-    };
-
-    /// @brief Expression node for referencing variables
-    class ExprAddress : public Expr {
-    private:
-        /// @brief the name of the variable to reference
-        std::string name;
-    public:
-        /// @brief the Let statement this references
-        NodeBase* let;
-
-        ExprAddress(std::string& name, Span span)
-        : Expr(span), name(name) { }
-
-        static std::unique_ptr<ExprAddress> parse(Lexer::Stream& s);
-
-        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        unique_ptr<Value> generate(Context& ctx) override;
-        virtual std::string to_string() override;
-    };
-
-    /// @brief Expression node for the variable to dereference
-    class ExprDeref : public Expr {
-    private:
-        /// @brief the name of the variable to dereference
-        std::string name;
-
-    public:
-        NodeBase* let;
-
-        ExprDeref(std::string& name, Span span)
-        : Expr(span), name(name) { }
-
-        static std::unique_ptr<ExprDeref> parse(Lexer::Stream& s);
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         unique_ptr<Value> generate(Context& ctx) override;
