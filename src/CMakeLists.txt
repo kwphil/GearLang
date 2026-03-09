@@ -30,6 +30,10 @@
 
 cmake_minimum_required(VERSION 3.20)
 
+if( !COMPILE_MODE )
+    set(COMPILE_MODE "executable")
+endif()
+
 project(gearlang LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
@@ -48,7 +52,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(LLVM REQUIRED CONFIG)
 
 set(GEARLANG_CORE
-    main.cpp
     ctx.cpp
     error.cpp
     func.cpp
@@ -89,14 +92,26 @@ set(GEARLANG_PARSE
     parse/stmt.cpp
 )
 
-add_executable(gearlang
-    ${GEARLANG_CORE}
-    ${GEARLANG_LEX}
-    ${GEARLANG_SEM}
-    ${GEARLANG_ANALYZE}
-    ${GEARLANG_GENERATE}
-    ${GEARLANG_PARSE}
-)
+if( COMPILE_MODE STREQUAL "executable" ) 
+    add_executable(gearlang
+        main.cpp
+        ${GEARLANG_CORE}
+        ${GEARLANG_LEX}
+        ${GEARLANG_SEM}
+        ${GEARLANG_ANALYZE}
+        ${GEARLANG_GENERATE}
+        ${GEARLANG_PARSE}
+    )
+else( COMPILE_MODE STREQUAL "library" )
+    add_library(gearlang SHARED
+        ${GEARLANG_CORE}
+        ${GEARLANG_LEX}
+        ${GEARLANG_SEM}
+        ${GEARLANG_ANALYZE}
+        ${GEARLANG_GENERATE}
+        ${GEARLANG_PARSE}
+    )
+endif()
 
 target_include_directories(gearlang PRIVATE 
     ${LLVM_INCLUDE_DIRS}
