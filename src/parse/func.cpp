@@ -214,16 +214,15 @@ deque<unique_ptr<Argument>> parse_function_args(
     Sem::Type& ty
 ) {
     is_variadic = false;
+    deque<unique_ptr<Argument>> args;
 
     // No arguments
     if (s.peek()->content != "(") {
-        return { };
+        goto after_args;
     }
 
     // Consume '('
     s.pop();
-
-    deque<unique_ptr<Argument>> args;
 
     while (true) {
         if (!s.has()) {
@@ -250,6 +249,7 @@ deque<unique_ptr<Argument>> parse_function_args(
     
     s.pop(); // )
 
+after_args:
     ty = Sem::Type("void");
     if(s.peek()->content == "returns") {
         s.pop();
