@@ -210,3 +210,13 @@ int Type::struct_parameter_index(string name) {
 
     return -1;
 }
+
+Type::PrimType Type::bits_low_type() const {
+    if(prim_type == PrimType::Void) return PrimType::Void;
+    if(prim_type == PrimType::Char) return PrimType::I8;
+
+    if(is_int()) return PrimType::I8;
+    if(is_float()) return PrimType::F32;
+    
+    return PrimType::Invalid;
+}

@@ -126,6 +126,10 @@ namespace Sem {
         bool is_float() const;
         /// @brief Checks if the type is an ixx type
         bool is_int() const;
+        /// @brief The 8-bit type (int -> i8, float -> f16). Assumes this is a primitive
+        PrimType bits_low_type() const;
+        /// @brief Checks the bit level (8bits=0, 16=1, 32=2, ...). Assumes this is a primitive
+        inline int bit_level() const { return (int)prim_type-(int)bits_low_type(); }
         /// @brief Gets the index of a variable in a struct by name.
         /// @param name the name of the parameter
         /// @returns -1 if the the parameter doesn't exist, otherwise the index of the parameter

@@ -76,14 +76,14 @@ unique_ptr<ExprValue> ExprBlock::analyze(Analyzer& analyzer) {
 
 unique_ptr<ExprValue> ExprAddress::analyze(Analyzer& analyzer) {
     var->analyze(analyzer);
-    ty = std::make_unique<Type>(var->get_type().value());
+    ty = std::make_unique<Type>(var->get_type().value().ref());
 
     return std::make_unique<ExprValue>(false, *ty);
 }
 
 unique_ptr<ExprValue> ExprDeref::analyze(Analyzer& analyzer) {
     var->analyze(analyzer);
-    ty = std::make_unique<Type>(var->get_type().value());
+    ty = std::make_unique<Type>(var->get_type().value().deref());
 
     return std::make_unique<ExprValue>(false, *ty);
 }
