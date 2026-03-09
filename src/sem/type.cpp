@@ -101,16 +101,7 @@ llvm::Type* Type::to_llvm(Context& ctx) const {
 
     // Pointer
     if (pointer) {
-        llvm::Type* base;
-
-        if(pointer > 1) {
-            // If pointers are stacked we don't truly care about what goes below the next
-            base = llvm::PointerType::getUnqual(ctx.llvmCtx);
-        } else {
-            base = underlying_to_llvm(ctx);
-        }
-
-        return llvm::PointerType::get(base, 0);
+        return llvm::PointerType::get(ctx.llvmCtx, 0);
     }
 
     throw std::runtime_error("Unknown non-primitive kind");
