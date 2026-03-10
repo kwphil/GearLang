@@ -1,3 +1,35 @@
+/*
+   _____                 _                       
+  / ____|               | |                      
+ | |  __  ___  __ _ _ __| |     __ _ _ __   __ _ 
+ | | |_ |/ _ \/ _` | '__| |    / _` | '_ \ / _` | Clean, Clear and Fast Code
+ | |__| |  __/ (_| | |  | |___| (_| | | | | (_| | https://github.com/kwphil/gearlang
+  \_____|\___|\__,_|_|  |______\__,_|_| |_|\__, |
+                                            __/ |
+                                           |___/ 
+
+Licensed under the MIT License <https://opensource.org/licenses/MIT>.
+SPDX-License-Identifier: MIT
+
+Permission is hereby  granted, free of charge, to any  person obtaining a copy
+of this software and associated  documentation files (the "Software"), to deal
+in the Software  without restriction, including without  limitation the rights
+to  use, copy,  modify, merge,  publish, distribute,  sublicense, and/or  sell
+copies  of  the Software,  and  to  permit persons  to  whom  the Software  is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE  IS PROVIDED "AS  IS", WITHOUT WARRANTY  OF ANY KIND,  EXPRESS OR
+IMPLIED,  INCLUDING BUT  NOT  LIMITED TO  THE  WARRANTIES OF  MERCHANTABILITY,
+FITNESS FOR  A PARTICULAR PURPOSE AND  NONINFRINGEMENT. IN NO EVENT  SHALL THE
+AUTHORS  OR COPYRIGHT  HOLDERS  BE  LIABLE FOR  ANY  CLAIM,  DAMAGES OR  OTHER
+LIABILITY, WHETHER IN AN ACTION OF  CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Function.h>
 
@@ -63,31 +95,14 @@ void Function::generate(Context& ctx) {
 
         ast_arg->var = alloca;
 
-        if(ast_arg->get_type()->is_pointer_ty()) {
-            Value* val = new Value {
-                .ir=alloca,
-                .ty=ast_arg->get_type()->get_underlying_type(ctx),
-                .addr=ast_arg->get_type()->pointer_level()
-            };
-
-            ctx.bind(ast_arg->name, val);
-        } else {
-            Value* val = new Value {
-                .ir=alloca,
-                .ty=arg_ty,
-                .addr=false
-            };
-
-            ctx.bind(ast_arg->name, val);
-        }
-
         idx++;
     }
 
     generate_node(block.get(), ctx);
 
     if (!entry->getTerminator()) {
-        ctx.builder.CreateRet(
+        if(ty == "void") ctx.builder.CreateRetVoid();
+        else ctx.builder.CreateRet(
             llvm::Constant::getNullValue(
                 fn->getReturnType()
             )
@@ -107,6 +122,11 @@ void Ast::Nodes::ExternFn::generate(Context& ctx) {
         param_types.push_back(
             arg->get_type()->to_llvm(ctx)
         );
+    }
+
+    // TODO
+    if(no_mangle) {
+
     }
     
     llvm::FunctionType* fn_type = llvm::FunctionType::get(

@@ -1,3 +1,35 @@
+/*
+   _____                 _                       
+  / ____|               | |                      
+ | |  __  ___  __ _ _ __| |     __ _ _ __   __ _ 
+ | | |_ |/ _ \/ _` | '__| |    / _` | '_ \ / _` | Clean, Clear and Fast Code
+ | |__| |  __/ (_| | |  | |___| (_| | | | | (_| | https://github.com/kwphil/gearlang
+  \_____|\___|\__,_|_|  |______\__,_|_| |_|\__, |
+                                            __/ |
+                                           |___/ 
+
+Licensed under the MIT License <https://opensource.org/licenses/MIT>.
+SPDX-License-Identifier: MIT
+
+Permission is hereby  granted, free of charge, to any  person obtaining a copy
+of this software and associated  documentation files (the "Software"), to deal
+in the Software  without restriction, including without  limitation the rights
+to  use, copy,  modify, merge,  publish, distribute,  sublicense, and/or  sell
+copies  of  the Software,  and  to  permit persons  to  whom  the Software  is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE  IS PROVIDED "AS  IS", WITHOUT WARRANTY  OF ANY KIND,  EXPRESS OR
+IMPLIED,  INCLUDING BUT  NOT  LIMITED TO  THE  WARRANTIES OF  MERCHANTABILITY,
+FITNESS FOR  A PARTICULAR PURPOSE AND  NONINFRINGEMENT. IN NO EVENT  SHALL THE
+AUTHORS  OR COPYRIGHT  HOLDERS  BE  LIABLE FOR  ANY  CLAIM,  DAMAGES OR  OTHER
+LIABILITY, WHETHER IN AN ACTION OF  CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/GlobalVariable.h>
@@ -6,139 +38,132 @@
 #include <gearlang/ast/expr.hpp>
 #include <gearlang/ast/stmt.hpp>
 #include <gearlang/ast/func.hpp>
+#include <gearlang/ast/vars.hpp>
 
 #include <gearlang/error.hpp>
 #include <gearlang/etc.hpp>
 
+using namespace Ast::Nodes;
+
+llvm::Value* get_var(NodeBase* let) {
+    if(Let* let_val = try_cast<NodeBase, Let>(let))
+        return let_val->var;
+    
+    return try_cast<NodeBase, Argument>(let)->var;
+}
+
+#define CREATE_OP(method, name) \
+    out = ctx.builder.method(lhs->ir, rhs->ir, name)
+
 // Generates both sides of the expression, and stores them in temporary values
 // Matches through each operation and stores the output as a temp
 // Returns the temporary variable
-Value* Ast::Nodes::ExprOp::generate(Context& ctx) {
-    Value* lhs = left->generate(ctx);
-    Value* rhs = right->generate(ctx);
+unique_ptr<Value> ExprOp::generate(Context& ctx) {
+    unique_ptr<Value> lhs = left->generate(ctx);
+    unique_ptr<Value> rhs = right->generate(ctx);
     llvm::Value* out;
 
     if(ty->is_float()) {
         switch(type) {
-            case Add: out = ctx.builder.CreateFAdd(lhs->ir, rhs->ir, "faddtmp"); break;
-            case Sub: out = ctx.builder.CreateFSub(lhs->ir, rhs->ir, "fsubtmp"); break;
-            case Mul: out = ctx.builder.CreateFMul(lhs->ir, rhs->ir, "fmultmp"); break;
-            case Div: out = ctx.builder.CreateFDiv(lhs->ir, rhs->ir, "fdivtmp"); break;
+            case Add: CREATE_OP(CreateFAdd, "faddtmp"); break;
+            case Sub: CREATE_OP(CreateFSub, "fsubtmp"); break;
+            case Mul: CREATE_OP(CreateFMul, "fmultmp"); break;
+            case Div: CREATE_OP(CreateFDiv, "fdivtmp"); break;
+
+            case Eq: CREATE_OP(CreateFCmpOEQ, "feqtmp"); break;
+            case Ne: CREATE_OP(CreateFCmpONE, "fnetmp"); break;
+            case Gt: CREATE_OP(CreateFCmpOGT, "fgttmp"); break;
+            case Lt: CREATE_OP(CreateFCmpOLT, "flttmp"); break;
+            case Ge: CREATE_OP(CreateFCmpOGE, "fgetmp"); break;
+            case Le: CREATE_OP(CreateFCmpOLE, "fletmp"); break;
         }
     } else {
         switch (type) {
-            case Add: out = ctx.builder.CreateAdd(lhs->ir, rhs->ir, "iaddtmp"); break;
-            case Sub: out = ctx.builder.CreateSub(lhs->ir, rhs->ir, "isubtmp"); break;
-            case Mul: out = ctx.builder.CreateMul(lhs->ir, rhs->ir, "imultmp"); break;
-            case Div: out = ctx.builder.CreateSDiv(lhs->ir, rhs->ir, "idivtmp"); break;
+            case Add: CREATE_OP(CreateAdd, "iaddtmp"); break;
+            case Sub: CREATE_OP(CreateSub, "isubtmp"); break;
+            case Mul: CREATE_OP(CreateMul, "imultmp"); break;
+            case Div: CREATE_OP(CreateSDiv, "idivtmp"); break;
+
+            case Eq: CREATE_OP(CreateICmpEQ, "feqtmp"); break;
+            case Ne: CREATE_OP(CreateICmpNE, "fnetmp"); break;
+            case Gt: CREATE_OP(CreateICmpSGT, "fgttmp"); break;
+            case Lt: CREATE_OP(CreateICmpSLT, "flttmp"); break;
+            case Ge: CREATE_OP(CreateICmpSGE, "fgetmp"); break;
+            case Le: CREATE_OP(CreateICmpSLE, "fletmp"); break;
         }
     }
 
     if(out) {
-        return new Value {
-            .ir=out,
-            .ty=ty->to_llvm(ctx),
-            .addr = lhs->addr
-        };
+        return std::make_unique<Value>(
+            out,
+            ty->to_llvm(ctx),
+            lhs->addr
+        );
     }
 
-    Error::throw_error(
-        line_number,
-        "",
-        "Invalid ExprOp",
-        Error::ErrorCodes::INVALID_AST
-    );
+    assert(false && "You shouldn't be here!!");
 }
-
-#include <iostream>
 
 // Looks up the name of the variable
 // If the variable doesn't exist, it throws an error and quits
 // Otherwise Checks if it is a global and returns it
-Value* Ast::Nodes::ExprVar::generate(Context& ctx) {
-    // Link to the declaration statement
-    llvm::Value* var;
-
-    // std::cout << name << ": " << let << std::endl;
-    // Checking if it came from a let stmt
-    if(Let* let_val = try_cast<NodeBase, Let>(let))
-        var = let_val->var;
-    else
-        var = try_cast<NodeBase, Argument>(let)->var;
-
-
-    if (auto* gv = llvm::dyn_cast<llvm::GlobalVariable>(var)) {
-        llvm::Value* ir = ctx.builder.CreateLoad(
-            ty->to_llvm(ctx),
-            gv,
-            name + ".load"
-        );
-
-        return new Value {
-            .ir=ir,
-            .ty=ty->to_llvm(ctx),
-            .addr=ty->pointer_level()
-        };
-    }
-
-    llvm::AllocaInst* alloca = llvm::dyn_cast<llvm::AllocaInst>(var);
-
+unique_ptr<Value> ExprVar::generate(Context& ctx) {
     llvm::Value* ir = ctx.builder.CreateLoad(
-        alloca->getAllocatedType(),
-        var,
+        ty->to_llvm(ctx),
+        access_alloca(ctx),
         name + ".load"
     );
 
-    return new Value {
-        .ir=ir,
-        .ty=ty->to_llvm(ctx),
-        .addr=ty->pointer_level()
-    };
+    return std::make_unique<Value>(
+        ir,
+        ty->to_llvm(ctx),
+        ty->pointer_level()
+    );
+}
+
+llvm::Value* ExprVar::access_alloca(Context& _ctx) {
+    return get_var(let);
+}
+
+unique_ptr<Value> ExprStructParam::generate(Context& ctx) {
+    llvm::Type* ty_ll = ty->struct_param_ty(index).to_llvm(ctx);
+
+    llvm::Value* ir = ctx.builder.CreateLoad(ty_ll, access_alloca(ctx), struct_name + name + ".load");
+
+    return std::make_unique<Value>(
+        ir,
+        ty_ll,
+        ty->pointer_level()
+    );
+}
+
+// Returns the address calculated from the GEP
+llvm::Value* ExprStructParam::access_alloca(Context& ctx) {
+    llvm::Type* struct_ll = ty->get_llvm_struct();
+
+    return ctx.builder.CreateStructGEP(
+        struct_ll, get_var(let), index+1
+    );
 }
 
 // Assigns a value to a variable, and stores the value in the variable's alloca
 // If the variable doesn't exist, it throws an error and quits
-Value* Ast::Nodes::ExprAssign::generate(Context& ctx) {
-    // Link to the declaration statement
-    llvm::Value* var;
-
-    // Checking if it came from a let stmt
-    if(Let* let_val = try_cast<NodeBase, Let>(let))
-        var = let_val->var;
-    else
-        var = try_cast<NodeBase, Argument>(let)->var;
+unique_ptr<Value> ExprAssign::generate(Context& ctx) {
+    llvm::Value* alloca = var->access_alloca(ctx);
 
     Expr* expr2 = dynamic_cast<Expr*>(expr.get());
     
-    if(!expr2) {
-        Error::throw_error(
-            line_number,
-            "",
-            "Expected rvalue",
-            Error::ErrorCodes::INVALID_AST
-        );
-    }
-    
-    Value* value = expr2->generate(ctx);
+    unique_ptr<Value> value = expr2->generate(ctx);
 
-    ctx.builder.CreateStore(value->ir, var);
+    ctx.builder.CreateStore(value->ir, alloca);
 
     return value;
 }
 
 // Gets the function by name, and creates a call for it
 // Parses the expressions for each argument and calls it
-Value* Ast::Nodes::ExprCall::generate(Context& ctx) {
+unique_ptr<Value> ExprCall::generate(Context& ctx) {
     llvm::Function* func = ctx.module->getFunction(callee);
-
-    if(!func) {
-        Error::throw_error(
-            line_number,
-            callee.c_str(),
-            "Unknown function",
-            Error::ErrorCodes::FUNCTION_NOT_DEFINED
-        );
-    }
 
     std::vector<llvm::Value*> arg_values;
     
@@ -153,105 +178,54 @@ Value* Ast::Nodes::ExprCall::generate(Context& ctx) {
 
     llvm::Value* val = ctx.builder.CreateCall(func, arg_values, "call");
 
-    return new Value {
-        .ir=val,
-        .ty=val->getType(),
-        .addr=0
-    };
+    return std::make_unique<Value>(
+        val,
+        val->getType(),
+        0
+    );
 }
 
-Value* Ast::Nodes::ExprAddress::generate(Context& ctx) {
-    Value* var = ctx.lookup(name);
-
-    if(!var) {
-        Error::throw_error(
-            line_number,
-            name.c_str(),
-            "Tried to reference a variable that wasn't declared",
-            Error::ErrorCodes::VARIABLE_NOT_DEFINED
-        );
-    }
-
+unique_ptr<Value> ExprAddress::generate(Context& ctx) {
     // Just return the value because everything is allocated
     // TODO: Later I might optimize this to locate which variables
     // have to alloca and optimize ones that don't out
-    return new Value {
-        .ir=var->ir,
-        .ty=var->ty,
-        .addr=var->addr+1
-    };
+    return std::make_unique<Value>(
+        var->access_alloca(ctx),
+        ty->ref().to_llvm(ctx),
+        ty->pointer_level()+1
+    );
 }
 
 llvm::Value* deref(
     Context& ctx, 
     llvm::Value* ptr, 
-    llvm::Type* type,
+    Sem::Type* type,
     std::string&& name,
     const char* suffix, 
     int line_number
 ) {
-    // First try if it is a global
-    if(auto* gptr = llvm::dyn_cast<llvm::GlobalVariable>(ptr)) {
-        return ctx.builder.CreateLoad(
-            type,
-            gptr,
-            name + suffix
-        );
-    }
-
     return ctx.builder.CreateLoad(
-        type,
+        type->to_llvm(ctx),
         ptr,
         name + suffix
     );
 }
 
-Value* Ast::Nodes::ExprDeref::generate(Context& ctx) {
-    Value* var = ctx.lookup(name);
-
-    if(!var) {
-        Error::throw_error(
-            line_number,
-            name.c_str(),
-            "Tried to dereference a variable that wasn't declared",
-            Error::ErrorCodes::VARIABLE_NOT_DEFINED
-        );
-    }
-
-    // Load the variable twice and return
-    // Once to get the pointer
-    // Twice to get the dereferenced data
-
-    if(!var->addr) {
-        Error::throw_error(
-            line_number,
-            var->ir->getName().str().c_str(),
-            "Expected a pointer type",
-            Error::ErrorCodes::BAD_TYPE
-        );
-    }
-
-    llvm::Value* load = deref(
-        ctx,
-        var->ir,
-        var->ir->getType(),
-        var->ir->getName().str(),
-        ".load",
-        line_number
-    );
+unique_ptr<Value> ExprDeref::generate(Context& ctx) {
+    unique_ptr<Value> load = var->generate(ctx);
 
     llvm::Value* deref_var = deref(
         ctx,
-        load,
-        var->ty,
-        var->ir->getName().str(),
+        load->ir,
+        ty.get(),
+        var->name.c_str(),
         ".deref",
-        line_number
+        span_meta.line
     );
 
-    return new Value {
-        .ir=deref_var,
-        .ty=var->ty,
-        .addr=var->addr-1
-    };
+    return std::make_unique<Value>(
+        deref_var,
+        ty->to_llvm(ctx),
+        ty->pointer_level()-1
+    );
 }

@@ -1,36 +1,65 @@
-* [ ] **Build docs**
+* [ ] Documentation
   * [x] README
     * [x] Project overview
     * [x] Build instructions
     * [x] Supported platforms
-  * [ ] Usage
-    * [ ] CLI invocation patterns
-    * [ ] Input/output conventions
-    * [ ] Exit codes
-    * [ ] Environment variables
+  * [ ] User Guide
+    * [ ] Installation
+    * [ ] CLI usage
+      * [ ] Invocation patterns
+      * [x] Flags & options
+      * [ ] Input/output conventions
+      * [ ] Exit codes
+      * [ ] Environment variables
+    * [ ] Language basics
+    * [ ] Standard library overview
+    * [x] FFI / C interop
+    * [ ] Build modes (debug/release)
   * [ ] Examples
-    * [ ] Control flow examples
+    * [x] Hello world
+    * [ ] Control flow
     * [ ] Functions & parameters
-    * [X] Interop with C
-  * [ ] System
+    * [ ] Structs / types
+    * [x] Interop with C
+    * [ ] Larger sample program
+  * [ ] Compiler Internals
     * [ ] Architecture overview
-    * [X] Compiler pipeline (Lexer -> Parser -> LLVM)
+    * [x] Compiler pipeline (Lexer → Parser → LLVM)
+    * [ ] AST structure
+    * [ ] Type system design
     * [ ] Error model
-    * [ ] Design constraints & non-goals
+    * [ ] Code generation strategy
+    * [ ] Optimization passes
+    * [ ] Design constraints
+    * [ ] Non-goals
+  * [ ] Contributor Guide
+    * [ ] Project layout
+    * [ ] How to build locally
+    * [ ] How to run tests
+    * [ ] Code style guidelines
+    * [ ] Adding a new language feature
+  * [ ] Language Reference
+    * [ ] Grammar (EBNF)
+    * [ ] Type rules
+    * [ ] Operator precedence table
+    * [ ] Memory model
 * [ ] **Frontend**
   * [ ] Compiler options
     * [x] `--verbose`
     * [x] `--version`
-    * [X] `-G,--object`
-      * [ ] Emit object file
+    * [X] `-c,--object`
+      * [x] Emit object file
       * [ ] Target-specific formats
     * [X] `-S,--emit-llvm`
+    * [X] `--dump-ast`
+    * [X] `--dump-tokens`
+    * [ ] `--dump-analyzer`
     * [ ] `-O,--opt-level`
     * [X] `-o,--output`
     * [ ] `--target`
   * [x] Graceful Error Handling
     * [x] Structured error types
-    * [ ] Error codes
+    * [X] Error codes
     * [ ] Error recovery strategy
 * [ ] **Lexer**
   * [x] Basic functionality
@@ -42,7 +71,7 @@
       * [ ] ANSI support
       * [ ] Disable color flag
     * [ ] Context-binded error handling
-      * [ ] Line/column tracking
+      * [X] Line/column tracking
       * [ ] Source snippet highlighting
   * [ ] Unicode handling
   * [ ] Keyword vs identifier disambiguation
@@ -50,14 +79,14 @@
   * [x] Expression parsing
   * [x] Statement parsing
   * [ ] Error recovery
-  * [ ] AST generation
+  * [X] AST generation
     * [x] Typed AST
-    * [ ] Source span metadata
+    * [x] Source span metadata
 * [ ] **Semantic Analysis**
   * [x] Symbol table
   * [x] Scope resolution
-  * [ ] Type checking
-  * [ ] Implicit casts
+  * [X] Type checking
+  * [X] Implicit casts
   * [ ] Function signature validation
   * [ ] Unreachable code detection
 * [ ] **Code Generation**
@@ -78,10 +107,13 @@
     * [X] Recursion
     * [ ] Tail-call optimization hooks
   * [ ] Variables
+    * [X] Basic types
+    * [X] Pointers
+    * [ ] Structs
+    * [ ] Generics
     * [x] Variable variable types
-    * [ ] Implicit matching
-    * [ ] Lifetime tracking
-    * [ ] Stack vs heap allocation
+    * [X] Implicit matching
+    * [ ] Stack vs heap allocation (Needs to be worked)
   * [ ] Memory
     * [ ] Stack frame layout
     * [ ] Alignment rules
@@ -98,21 +130,19 @@
     * [ ] Common Name Mangling
     * [ ] Extern "C++" support
     * [ ] Simple class interop
-  * [ ] Platform ABIs
-    * [X] x86_64 System V
-    * [ ] Windows x64
 * [ ] **Optimizer**
   * [ ] Constant folding
   * [ ] Dead code elimination
   * [ ] Common subexpression elimination
   * [ ] Inlining
   * [ ] Control-flow graph generation
-  * [ ] SSA form (optional)
 * [ ] **Tooling**
   * [ ] Debug symbols
   * [ ] Source maps
-  * [ ] Compiler tests
-    * [ ] Lexer tests
-    * [ ] Parser tests
-    * [ ] Codegen tests
+  * [ ] Test suite
+    * [ ] Documentation for adding tests
+    * [ ] Lexer
+    * [ ] Ast
+    * [ ] Analyzer
+    * [ ] Generator 
   * [ ] Fuzzing

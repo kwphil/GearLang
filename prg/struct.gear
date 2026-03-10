@@ -1,0 +1,19 @@
+extern("C") fn printf(s char^, ...);
+
+struct foo {
+    x i16;
+    y i16;
+};
+
+let s: foo;
+s.x = 8200;
+// s.y = 40;
+
+fn bar(s2 foo^) {
+    let s3 = @s2;
+    printf("in bar: %d\n", s3.x);
+}
+
+bar(#s);
+
+printf("in main: %d\n", s.x);

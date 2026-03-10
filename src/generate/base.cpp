@@ -1,3 +1,35 @@
+/*
+   _____                 _                       
+  / ____|               | |                      
+ | |  __  ___  __ _ _ __| |     __ _ _ __   __ _ 
+ | | |_ |/ _ \/ _` | '__| |    / _` | '_ \ / _` | Clean, Clear and Fast Code
+ | |__| |  __/ (_| | |  | |___| (_| | | | | (_| | https://github.com/kwphil/gearlang
+  \_____|\___|\__,_|_|  |______\__,_|_| |_|\__, |
+                                            __/ |
+                                           |___/ 
+
+Licensed under the MIT License <https://opensource.org/licenses/MIT>.
+SPDX-License-Identifier: MIT
+
+Permission is hereby  granted, free of charge, to any  person obtaining a copy
+of this software and associated  documentation files (the "Software"), to deal
+in the Software  without restriction, including without  limitation the rights
+to  use, copy,  modify, merge,  publish, distribute,  sublicense, and/or  sell
+copies  of  the Software,  and  to  permit persons  to  whom  the Software  is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE  IS PROVIDED "AS  IS", WITHOUT WARRANTY  OF ANY KIND,  EXPRESS OR
+IMPLIED,  INCLUDING BUT  NOT  LIMITED TO  THE  WARRANTIES OF  MERCHANTABILITY,
+FITNESS FOR  A PARTICULAR PURPOSE AND  NONINFRINGEMENT. IN NO EVENT  SHALL THE
+AUTHORS  OR COPYRIGHT  HOLDERS  BE  LIABLE FOR  ANY  CLAIM,  DAMAGES OR  OTHER
+LIABILITY, WHETHER IN AN ACTION OF  CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #include <llvm/IR/Value.h>         
 #include <llvm/IR/Function.h>      
 #include <llvm/IR/Module.h>        
@@ -22,13 +54,17 @@
 // Otherwise, it creates the variable in the current scope
 // If in the global scope, it creates a global variable
 void Ast::Nodes::Let::generate(Context& ctx) {
-    Expr* rvalue = dynamic_cast<Expr*>(expr.value().get());
-    Value* initVal = rvalue->generate(ctx);
+    Expr* rvalue = dynamic_cast<Expr*>(expr.get());
+    unique_ptr<Value> initVal;
+
+    if(rvalue) {
+        initVal = rvalue->generate(ctx);
+    }
 
     if (is_global) {
         // Creating a placeholder and then assigning the value
         llvm::Constant* placeholder = 
-            llvm::Constant::getNullValue(initVal->ty);
+            llvm::Constant::getNullValue(ty->to_llvm(ctx));
         
         // Create the variable
         llvm::GlobalVariable* var = new llvm::GlobalVariable(
@@ -40,13 +76,9 @@ void Ast::Nodes::Let::generate(Context& ctx) {
             target
         );
 
-        ctx.bind(target, new Value { 
-            .ir=var, 
-            .ty=initVal->ty, 
-            .addr=initVal->addr 
-        });
-
-        ctx.builder.CreateStore(initVal->ir, var);
+        if(rvalue) {
+            ctx.builder.CreateStore(initVal->ir, var);
+        }
 
         this->var = var;
 
@@ -55,22 +87,18 @@ void Ast::Nodes::Let::generate(Context& ctx) {
 
     llvm::Function* fn = ctx.current_fn;
     llvm::AllocaInst* alloca =
-        ctx.create_entry_block(fn, target, initVal->ir->getType());
+        ctx.create_entry_block(fn, target, ty->to_llvm(ctx));
 
     var = alloca;
 
-    ctx.builder.CreateStore(initVal->ir, alloca);
-    
-    ctx.bind(target, new Value {
-        .ir=alloca,
-        .ty=initVal->ty,
-        .addr=initVal->addr
-    });
+    if(rvalue) {
+        ctx.builder.CreateStore(initVal->ir, alloca);
+    }
 }
 
 // Creates a new scope, generates all the expressions inside the block,
 // then pops the scope
-Value* Ast::Nodes::ExprBlock::generate(Context& ctx) {
+unique_ptr<Value> Ast::Nodes::ExprBlock::generate(Context& ctx) {
     ctx.push_scope();
     for (auto& expr : nodes)
         generate_node(expr.get(), ctx);
@@ -80,7 +108,7 @@ Value* Ast::Nodes::ExprBlock::generate(Context& ctx) {
 
 void Ast::Nodes::Return::generate(Context& ctx) {
     Expr* exp = dynamic_cast<Expr*>(expr.get());
-    Value* retVal = exp->generate(ctx);
+    unique_ptr<Value> retVal = exp->generate(ctx);
     llvm::Type* fn_return = ctx.current_fn->getReturnType();
 
     llvm::Value* ret_ir = retVal->ir;
@@ -104,16 +132,8 @@ void Ast::Nodes::If::generate(Context& ctx) {
         llvm::BasicBlock::Create(ctx.llvmCtx, "if.end", fn);
 
     // Generate condition
-    Expr* cond_expr = dynamic_cast<Expr*>(cond_expr);
-    if(!cond_expr) {
-        Error::throw_error(
-            line_number,
-            "if",
-            "Expected rvalue",
-            Error::ErrorCodes::INVALID_AST
-        );
-    }
-    Value* condVal = cond_expr->generate(ctx);
+    Expr* cond_expr = dynamic_cast<Expr*>(cond.get());
+    unique_ptr<Value> condVal = cond_expr->generate(ctx);
 
     // Convert to boolean: cond != 0
     // TODO: Support different types (String would be x != "", etc)
@@ -152,15 +172,7 @@ void Ast::Nodes::Else::generate(Context& ctx) {
 
     // Generate condition
     Expr* cond_expr = dynamic_cast<Expr*>(cond.get());
-    if(!cond_expr) {
-        Error::throw_error(
-            line_number,
-            "else",
-            "Expected an rvalue but received an lvalue",
-            Error::ErrorCodes::INVALID_AST
-        );
-    }
-    Value* condVal = cond_expr->generate(ctx);
+    unique_ptr<Value> condVal = cond_expr->generate(ctx);
 
     // Convert to boolean: cond != 0
     // TODO: Support different types (String would be x != "", etc)
@@ -185,22 +197,12 @@ void Ast::Nodes::Else::generate(Context& ctx) {
     // else
     ctx.builder.SetInsertPoint(else_block);
     Expr* else_expr2 = dynamic_cast<Expr*>(expr.get());
-    if(!else_expr2) {
-        Error::throw_error(
-            line_number,
-            "",
-            "Expected rvalue",
-            Error::ErrorCodes::INVALID_AST
-        );
-    }
     else_expr2->generate(ctx);
     ctx.builder.CreateBr(then_block);
 
     // end
     ctx.builder.SetInsertPoint(then_block);
 }
-
-#include <iostream>
 
 void generate_node(Ast::Nodes::NodeBase* node, Context& ctx) {
     using namespace Ast::Nodes;

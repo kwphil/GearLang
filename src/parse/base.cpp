@@ -1,7 +1,38 @@
+/*
+   _____                 _                       
+  / ____|               | |                      
+ | |  __  ___  __ _ _ __| |     __ _ _ __   __ _ 
+ | | |_ |/ _ \/ _` | '__| |    / _` | '_ \ / _` | Clean, Clear and Fast Code
+ | |__| |  __/ (_| | |  | |___| (_| | | | | (_| | https://github.com/kwphil/gearlang
+  \_____|\___|\__,_|_|  |______\__,_|_| |_|\__, |
+                                            __/ |
+                                           |___/ 
+
+Licensed under the MIT License <https://opensource.org/licenses/MIT>.
+SPDX-License-Identifier: MIT
+
+Permission is hereby  granted, free of charge, to any  person obtaining a copy
+of this software and associated  documentation files (the "Software"), to deal
+in the Software  without restriction, including without  limitation the rights
+to  use, copy,  modify, merge,  publish, distribute,  sublicense, and/or  sell
+copies  of  the Software,  and  to  permit persons  to  whom  the Software  is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE  IS PROVIDED "AS  IS", WITHOUT WARRANTY  OF ANY KIND,  EXPRESS OR
+IMPLIED,  INCLUDING BUT  NOT  LIMITED TO  THE  WARRANTIES OF  MERCHANTABILITY,
+FITNESS FOR  A PARTICULAR PURPOSE AND  NONINFRINGEMENT. IN NO EVENT  SHALL THE
+AUTHORS  OR COPYRIGHT  HOLDERS  BE  LIABLE FOR  ANY  CLAIM,  DAMAGES OR  OTHER
+LIABILITY, WHETHER IN AN ACTION OF  CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #include <string>
 #include <vector>
 #include <memory>
-#include <format>
 
 #include <gearlang/ast/stmt.hpp>
 #include <gearlang/ast/expr.hpp>
@@ -11,52 +42,18 @@
 #include <gearlang/lex.hpp>
 #include <gearlang/error.hpp>
 
-std::unique_ptr<Ast::Nodes::Let> Ast::Nodes::Let::parse(Lexer::Stream& s) {
-    int line_number = s.peek()->line;
-    
-    s.expect("let", line_number);
-    std::string target = s.pop()->content;
-    s.expect("=", line_number);
-    std::unique_ptr<Expr> expr = Expr::parse(s);
+using namespace Ast::Nodes;
+using std::unique_ptr;
+using std::string;
 
-    return std::make_unique<Let>(target, std::move(expr), line_number);
-}
-
-std::unique_ptr<Ast::Nodes::ExprBlock> Ast::Nodes::ExprBlock::parse(Lexer::Stream& s) {
-    int line_number = s.peek()->line;
-    std::vector<std::unique_ptr<NodeBase>> nodes;
-
-    s.expect("{", line_number);
-    std::unique_ptr<Lexer::Token> t = s.peek();
-    int brace_count = 1;
-    while(s.has()) {
-        // For nested braces
-        if(t->type == Lexer::Type::BraceOpen) brace_count++;
-        if(t->type == Lexer::Type::BraceClose) brace_count--;
-
-        if(brace_count == 0) {
-            break;
-        }
-
-        nodes.push_back(NodeBase::parse(s));
-
-        t = s.peek();
-    }
-
-    s.pop(); // To remove the last }
-
-    return std::make_unique<Ast::Nodes::ExprBlock>(std::move(nodes), line_number);
-}
-
-std::unique_ptr<Ast::Nodes::NodeBase> Ast::Nodes::NodeBase::parse(Lexer::Stream& s) {
-    std::unique_ptr<NodeBase> out;
-    std::unique_ptr<Lexer::Token> curr = s.peek();
-    int line_number = curr->line;
+unique_ptr<NodeBase> NodeBase::parse(Lexer::Stream& s) {
+    unique_ptr<NodeBase> out;
+    unique_ptr<Lexer::Token> curr = s.peek();
+    Span span = curr->span;
 
     if(!s.has()) {
         Error::throw_error(
-            line_number,
-            "",
+            span,
             "Unexpected EOF",
             Error::ErrorCodes::UNEXPECTED_EOF
         );
@@ -78,40 +75,13 @@ std::unique_ptr<Ast::Nodes::NodeBase> Ast::Nodes::NodeBase::parse(Lexer::Stream&
     else if (curr->content == "let")    out = Let::parse(s);
     else if (curr->content == "return") out = Return::parse(s);
     else if (curr->content == "extern") out = ExternFn::parse(s);
+    else if (curr->content == "struct") out = Struct::parse(s);
     else                                out = Expr::parse(s);
-    s.expect(";", s.peek()->line);
+    s.expect(";", s.peek()->span);
 
     return out;
 }
 
-std::unique_ptr<Ast::Nodes::Return> Ast::Nodes::Return::parse(Lexer::Stream& s) {
-    int line_number = s.peek()->line;
-    
-    s.expect("return", line_number);
-    std::unique_ptr<Expr> expr = Expr::parse(s);
-
-    return std::make_unique<Return>(std::move(expr), line_number);
-}
-
-std::unique_ptr<Ast::Nodes::If> Ast::Nodes::If::parse(Lexer::Stream& s) {
-    int line_number = s.peek()->line; // Get it here on the line of the if statement itself
-    s.expect("if", line_number);
-    pExpr cond = Expr::parse(s);
-    std::unique_ptr<NodeBase> expr = NodeBase::parse(s);
-
-    return std::make_unique<If>(std::move(expr), std::move(cond), line_number);
-}
-
-std::unique_ptr<Ast::Nodes::Else> Ast::Nodes::Else::parse(
-    std::unique_ptr<If> if_expr,
-    Lexer::Stream& s
-) {
-    int line_number = s.peek()->line;
-    s.expect("else", line_number);
-    std::unique_ptr<NodeBase> expr = NodeBase::parse(s);
-
-    return std::make_unique<Else>(std::move(expr), std::move(*if_expr));
-}
 
 Ast::Program Ast::Program::parse(Lexer::Stream& s) {
     Program that = Program();
@@ -120,4 +90,17 @@ Ast::Program Ast::Program::parse(Lexer::Stream& s) {
     }
     
     return that; 
+}
+
+std::string Ast::Program::to_string() {
+    std::string out = "[";
+    
+    for(auto& n : content) {
+        out += n->to_string();
+        out += ",\n";
+    }   
+
+    out[out.size()-2] = ']';
+
+    return out;
 }

@@ -1,3 +1,35 @@
+/*
+   _____                 _                       
+  / ____|               | |                      
+ | |  __  ___  __ _ _ __| |     __ _ _ __   __ _ 
+ | | |_ |/ _ \/ _` | '__| |    / _` | '_ \ / _` | Clean, Clear and Fast Code
+ | |__| |  __/ (_| | |  | |___| (_| | | | | (_| | https://github.com/kwphil/gearlang
+  \_____|\___|\__,_|_|  |______\__,_|_| |_|\__, |
+                                            __/ |
+                                           |___/ 
+
+Licensed under the MIT License <https://opensource.org/licenses/MIT>.
+SPDX-License-Identifier: MIT
+
+Permission is hereby  granted, free of charge, to any  person obtaining a copy
+of this software and associated  documentation files (the "Software"), to deal
+in the Software  without restriction, including without  limitation the rights
+to  use, copy,  modify, merge,  publish, distribute,  sublicense, and/or  sell
+copies  of  the Software,  and  to  permit persons  to  whom  the Software  is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE  IS PROVIDED "AS  IS", WITHOUT WARRANTY  OF ANY KIND,  EXPRESS OR
+IMPLIED,  INCLUDING BUT  NOT  LIMITED TO  THE  WARRANTIES OF  MERCHANTABILITY,
+FITNESS FOR  A PARTICULAR PURPOSE AND  NONINFRINGEMENT. IN NO EVENT  SHALL THE
+AUTHORS  OR COPYRIGHT  HOLDERS  BE  LIABLE FOR  ANY  CLAIM,  DAMAGES OR  OTHER
+LIABILITY, WHETHER IN AN ACTION OF  CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #pragma once
 
 #include <string>
@@ -6,7 +38,8 @@
 #include <source_location>
 #include <memory>
 
-/// @brief Lexer namespace
+#include "etc.hpp"
+
 namespace Lexer {
 
 /// @brief Character types used during lexing
@@ -45,6 +78,7 @@ enum class Type {
     BraceOpen,
     BraceClose,
     Ellipsis,
+    Equal,
     Comma,
     Semi,
     Caret,
@@ -52,7 +86,7 @@ enum class Type {
     At
 };
 
-std::string print_type(Type ty);
+const char* print_type(Type ty);
 
 /// @brief Classify a token based on its content and ending character type
 /// @param content Content of the token
@@ -65,8 +99,8 @@ class Token {
 public:
     /// @brief Construct a new Token object
     std::string content;
-    /// @brief Line number where the token is located
-    uint32_t line;
+    /// @brief The span metadata of the token
+    Span span;
     /// @brief Column number where the token starts
     Type type;
 };
@@ -97,13 +131,15 @@ public:
     /// @brief Expect the next token to match a specific content
     /// @param should Expected token content
     /// @param line_number Line expected for the error
-    void expect(
-        const char* should, 
-        int line_number
-    );
+    void expect(const char* should, Span const& span);
+    /// @brief Expect the next token to match a specific content
+    /// @param should Expected token content
+    void expect(const char* should) { return expect(should, this->peek()->span); };
 
     /// @brief Dumps the remaining unparsed text
     void dump();
+    /// @brief Converts all output into a string, format as { content, line, type }
+    std::string to_string();
 };
 
 /// @brief Tokenize a source file into a token stream

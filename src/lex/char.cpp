@@ -30,40 +30,42 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <gearlang/ast/expr.hpp>
-#include <gearlang/sem/val.hpp>
-#include <gearlang/sem/analyze.hpp>
-#include <gearlang/error.hpp>
+#include <gearlang/lex.hpp>
 
-#include <format>
+Lexer::CharType Lexer::getCharType(char c) {
+    if (isalpha(c)) return CharType::Alpha;
+    if (isdigit(c)) return CharType::Num;
 
-using namespace Ast::Nodes;
-using namespace Sem;
-
-unique_ptr<ExprValue> ExprOp::analyze(Analyzer& analyzer) {
-    unique_ptr<ExprValue> lhs = left->analyze(analyzer);
-    unique_ptr<ExprValue> rhs = right->analyze(analyzer);
-
-    if(!analyzer.type_is_compatible(lhs->ty, rhs->ty)) {
-        Error::throw_error(
-            span_meta,
-            std::format(
-                "Types do not match. lhs: {}, rhs: {}",
-                left->get_type()->dump(), right->get_type()->dump()
-            ).c_str(),
-            Error::ErrorCodes::BAD_TYPE
-        );
+    switch(c) {
+        case('_'): return CharType::Alpha;
+        case('.'): return CharType::Num;
+        case('('): // Next
+        case(')'): return CharType::Paren;
+        case('{'): // Next
+        case('}'): return CharType::Brace;
+        case(' '):  // Next
+        case('\n'): // Next
+        case('\t'): return CharType::Format;
+        case('"'): return CharType::Quote;
+        case('^'): return CharType::Caret;
+        case(';'): return CharType::Semi;
+        case('#'): return CharType::Hash;
+        case('@'): return CharType::At;
+        default: return CharType::Sym;
     }
+}
 
-    // Checking for boolean operators
-    if(type >= Type::Gt) {
-        ty = std::make_unique<Sem::Type>("bool");
-    } else {
-        ty = std::make_unique<Sem::Type>(lhs->ty);
+bool is_single_char_token(Lexer::CharType t) {
+    using Lexer::CharType;
+    
+    switch(t) {
+    case(CharType::Paren):
+    case(CharType::Brace):
+    case(CharType::Caret):
+    case(CharType::Semi):
+    case(CharType::Hash):
+    case(CharType::At):
+        return true;
+    default: return false;
     }
-
-    // Implicit cast
-    right->set_type(lhs->ty);
-
-    return std::make_unique<ExprValue>(lhs->is_const && rhs->is_const, lhs->ty);
 }
