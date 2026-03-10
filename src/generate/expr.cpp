@@ -45,13 +45,6 @@ SOFTWARE.
 
 using namespace Ast::Nodes;
 
-llvm::Value* get_var(NodeBase* let) {
-    if(Let* let_val = try_cast<NodeBase, Let>(let))
-        return let_val->var;
-    
-    return try_cast<NodeBase, Argument>(let)->var;
-}
-
 #define CREATE_OP(method, name) \
     out = ctx.builder.method(lhs, rhs, name)
 
@@ -97,49 +90,6 @@ llvm::Value* ExprOp::generate(Context& ctx) {
     return out;
 }
 
-llvm::Value* deref(
-    Context& ctx, 
-    llvm::Value* ptr, 
-    Sem::Type* type,
-    const std::string& name,
-    const char* suffix
-) {
-    return ctx.builder.CreateLoad(
-        type->to_llvm(ctx),
-        ptr,
-        name + suffix
-    );
-}
-
-// Looks up the name of the variable
-// If the variable doesn't exist, it throws an error and quits
-// Otherwise Checks if it is a global and returns it
-llvm::Value* ExprVar::generate(Context& ctx) {
-    return deref(
-        ctx, access_alloca(ctx),
-        ty.get(), name, ".load"
-    );
-}
-
-llvm::Value* ExprVar::access_alloca(Context& _ctx) {
-    return get_var(let);
-}
-
-llvm::Value* ExprStructParam::generate(Context& ctx) {
-    llvm::Type* ty_ll = ty->struct_param_ty(index).to_llvm(ctx);
-
-    return ctx.builder.CreateLoad(ty_ll, access_alloca(ctx), struct_name + "." + name + ".load");
-}
-
-// Returns the address calculated from the GEP
-llvm::Value* ExprStructParam::access_alloca(Context& ctx) {
-    llvm::Type* struct_ll = ty->get_llvm_struct();
-
-    return ctx.builder.CreateStructGEP(
-        struct_ll, get_var(let), index+1
-    );
-}
-
 // Assigns a value to a variable, and stores the value in the variable's alloca
 // If the variable doesn't exist, it throws an error and quits
 llvm::Value* ExprAssign::generate(Context& ctx) {
@@ -176,6 +126,20 @@ llvm::Value* ExprAddress::generate(Context& ctx) {
     // TODO: Later I might optimize this to locate which variables
     // have to alloca and optimize ones that don't out
     return var->access_alloca(ctx);
+}
+
+inline llvm::Value* deref(
+    Context& ctx, 
+    llvm::Value* ptr, 
+    Sem::Type* type,
+    const std::string& name,
+    const char* suffix
+) {
+    return ctx.builder.CreateLoad(
+        type->to_llvm(ctx),
+        ptr,
+        name + suffix
+    );
 }
 
 llvm::Value* ExprDeref::generate(Context& ctx) {

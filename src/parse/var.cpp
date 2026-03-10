@@ -30,45 +30,41 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
-
 #include <memory>
-#include <cassert>
+#include <string>
+#include <vector>
+#include <format>
 
-#include <llvm/IR/Value.h>
+#include <gearlang/ast/expr.hpp>
+#include <gearlang/ast/vars.hpp>
+#include <gearlang/lex.hpp>
+#include <gearlang/error.hpp>
 
+using namespace Ast::Nodes;
+using std::string;
+using std::unique_ptr;
 
-/// @brief Safe casting
-template<typename From, typename To>
-inline To* try_cast(From* from) {
-    assert(from != nullptr);
-    return dynamic_cast<To*>(from);
+unique_ptr<ExprVar> ExprVar::parse(const Lexer::Token& token, Lexer::Stream& s) { 
+    if(token.content.back() == '.') return ExprStructParam::parse(token, s);
+
+    return std::make_unique<ExprVar>(token.content, token.span);
 }
 
-/// @brief Wrapper for try_cast to specifically take input from a unique_ptr*
-template<typename From, typename To>
-inline To* cast_from_uptr(std::unique_ptr<From>* from) {
-    From* underlying = from->get();
+string ExprVar::to_string() { return std::format("{{ \"type\":\"ExprVar\", \"name\":\"{}\" }}", name); }
 
-    return try_cast<From, To>(underlying);
+unique_ptr<ExprStructParam> ExprStructParam::parse(const Lexer::Token& token, Lexer::Stream& s) {
+    Span span = token.span;
+    string struct_name = token.content;
+    struct_name.pop_back();
+    string param_name = s.peek()->content;
+    span.end = s.pop()->span.end;
+    
+    return std::make_unique<ExprStructParam>(struct_name, param_name, span);
 }
 
-/// @brief span metadata for tokens
-struct Span {
-    size_t line;
-    size_t col;
-    size_t start;
-    size_t end;
-};
-
-struct Options {
-    std::string input;
-    std::string output;
-
-    bool verbose = false;
-    bool emit_object = false;
-    bool emit_llvm = false;
-
-    bool dump_tokens = false;
-    bool dump_ast = false;
-};
+string ExprStructParam::to_string() { 
+    return std::format(
+        "{{ \"type\"=\"ExprStructParam\", \"struct_name\":\"{}\", \"param_name\":\"{}\"}}",
+        struct_name, name
+    );
+}

@@ -49,29 +49,66 @@ SOFTWARE.
 #include <gearlang/error.hpp>
 #include <gearlang/func.hpp>
 
-// Creates a new scope, generates all the expressions inside the block,
-// then pops the scope
-llvm::Value* Ast::Nodes::ExprBlock::generate(Context& ctx) {
-    for (auto& expr : nodes)
-        generate_node(expr.get(), ctx);
+llvm::Value* Ast::Nodes::Return::generate(Context& ctx) {
+    Expr* exp = dynamic_cast<Expr*>(expr.get());
+    llvm::Value* retVal = exp->generate(ctx);
+    llvm::Type* fn_return = ctx.current_fn->getReturnType();
+
+    llvm::Value* ret_ir = retVal;
+    if(exp->get_type()->to_llvm(ctx) != fn_return) {
+        ret_ir = ctx.builder.CreateIntCast(retVal, fn_return, true);
+    }
+
+    ctx.builder.CreateRet(ret_ir);
 
     return nullptr;
 }
 
-void generate_node(Ast::Nodes::NodeBase* node, Context& ctx) {
-    using namespace Ast::Nodes;
-    
-    if (auto* stmt = dynamic_cast<Stmt*>(node)) {
-        stmt->generate(ctx);
-    } else if (auto* expr = dynamic_cast<Expr*>(node)) {
-        expr->generate(ctx);
-    } else {
-        throw std::runtime_error("invalid node");
-    }
-}
+// Checks if the variable already exists
+// If it does, it throws an error and quits
+// Otherwise, it creates the variable in the current scope
+// If in the global scope, it creates a global variable
+llvm::Value* Ast::Nodes::Let::generate(Context& ctx) {
+    Expr* rvalue = dynamic_cast<Expr*>(expr.get());
+    llvm::Value* initVal;
 
-void Ast::Program::generate(Context& ctx) {
-    for (const auto& node : content) {
-        generate_node(node.get(), ctx);
+    if(rvalue) {
+        initVal = rvalue->generate(ctx);
     }
+
+    if (is_global) {
+        // Creating a placeholder and then assigning the value
+        llvm::Constant* placeholder = 
+            llvm::Constant::getNullValue(ty->to_llvm(ctx));
+        
+        // Create the variable
+        llvm::GlobalVariable* var = new llvm::GlobalVariable(
+            *(ctx.module),
+            ty->to_llvm(ctx),
+            false,
+            llvm::GlobalValue::ExternalLinkage,
+            placeholder,
+            target
+        );
+
+        if(rvalue) {
+            ctx.builder.CreateStore(initVal, var);
+        }
+
+        this->var = var;
+
+        return nullptr;
+    }
+
+    llvm::Function* fn = ctx.current_fn;
+    llvm::AllocaInst* alloca =
+        ctx.create_entry_block(fn, target, ty->to_llvm(ctx));
+
+    var = alloca;
+
+    if(rvalue) {
+        ctx.builder.CreateStore(initVal, alloca);
+    }
+
+    return nullptr;
 }

@@ -31,7 +31,17 @@ SOFTWARE.
 */
 
 #include <gearlang/func.hpp>
+#include <gearlang/ast/base.hpp>
+#include <gearlang/sem/analyze.hpp>
+#include <gearlang/lex.hpp>
+#include <gearlang/etc.hpp>
+
 #include <argparse/argparse.hpp>
+
+#define RUN_STEP(note, code) \
+    if(opts.verbose) std::cout << note << "...\n"; \
+    { code } \
+    if(opts.verbose) std::cout << "done\n";
 
 void init_program(argparse::ArgumentParser& program) {
     program.add_description("Gearlang compiler");
@@ -91,4 +101,35 @@ llvm::Function* build_runtime(Context& ctx) {
     ctx.current_fn = global_fn;
 
     return global_fn;
+}
+
+Ast::Program build_tree(const Options& opts) {
+    Lexer::Stream tokens;
+    Ast::Program root;
+
+    RUN_STEP("tokenizing",
+        tokens = Lexer::tokenize(opts.input);
+    );
+
+    if(opts.dump_tokens) {
+        std::cout << tokens.to_string() << "\n";
+        exit(EXIT_SUCCESS);
+    }
+
+    RUN_STEP("parsing",
+        root = Ast::Program::parse(tokens);
+    );
+
+    if(opts.dump_ast) {
+        std::cout << root.to_string() << "\n";
+        exit(EXIT_SUCCESS);
+    }
+
+    Sem::Analyzer analyzer;
+
+    RUN_STEP("analyzing",
+        analyzer.analyze(root.content);
+    );
+
+    return root;
 }

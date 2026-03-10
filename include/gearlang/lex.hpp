@@ -145,6 +145,6 @@ public:
 /// @brief Tokenize a source file into a token stream
 /// @param source_path Path to the source file
 /// @return Token stream
-Stream tokenize(std::string& source_path);
+Stream tokenize(const std::string& source_path);
 
 } 

@@ -30,45 +30,57 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <gearlang/ast/expr.hpp>
+#include <gearlang/lex.hpp>
 
 #include <memory>
-#include <cassert>
+#include <string>
+#include <format>
 
-#include <llvm/IR/Value.h>
+using std::string;
+using std::unique_ptr;
+using namespace Ast::Nodes;
 
+unique_ptr<ExprLitInt> ExprLitInt::parse(Lexer::Stream& s) { 
+    auto tok = *s.pop();
 
-/// @brief Safe casting
-template<typename From, typename To>
-inline To* try_cast(From* from) {
-    assert(from != nullptr);
-    return dynamic_cast<To*>(from);
+    return std::make_unique<ExprLitInt>((uint64_t)std::stoi(tok.content), tok.span); 
 }
 
-/// @brief Wrapper for try_cast to specifically take input from a unique_ptr*
-template<typename From, typename To>
-inline To* cast_from_uptr(std::unique_ptr<From>* from) {
-    From* underlying = from->get();
+string ExprLitInt::to_string() { return std::format("{{ \"type\":\"ExprLitInt\", \"value\":{} }}", value); }
 
-    return try_cast<From, To>(underlying);
+unique_ptr<ExprLitFloat> ExprLitFloat::parse(Lexer::Stream& s) { 
+    auto tok = *s.pop();
+    double val = std::stod(tok.content);
+
+    return std::make_unique<ExprLitFloat>(val, tok.span); 
 }
 
-/// @brief span metadata for tokens
-struct Span {
-    size_t line;
-    size_t col;
-    size_t start;
-    size_t end;
-};
+string ExprLitFloat::to_string() { return std::format("{{ \"type\":\"ExprLitFloat\", \"value\":{} }}", value); }
 
-struct Options {
-    std::string input;
-    std::string output;
+unique_ptr<ExprLitString> ExprLitString::parse(Lexer::Stream& s) {
+    unique_ptr<Lexer::Token> t = s.pop();
 
-    bool verbose = false;
-    bool emit_object = false;
-    bool emit_llvm = false;
+    return std::make_unique<ExprLitString>(t->content, t->span);
+}
 
-    bool dump_tokens = false;
-    bool dump_ast = false;
-};
+string ExprLitString::to_string() { 
+    std::string out;
+
+    for(auto c : string) {
+        if(c == '\n') {
+            out.push_back('\\');
+            out.push_back('n');
+            continue;
+        }
+        if(c == '\t') {
+            out.push_back('\\');
+            out.push_back('t');
+            continue;
+        }
+
+        out.push_back(c);
+    }
+
+    return std::format("{{ \"type\":\"ExprLitString\", \"string\":\"{}\" }}", out); 
+}
