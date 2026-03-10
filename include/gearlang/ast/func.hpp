@@ -34,6 +34,7 @@ SOFTWARE.
 #include <gearlang/sem/type.hpp>
 #include "base.hpp"
 #include "stmt.hpp"
+#include "vars.hpp"
 
 #include <string>
 #include <deque>
@@ -44,24 +45,6 @@ using std::deque;
 using std::unique_ptr;
 
 namespace Ast::Nodes {
-    /// @brief Function arguments
-    class Argument : public Expr {
-    public:
-        /// @brief the name of the function
-        string name;
-        /// @brief the argument converted to llvm
-        llvm::Value* var;
-
-        Argument(string name, Sem::Type* ty, Span span)
-        : Expr(span, ty), name(name) { }
-
-        static unique_ptr<Argument> parse(Lexer::Stream& s);
-
-        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        unique_ptr<Value> generate(Context& ctx) override { return nullptr; } 
-        virtual std::string to_string() override;
-    };
-
     /// @brief Node for function definitions
     class Function : public Stmt {
     private:

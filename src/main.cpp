@@ -149,7 +149,7 @@ int main(int argc, char** argv) {
     }
 
     run_command("llvm-as build/build.llvm -o build/build.bc", verbose);
-    run_command("llc build/build.bc -filetype=obj -o build/build.o", verbose);
+    run_command("llc build/build.bc -filetype=obj -relocation-model=pic -o build/build.o", verbose);
 
     if(output_object) {
         run_command("mv build/build.o build.o", verbose);
@@ -158,7 +158,7 @@ int main(int argc, char** argv) {
 
     {
         std::string cc =
-            std::format("cc build/build.o -o {}", output_file);
+            std::format("cc build/build.o -fPIE -o {}", output_file);
         run_command(cc.c_str(), verbose);
     }
 

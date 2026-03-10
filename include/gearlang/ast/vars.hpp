@@ -56,8 +56,8 @@ namespace Ast::Nodes {
         /// @brief The variable name
         const std::string name;
 
-        ExprVar(const std::string& name, Span span)
-        : Expr(span), name(name) {};
+        ExprVar(const std::string& name, Span span, unique_ptr<Sem::Type> ty = nullptr)
+        : Expr(span, std::move(ty)), name(name) {};
 
         /// @brief Returns the alloca or global this variable references WITHOUT loading it
         /// @returns an AllocaInst or GlobalVariable or whatever else
@@ -147,5 +147,21 @@ namespace Ast::Nodes {
         virtual std::string to_string() override;
     };
 
+        /// @brief Function arguments
+    class Argument : public ExprVar {
+    public:
+        /// @brief the name of the function
+        string name;
+        /// @brief the argument converted to llvm
+        llvm::Value* var;
 
+        Argument(string name, Sem::Type ty, Span span)
+        : ExprVar(name, span), name(name) { set_type(ty); }
+
+        static unique_ptr<Argument> parse(Lexer::Stream& s);
+
+        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
+        unique_ptr<Value> generate(Context& ctx) override { return nullptr; } 
+        virtual std::string to_string() override;
+    };
 }

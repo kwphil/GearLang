@@ -102,7 +102,7 @@ unique_ptr<ExprValue> ExprAssign::analyze(Analyzer& analyzer) {
     var->analyze(analyzer);
     ty = std::make_unique<Type>(var->get_type().value());
 
-    expr->set_type(*ty);
+    expr->set_type(*ty); // implicit casting
     return expr->analyze(analyzer);
 }
 
@@ -136,8 +136,7 @@ unique_ptr<ExprValue> ExprStructParam::analyze(Sem::Analyzer& analyzer) {
     }
 
     let = v->let_stmt;
-    ty = std::make_unique<Type>(v->type);
-    index = ty->struct_parameter_index(name);
+    index = v->type.struct_parameter_index(name);
 
     if(index < 0) {
         Error::throw_error(
@@ -149,6 +148,8 @@ unique_ptr<ExprValue> ExprStructParam::analyze(Sem::Analyzer& analyzer) {
             Error::ErrorCodes::VARIABLE_NOT_DEFINED
         );
     }
+
+    ty = std::make_unique<Type>(v->type);
 
     return std::make_unique<ExprValue>(false, *ty);
 }

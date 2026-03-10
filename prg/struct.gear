@@ -7,7 +7,7 @@ struct foo {
 
 let s: foo;
 s.x = 8200;
-s.y = 40;
+// s.y = 40;
 
 fn bar(s2 foo^) {
     let s3 = @s2;

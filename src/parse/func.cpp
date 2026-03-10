@@ -50,7 +50,7 @@ using std::vector;
 
 unique_ptr<Argument> Argument::parse(Lexer::Stream& s) {
     string arg = s.pop()->content;
-    Sem::Type* ty = new Sem::Type(s); 
+    Sem::Type ty(s); 
 
     return std::make_unique<Argument>(arg, ty, s.peek()->span);
 }

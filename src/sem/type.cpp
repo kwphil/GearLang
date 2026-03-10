@@ -45,8 +45,7 @@ unordered_map<string, shared_ptr<Type::Struct>> Type::struct_list = { };
 /* ============================
    LLVM lowering
    ============================ */
-static unordered_map<string, llvm::StructType*> struct_type_list_name;
-static unordered_map<Type::Struct*, llvm::StructType*> struct_type_list_sem;
+static unordered_map<string, llvm::StructType*> struct_type_list;
 
 llvm::Type* Type::struct_to_llvm(Type& obj, Context& ctx, string name) {
     // gather the types together and convert
@@ -59,20 +58,19 @@ llvm::Type* Type::struct_to_llvm(Type& obj, Context& ctx, string name) {
 
     llvm::StructType* ty = llvm::StructType::create(tys, name);
 
-    struct_type_list_name.insert({ name, ty });
-    struct_type_list_sem.insert({ obj.struct_type.get(), ty });
+    struct_type_list.insert({ name, ty });
     return ty;
 }
 
 llvm::Type* Type::get_llvm_struct(string name, Struct& obj) {
-    auto it = struct_type_list_name.find(name);
-    assert(it != struct_type_list_name.end());
+    auto it = struct_type_list.find(name);
+    assert(it != struct_type_list.end());
     return it->second;
 }
 
 llvm::Type* Type::get_llvm_struct() const {
-    auto it = struct_type_list_sem.find(struct_type.get());
-    assert(it != struct_type_list_sem.end());
+    auto it = struct_type_list.find(struct_name);
+    assert(it != struct_type_list.end());
     return it->second;
 }
 
