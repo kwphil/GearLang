@@ -32,7 +32,6 @@ SOFTWARE.
 
 #include <gearlang/func.hpp>
 #include <gearlang/ctx.hpp>
-#include <gearlang/value.hpp>
 
 llvm::Function* declare_func(
     llvm::Type* ret_type,
@@ -53,7 +52,7 @@ llvm::Function* declare_func(
     );
 }
 
-void call_exit(Context& ctx, Value* retVal) {
+void call_exit(Context& ctx, llvm::Value* retVal) {
     static llvm::Function* exit_fn;
 
     if(!exit_fn) { // If exit hasn't been created yet
@@ -64,6 +63,6 @@ void call_exit(Context& ctx, Value* retVal) {
         );
     }
 
-    ctx.builder.CreateCall(exit_fn, { retVal->ir });
+    ctx.builder.CreateCall(exit_fn, { retVal });
     ctx.builder.CreateUnreachable();
 }

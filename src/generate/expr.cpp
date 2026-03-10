@@ -53,14 +53,14 @@ llvm::Value* get_var(NodeBase* let) {
 }
 
 #define CREATE_OP(method, name) \
-    out = ctx.builder.method(lhs->ir, rhs->ir, name)
+    out = ctx.builder.method(lhs, rhs, name)
 
 // Generates both sides of the expression, and stores them in temporary values
 // Matches through each operation and stores the output as a temp
 // Returns the temporary variable
-unique_ptr<Value> ExprOp::generate(Context& ctx) {
-    unique_ptr<Value> lhs = left->generate(ctx);
-    unique_ptr<Value> rhs = right->generate(ctx);
+llvm::Value* ExprOp::generate(Context& ctx) {
+    llvm::Value* lhs = left->generate(ctx);
+    llvm::Value* rhs = right->generate(ctx);
     llvm::Value* out;
 
     if(ty->is_float()) {
@@ -93,31 +93,31 @@ unique_ptr<Value> ExprOp::generate(Context& ctx) {
         }
     }
 
-    if(out) {
-        return std::make_unique<Value>(
-            out,
-            ty->to_llvm(ctx),
-            lhs->addr
-        );
-    }
+    assert(out);
+    return out;
+}
 
-    assert(false && "You shouldn't be here!!");
+llvm::Value* deref(
+    Context& ctx, 
+    llvm::Value* ptr, 
+    Sem::Type* type,
+    const std::string& name,
+    const char* suffix
+) {
+    return ctx.builder.CreateLoad(
+        type->to_llvm(ctx),
+        ptr,
+        name + suffix
+    );
 }
 
 // Looks up the name of the variable
 // If the variable doesn't exist, it throws an error and quits
 // Otherwise Checks if it is a global and returns it
-unique_ptr<Value> ExprVar::generate(Context& ctx) {
-    llvm::Value* ir = ctx.builder.CreateLoad(
-        ty->to_llvm(ctx),
-        access_alloca(ctx),
-        name + ".load"
-    );
-
-    return std::make_unique<Value>(
-        ir,
-        ty->to_llvm(ctx),
-        ty->pointer_level()
+llvm::Value* ExprVar::generate(Context& ctx) {
+    return deref(
+        ctx, access_alloca(ctx),
+        ty.get(), name, ".load"
     );
 }
 
@@ -125,16 +125,10 @@ llvm::Value* ExprVar::access_alloca(Context& _ctx) {
     return get_var(let);
 }
 
-unique_ptr<Value> ExprStructParam::generate(Context& ctx) {
+llvm::Value* ExprStructParam::generate(Context& ctx) {
     llvm::Type* ty_ll = ty->struct_param_ty(index).to_llvm(ctx);
 
-    llvm::Value* ir = ctx.builder.CreateLoad(ty_ll, access_alloca(ctx), struct_name + name + ".load");
-
-    return std::make_unique<Value>(
-        ir,
-        ty_ll,
-        ty->pointer_level()
-    );
+    return ctx.builder.CreateLoad(ty_ll, access_alloca(ctx), struct_name + "." + name + ".load");
 }
 
 // Returns the address calculated from the GEP
@@ -148,27 +142,23 @@ llvm::Value* ExprStructParam::access_alloca(Context& ctx) {
 
 // Assigns a value to a variable, and stores the value in the variable's alloca
 // If the variable doesn't exist, it throws an error and quits
-unique_ptr<Value> ExprAssign::generate(Context& ctx) {
+llvm::Value* ExprAssign::generate(Context& ctx) {
     llvm::Value* alloca = var->access_alloca(ctx);
+    llvm::Value* value = expr->generate(ctx);
 
-    Expr* expr2 = dynamic_cast<Expr*>(expr.get());
-    
-    unique_ptr<Value> value = expr2->generate(ctx);
-
-    ctx.builder.CreateStore(value->ir, alloca);
-
+    ctx.builder.CreateStore(value, alloca);
     return value;
 }
 
 // Gets the function by name, and creates a call for it
 // Parses the expressions for each argument and calls it
-unique_ptr<Value> ExprCall::generate(Context& ctx) {
+llvm::Value* ExprCall::generate(Context& ctx) {
     llvm::Function* func = ctx.module->getFunction(callee);
 
     std::vector<llvm::Value*> arg_values;
     
     for(auto& a : args) {
-        arg_values.push_back(a->generate(ctx)->ir);
+        arg_values.push_back(a->generate(ctx));
     }
 
     if(func->getReturnType() == llvm::Type::getVoidTy(ctx.llvmCtx)) { 
@@ -178,54 +168,24 @@ unique_ptr<Value> ExprCall::generate(Context& ctx) {
 
     llvm::Value* val = ctx.builder.CreateCall(func, arg_values, "call");
 
-    return std::make_unique<Value>(
-        val,
-        val->getType(),
-        0
-    );
+    return val;
 }
 
-unique_ptr<Value> ExprAddress::generate(Context& ctx) {
+llvm::Value* ExprAddress::generate(Context& ctx) {
     // Just return the value because everything is allocated
     // TODO: Later I might optimize this to locate which variables
     // have to alloca and optimize ones that don't out
-    return std::make_unique<Value>(
-        var->access_alloca(ctx),
-        ty->ref().to_llvm(ctx),
-        ty->pointer_level()+1
-    );
+    return var->access_alloca(ctx);
 }
 
-llvm::Value* deref(
-    Context& ctx, 
-    llvm::Value* ptr, 
-    Sem::Type* type,
-    std::string&& name,
-    const char* suffix, 
-    int line_number
-) {
-    return ctx.builder.CreateLoad(
-        type->to_llvm(ctx),
-        ptr,
-        name + suffix
-    );
-}
+llvm::Value* ExprDeref::generate(Context& ctx) {
+    llvm::Value* load = var->generate(ctx);
 
-unique_ptr<Value> ExprDeref::generate(Context& ctx) {
-    unique_ptr<Value> load = var->generate(ctx);
-
-    llvm::Value* deref_var = deref(
+    return deref(
         ctx,
-        load->ir,
+        load,
         ty.get(),
-        var->name.c_str(),
-        ".deref",
-        span_meta.line
-    );
-
-    return std::make_unique<Value>(
-        deref_var,
-        ty->to_llvm(ctx),
-        ty->pointer_level()-1
+        var->name,
+        ".deref"
     );
 }

@@ -65,10 +65,6 @@ namespace Ast::Nodes {
         /// @brief For the semantic analyzer
         /// @param analyzer The analyzer object
         virtual void analyze(Sem::Analyzer& analyzer) = 0;
-
-        /// @brief generate function that doesn't return anything
-        /// @param ctx the context
-        virtual void generate(Context& ctx) = 0;
     };
 
     /// @brief Node for defining structs
@@ -88,7 +84,7 @@ namespace Ast::Nodes {
         static unique_ptr<Struct> parse(Lexer::Stream& s);
         virtual std::string to_string() override;
         virtual void analyze(Sem::Analyzer& analyzer) override;
-        virtual void generate(Context& ctx) override { ty.struct_to_llvm(ty, ctx, name); }
+        virtual llvm::Value* generate(Context& ctx) override { ty.struct_to_llvm(ty, ctx, name); return nullptr; }
     };
 
     /// @brief Node for if statements
@@ -110,7 +106,7 @@ namespace Ast::Nodes {
         static unique_ptr<If> parse(Lexer::Stream& s);
 
         virtual void analyze(Sem::Analyzer& analyzer) override;
-        void generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
 
         virtual std::string to_string() override;
     };
@@ -133,7 +129,7 @@ namespace Ast::Nodes {
         );
 
         virtual void analyze(Sem::Analyzer& analyzer) override;
-        void generate(Context& ctx);
+        llvm::Value* generate(Context& ctx);
 
         virtual std::string to_string() override;
     };
@@ -161,7 +157,7 @@ namespace Ast::Nodes {
 
         std::string get_name() { return target; }
         Sem::Type get_type() { return *ty; }
-        void generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
         void analyze(Sem::Analyzer& analyzer) override; 
         virtual std::string to_string() override;
     };
@@ -179,7 +175,7 @@ namespace Ast::Nodes {
         static std::unique_ptr<Return> parse(Lexer::Stream& s);
 
         virtual void analyze(Sem::Analyzer& analyzer) override;
-        void generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 }

@@ -53,9 +53,9 @@ SOFTWARE.
 // If it does, it throws an error and quits
 // Otherwise, it creates the variable in the current scope
 // If in the global scope, it creates a global variable
-void Ast::Nodes::Let::generate(Context& ctx) {
+llvm::Value* Ast::Nodes::Let::generate(Context& ctx) {
     Expr* rvalue = dynamic_cast<Expr*>(expr.get());
-    unique_ptr<Value> initVal;
+    llvm::Value* initVal;
 
     if(rvalue) {
         initVal = rvalue->generate(ctx);
@@ -69,7 +69,7 @@ void Ast::Nodes::Let::generate(Context& ctx) {
         // Create the variable
         llvm::GlobalVariable* var = new llvm::GlobalVariable(
             *(ctx.module),
-            initVal->ty,
+            ty->to_llvm(ctx),
             false,
             llvm::GlobalValue::ExternalLinkage,
             placeholder,
@@ -77,12 +77,12 @@ void Ast::Nodes::Let::generate(Context& ctx) {
         );
 
         if(rvalue) {
-            ctx.builder.CreateStore(initVal->ir, var);
+            ctx.builder.CreateStore(initVal, var);
         }
 
         this->var = var;
 
-        return;
+        return nullptr;
     }
 
     llvm::Function* fn = ctx.current_fn;
@@ -92,38 +92,40 @@ void Ast::Nodes::Let::generate(Context& ctx) {
     var = alloca;
 
     if(rvalue) {
-        ctx.builder.CreateStore(initVal->ir, alloca);
+        ctx.builder.CreateStore(initVal, alloca);
     }
+
+    return nullptr;
 }
 
 // Creates a new scope, generates all the expressions inside the block,
 // then pops the scope
-unique_ptr<Value> Ast::Nodes::ExprBlock::generate(Context& ctx) {
-    ctx.push_scope();
+llvm::Value* Ast::Nodes::ExprBlock::generate(Context& ctx) {
     for (auto& expr : nodes)
         generate_node(expr.get(), ctx);
-    ctx.pop_scope();
+
     return nullptr;
 }
 
-void Ast::Nodes::Return::generate(Context& ctx) {
+llvm::Value* Ast::Nodes::Return::generate(Context& ctx) {
     Expr* exp = dynamic_cast<Expr*>(expr.get());
-    unique_ptr<Value> retVal = exp->generate(ctx);
+    llvm::Value* retVal = exp->generate(ctx);
     llvm::Type* fn_return = ctx.current_fn->getReturnType();
 
-    llvm::Value* ret_ir = retVal->ir;
-    if(retVal->ty != fn_return) {
-        ret_ir = ctx.builder.CreateIntCast(retVal->ir, fn_return, true);
+    llvm::Value* ret_ir = retVal;
+    if(exp->get_type()->to_llvm(ctx) != fn_return) {
+        ret_ir = ctx.builder.CreateIntCast(retVal, fn_return, true);
     }
 
     ctx.builder.CreateRet(ret_ir);
-    return;
+
+    return nullptr;
 }
 
 // Generates the if condition, creates blocks for the if and the continuation
 // Generates the 'then' block inside the if block
 // Jumps to the continuation block afterwards   
-void Ast::Nodes::If::generate(Context& ctx) {
+llvm::Value* Ast::Nodes::If::generate(Context& ctx) {
     llvm::Function* fn = ctx.builder.GetInsertBlock()->getParent();
 
     llvm::BasicBlock* if_block =
@@ -133,14 +135,12 @@ void Ast::Nodes::If::generate(Context& ctx) {
 
     // Generate condition
     Expr* cond_expr = dynamic_cast<Expr*>(cond.get());
-    unique_ptr<Value> condVal = cond_expr->generate(ctx);
+    llvm::Value* condVal = cond_expr->generate(ctx);
 
-    // Convert to boolean: cond != 0
-    // TODO: Support different types (String would be x != "", etc)
     llvm::Value* condv = ctx.builder.CreateICmpNE(
-        condVal->ir,
+        condVal,
         llvm::ConstantInt::get(
-            condVal->ir->getType(), // Pointers would be handled different so get the raw type
+            condVal->getType(), // Pointers would be handled different so get the raw type
             0,
             true
         ),
@@ -158,9 +158,11 @@ void Ast::Nodes::If::generate(Context& ctx) {
 
     // continuation
     ctx.builder.SetInsertPoint(then_block);
+
+    return nullptr;
 }
 
-void Ast::Nodes::Else::generate(Context& ctx) {
+llvm::Value* Ast::Nodes::Else::generate(Context& ctx) {
     llvm::Function* fn = ctx.builder.GetInsertBlock()->getParent();
 
     llvm::BasicBlock* if_block =
@@ -172,14 +174,14 @@ void Ast::Nodes::Else::generate(Context& ctx) {
 
     // Generate condition
     Expr* cond_expr = dynamic_cast<Expr*>(cond.get());
-    unique_ptr<Value> condVal = cond_expr->generate(ctx);
+    llvm::Value* condVal = cond_expr->generate(ctx);
 
     // Convert to boolean: cond != 0
     // TODO: Support different types (String would be x != "", etc)
     llvm::Value* condv = ctx.builder.CreateICmpNE(
-        condVal->ir,
+        condVal,
         llvm::ConstantInt::get(
-            condVal->ir->getType(),
+            condVal->getType(),
             0,
             true
         ),
@@ -202,6 +204,8 @@ void Ast::Nodes::Else::generate(Context& ctx) {
 
     // end
     ctx.builder.SetInsertPoint(then_block);
+
+    return nullptr;
 }
 
 void generate_node(Ast::Nodes::NodeBase* node, Context& ctx) {
