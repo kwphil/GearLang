@@ -29,9 +29,10 @@ LIABILITY, WHETHER IN AN ACTION OF  CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
-#include <string>
 #include <memory>
+#include <deque>
+#include <tuple>
+#include <format>
 
 #include <gearlang/ast/stmt.hpp>
 #include <gearlang/ast/expr.hpp>
@@ -42,68 +43,75 @@ SOFTWARE.
 #include <gearlang/error.hpp>
 
 using namespace Ast::Nodes;
-using std::unique_ptr;
 using std::string;
+using std::unique_ptr;
+using std::deque;
 
-unique_ptr<NodeBase> NodeBase::parse(Lexer::Stream& s) {
-    if(!s.has()) {
-        Error::throw_error(
-            Span{},
-            "Unexpected EOF",
-            Error::ErrorCodes::UNEXPECTED_EOF
-        );
+deque<unique_ptr<Argument>>
+parse_function_args(
+    Lexer::Stream& s,
+    Span& span,
+    bool requires_names,
+    bool& is_variadic,
+    Sem::Type& ty
+) {
+    is_variadic = false;
+    deque<unique_ptr<Argument>> args;
+
+    if(s.peek()->content == "(") {
+        s.pop();
+
+        while(true) {
+            if(!s.has()) {
+                Error::throw_error(
+                    span,
+                    "Unexpected EOF parsing function args",
+                    Error::ErrorCodes::UNEXPECTED_EOF
+                );
+            }
+
+            if(s.peek()->type == Lexer::Type::Ellipsis) {
+                s.pop();
+                is_variadic = true;
+                break;
+            }
+
+            args.push_back(Argument::parse(s));
+
+            if(s.peek()->content == ")")
+                break;
+
+            s.expect(",", s.peek()->span);
+
+            if(s.peek()->content == ")")
+                break;
+        }
+
+        s.pop(); // ')'
     }
 
-    auto curr = s.peek();
-    const string& tok = curr->content;
+    ty = Sem::Type("void");
 
-    // no semicolon statements
-    if(tok == "fn") return Function::parse(s);
-    if(tok == "{")  return ExprBlock::parse(s);
-
-    if(tok == "if") {
-        auto if_expr = If::parse(s);
-
-        if(s.peek()->content == "else")
-            return Else::parse(std::move(if_expr), s);
-
-        return if_expr;
+    if(s.peek()->content == "returns") {
+        s.pop();
+        ty = Sem::Type(s);
     }
 
-    // semicolon statements
-    unique_ptr<NodeBase> out;
-
-    if(tok == "let")        out = Let::parse(s);
-    else if(tok == "return")out = Return::parse(s);
-    else if(tok == "extern")out = ExternFn::parse(s);
-    else if(tok == "struct")out = Struct::parse(s);
-    else                    out = Expr::parse(s);
-
-    s.expect(";", s.peek()->span);
-
-    return out;
+    return args;
 }
 
-Ast::Program Ast::Program::parse(Lexer::Stream& s) {
-    Program program;
+std::tuple<Sem::Type, string, deque<unique_ptr<Argument>>>
+parse_function_header(
+    Lexer::Stream& s,
+    Span& span,
+    bool requires_names,
+    bool& is_variadic
+) {
+    string name = s.pop()->content;
+    Sem::Type ty;
 
-    while(s.has())
-        program.content.push_back(NodeBase::parse(s));
+    auto args =
+        parse_function_args(s, span, requires_names, is_variadic, ty);
 
-    return program;
-}
-
-string Ast::Program::to_string() {
-    string out = "[\n";
-
-    for(size_t i = 0; i < content.size(); i++) {
-        out += content[i]->to_string();
-
-        if(i + 1 != content.size())
-            out += ",\n";
-    }
-
-    out += "\n]";
-
-    return out;
+    return { ty, name, std::move(args) };
 }

@@ -95,7 +95,7 @@ namespace Ast::Nodes {
         ExternFn(
             string& callee, 
             Sem::Type ty,
-            deque<unique_ptr<Argument>>& args, 
+            deque<unique_ptr<Argument>> args, 
             bool is_variadic,
             bool no_mangle,
             Span span

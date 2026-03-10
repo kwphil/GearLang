@@ -35,85 +35,11 @@ SOFTWARE.
 #include <gearlang/lex.hpp>
 #include <gearlang/error.hpp>
 
-#include <llvm/IR/DerivedTypes.h>
-#include <llvm/IR/Type.h>
+#include <format>
 
 using namespace Sem;
 
 unordered_map<string, shared_ptr<Type::Struct>> Type::struct_list = { };
-
-/* ============================
-   LLVM lowering
-   ============================ */
-static unordered_map<string, llvm::StructType*> struct_type_list;
-
-llvm::Type* Type::struct_to_llvm(Type& obj, Context& ctx, string name) {
-    // gather the types together and convert
-    vector<llvm::Type*> tys;
-    tys.reserve(obj.struct_type->size());
-    
-    for(auto& param : *obj.struct_type) {
-        tys.push_back(param.second.to_llvm(ctx));
-    }
-
-    llvm::StructType* ty = llvm::StructType::create(tys, name);
-
-    struct_type_list.insert({ name, ty });
-    return ty;
-}
-
-llvm::Type* Type::get_llvm_struct(string name, Struct& obj) {
-    auto it = struct_type_list.find(name);
-    assert(it != struct_type_list.end());
-    return it->second;
-}
-
-llvm::Type* Type::get_llvm_struct() const {
-    auto it = struct_type_list.find(struct_name);
-    assert(it != struct_type_list.end());
-    return it->second;
-}
-
-llvm::Type* Type::primitive_to_llvm(PrimType ty, Context& ctx) {
-    switch (ty) {
-        case PrimType::Bool: return llvm::Type::getInt1Ty(ctx.llvmCtx);
-        case PrimType::Char: // Same as i8
-        case PrimType::I8: return llvm::Type::getInt8Ty(ctx.llvmCtx);
-        case PrimType::I16: return llvm::Type::getInt16Ty(ctx.llvmCtx);
-        case PrimType::I32:  return llvm::Type::getInt32Ty(ctx.llvmCtx);
-        case PrimType::F32:  return llvm::Type::getFloatTy(ctx.llvmCtx);
-        case PrimType::F64:  return llvm::Type::getDoubleTy(ctx.llvmCtx);
-        case PrimType::Void: return llvm::Type::getVoidTy(ctx.llvmCtx);
-        default:
-            throw std::runtime_error("Invalid primitive type");
-    }
-}
-
-llvm::Type* Type::to_llvm(Context& ctx) const {
-    if (is_primitive()) {
-        return primitive_to_llvm(prim_type, ctx);
-    }
-
-    if (!is_pointer_ty() && is_struct()) 
-        return get_llvm_struct();
-
-    // Pointer
-    if (pointer) {
-        return llvm::PointerType::get(ctx.llvmCtx, 0);
-    }
-
-    throw std::runtime_error("Unknown non-primitive kind");
-}
-
-llvm::Type* Type::get_underlying_type(Context& ctx) const {
-    if (!is_pointer_ty()) return nullptr;
-
-    if(pointer > 1) {
-        return llvm::PointerType::getUnqual(ctx.llvmCtx);
-    }
-
-    return primitive_to_llvm(prim_type, ctx);
-}
 
 /* ============================
    Queries
@@ -217,4 +143,16 @@ Type::PrimType Type::bits_low_type() const {
     if(is_float()) return PrimType::F32;
     
     return PrimType::Invalid;
+}
+
+Type Type::ref() {
+    return Type(std::format("{}^", dump()).c_str());
+}
+
+Type Type::deref() {
+    assert(pointer != 0);
+
+    Type new_type = *this;
+    new_type.pointer -= 1;
+    return new_type;
 }

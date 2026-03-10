@@ -38,10 +38,6 @@ SOFTWARE.
 using namespace Sem;
 using std::string;
 
-/* ============================
-   Primitive parsing
-   ============================ */
-
 Type::PrimType Type::parse_primitive(string& s) {
     if (s == "void") return PrimType::Void;
     if (s == "bool") return PrimType::Bool;
@@ -57,10 +53,6 @@ Type::PrimType Type::parse_primitive(string& s) {
 Type::PrimType Type::parse_primitive(Lexer::Stream& s) {
     return parse_primitive(s.pop()->content);
 }
-
-/* ============================
-   Construction
-   ============================ */
 
 Type::Type(Lexer::Stream& s) {
     auto tok = s.peek();
@@ -122,16 +114,4 @@ pointer_parse:
             Error::ErrorCodes::UNKNOWN_TYPE
         );
     }
-}
-
-Type Type::ref() {
-    return Type(std::format("{}^", dump()).c_str());
-}
-
-Type Type::deref() {
-    assert(pointer != 0);
-
-    Type new_type = *this;
-    new_type.pointer -= 1;
-    return new_type;
 }
