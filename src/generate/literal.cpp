@@ -69,11 +69,13 @@ unique_ptr<Value> Ast::Nodes::ExprLitFloat::generate(Context& ctx) {
 unique_ptr<Value> Ast::Nodes::ExprLitString::generate(Context& ctx) {
     std::vector<llvm::Constant*> chars(string.size());
     llvm::Type* i8 = llvm::Type::getInt8Ty(ctx.llvmCtx);
-    llvm::ArrayType* arr_i8 = llvm::ArrayType::get(i8, chars.size());
+    llvm::ArrayType* arr_i8 = llvm::ArrayType::get(i8, chars.size()+1); // Plus null terminator
 
     for(long unsigned int i = 0; i < string.size(); i++) {
         chars[i] = llvm::ConstantInt::get(i8, string[i]);
     }
+
+    chars.push_back(llvm::ConstantInt::get(i8, '\0'));
 
     auto array = llvm::ConstantArray::get(
         arr_i8, 
@@ -84,7 +86,7 @@ unique_ptr<Value> Ast::Nodes::ExprLitString::generate(Context& ctx) {
         *ctx.module,
         arr_i8,
         true,
-        llvm::GlobalValue::ExternalLinkage,
+        llvm::GlobalValue::PrivateLinkage,
         array,
         ".str"
     );

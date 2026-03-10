@@ -65,6 +65,7 @@ namespace Ast::Nodes {
         void set_type(Sem::Type ty) { this->ty = std::make_unique<Sem::Type>(ty); }
 
         Expr(Span span, Sem::Type* ty = nullptr) : NodeBase(span), ty(ty) {}
+        Expr(Span span, unique_ptr<Sem::Type> ty) : NodeBase(span), ty(std::move(ty)) {}
 
         static std::unique_ptr<Expr> parse(Lexer::Stream& s);
 

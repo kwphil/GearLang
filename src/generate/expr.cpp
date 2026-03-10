@@ -126,21 +126,23 @@ llvm::Value* ExprVar::access_alloca(Context& _ctx) {
 }
 
 unique_ptr<Value> ExprStructParam::generate(Context& ctx) {
-    Type param_ty = ty->struct_param_ty(index);
-    llvm::Type* ty_ll = param_ty.to_llvm(ctx);
+    llvm::Type* ty_ll = ty->struct_param_ty(index).to_llvm(ctx);
 
     llvm::Value* ir = ctx.builder.CreateLoad(ty_ll, access_alloca(ctx), struct_name + name + ".load");
 
     return std::make_unique<Value>(
         ir,
         ty_ll,
-        param_ty.pointer_level()
+        ty->pointer_level()
     );
 }
 
+// Returns the address calculated from the GEP
 llvm::Value* ExprStructParam::access_alloca(Context& ctx) {
+    llvm::Type* struct_ll = ty->get_llvm_struct();
+
     return ctx.builder.CreateStructGEP(
-        ty->get_llvm_struct(), get_var(let), index
+        struct_ll, get_var(let), index+1
     );
 }
 

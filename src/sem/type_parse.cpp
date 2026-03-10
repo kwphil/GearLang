@@ -90,6 +90,7 @@ Type::Type(Lexer::Stream& s) {
         s.pop(); // }
         
         struct_list.insert({ name, struct_type });
+        struct_name = name;
         return;
     }
 
@@ -97,6 +98,7 @@ Type::Type(Lexer::Stream& s) {
     auto _struct = struct_list.find(s.peek()->content);
     if(_struct != struct_list.end()) {
         struct_type = _struct->second;
+        struct_name = _struct->first;
         s.pop();
         goto pointer_parse;
     }

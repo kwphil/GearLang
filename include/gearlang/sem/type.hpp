@@ -70,6 +70,7 @@ namespace Sem {
 
         PrimType prim_type = PrimType::Invalid;
         shared_ptr<Struct> struct_type;
+        string struct_name;
         unsigned int pointer;
 
         static PrimType parse_primitive(std::string& s);
@@ -85,8 +86,13 @@ namespace Sem {
     public:
         Type() = default;
         Type(Lexer::Stream& s);
-        Type(PrimType prim_type, int pointer) 
-        : prim_type(prim_type), pointer(pointer) { } 
+        Type(
+            PrimType prim_type, 
+            int pointer, 
+            shared_ptr<Struct> struct_type = { }, 
+            string struct_name = ""
+        )
+        = delete;
         /// @brief Builds the type with a constant string
         /// @param s the string
         constexpr explicit Type(const char* s);
