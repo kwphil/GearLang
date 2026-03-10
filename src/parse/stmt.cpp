@@ -60,7 +60,8 @@ unique_ptr<Let> Let::parse(Lexer::Stream& s) {
     Span start_span = s.peek()->span;
     
     s.expect("let", start_span);
-    string target = s.pop()->content;
+    string target = s.peek()->content;
+    s.expect(Lexer::Type::Identifier);
     unique_ptr<Sem::Type> ty;
 
     if(s.peek()->content[0] == ':') {

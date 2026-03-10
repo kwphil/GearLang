@@ -43,9 +43,9 @@ using namespace Sem;
 using std::optional;
 
 unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
-    optional<Variable> ref = analyzer.decl_lookup(callee);
+    optional<Func> ref = analyzer.lookup_func(callee);
 
-    if(!ref.has_value()) {
+    if(!ref) {
         Error::throw_error(
             span_meta,
             "Function not defined",
@@ -53,13 +53,39 @@ unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
         );
     }
 
-    Variable retval = ref.value();
+    Func handle = ref.value();
 
     for(auto& arg : args) {
         arg->analyze(analyzer);
     } 
 
-    return std::make_unique<ExprValue>(false, retval.type);
+    if(handle.args.size() != args.size() && !handle.is_variadic) {
+        Error::throw_error(
+            span_meta, 
+            std::format(
+                "Expected {} elements, received {}",
+                handle.args.size(), args.size()
+            ).c_str(),
+            Error::ErrorCodes::FUNCTION_INVALID_ARGS
+        );
+    }
+
+    auto it = args.begin();
+    for(auto& a : handle.args) {
+        auto curr_type = (*it)->get_type();
+        if(analyzer.type_is_compatible(a, curr_type.value())) { it++; continue; }
+
+        Error::throw_error(
+            (*it)->span_meta,
+            std::format(
+                "Expected type {}, got type {}",
+                a.dump(), curr_type->dump()
+            ).c_str(),
+            Error::ErrorCodes::BAD_TYPE
+        );
+    }
+
+    return std::make_unique<ExprValue>(false, handle.ret);
 }
 
 unique_ptr<ExprValue> ExprBlock::analyze(Analyzer& analyzer) {

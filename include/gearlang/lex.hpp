@@ -130,12 +130,19 @@ public:
     void back() { index--; }
     /// @brief Expect the next token to match a specific content
     /// @param should Expected token content
-    /// @param line_number Line expected for the error
+    /// @param span The span metadata
     void expect(const char* should, Span const& span);
     /// @brief Expect the next token to match a specific content
     /// @param should Expected token content
-    void expect(const char* should) { return expect(should, this->peek()->span); };
-
+    void expect(const char* should) { return expect(should, peek()->span); };
+    /// @brief Expect the next token to match a specific type
+    /// @param should Expected token type
+    /// @param span the span metadata
+    void expect(Type should, Span const& span);
+    /// @brief Expect the next token to match a specific type
+    /// @param should expected token type
+    void expect(Type should) { return expect(should, peek()->span); }
+    
     /// @brief Dumps the remaining unparsed text
     void dump();
     /// @brief Converts all output into a string, format as { content, line, type }

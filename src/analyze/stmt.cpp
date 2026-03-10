@@ -54,30 +54,39 @@ void Return::analyze(Analyzer& analyzer) {
 
 void Function::analyze(Analyzer& analyzer) {
     weak_ptr<Analyzer::Scope> fn_scope = analyzer.new_scope();
+    vector<Type> arg_handle;
 
     for(auto& arg : args) { // Won't matter too much to change values 
         arg->analyze(analyzer);
+        arg_handle.push_back(arg->get_type().value());
     }
     
     analyze_nodebase(&block, analyzer);
 
     analyzer.delete_scope();
 
-    Sem::Variable var = {
+    Sem::Func handle = {
         .name=name,
-        .type=ty,
-        .is_global=1
+        .ret=ty, 
+        .args=arg_handle,
+        .is_variadic=is_variadic
     };
 
-    analyzer.add_variable(name, var);
+    analyzer.add_function(name, handle);
 }
 
 void ExternFn::analyze(Analyzer& analyzer) {
-    Sem::Variable var = {
+    vector<Type> arg_handle;
+    for(auto& a : args) {
+        arg_handle.push_back(a->get_type().value());
+    }
+    
+    Sem::Func handle = {
         .name=callee,
-        .type=ty,
-        .is_global=1
+        .ret=ty,
+        .args=arg_handle,
+        .is_variadic=is_variadic
     };
 
-    analyzer.add_variable(callee, var);
+    analyzer.add_function(callee, handle);
 }
