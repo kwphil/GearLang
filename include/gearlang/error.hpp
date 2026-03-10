@@ -46,6 +46,7 @@ namespace Error {
         VARIABLE_ALREADY_DEFINED,
         VARIABLE_NOT_DEFINED,
         FUNCTION_NOT_DEFINED,
+        FUNCTION_INVALID_ARGS,
         INVALID_AST,
         BAD_TYPE,
     };

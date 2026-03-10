@@ -48,6 +48,8 @@ using std::vector;
 using std::unique_ptr;
 using std::shared_ptr;
 using std::weak_ptr;
+using std::unordered_map;
+using std::optional;
 using namespace Ast::Nodes;
 using namespace Sem;
 
@@ -58,6 +60,7 @@ namespace Sem {
 
     private: 
         vector<shared_ptr<Scope>> active_scopes;
+        unordered_map<string, Func> function_list; 
 
         bool analyze_decl_statements(NodeBase* node);
 
@@ -71,7 +74,7 @@ namespace Sem {
         /// @brief Looks up a variable with a given name and scope
         /// @param name the name of the variable
         /// @return the semantic information from the variable
-        std::optional<Variable> decl_lookup(string name); 
+        optional<Variable> decl_lookup(string name); 
         /// @brief Pushes a new scope to the stack
         /// @return a pointer to the new scope
         weak_ptr<Scope> new_scope();
@@ -81,6 +84,21 @@ namespace Sem {
         /// @param name the name of the variable
         /// @param var the semantic information from the variable
         void add_variable(string name, Variable var);
+        /// @brief Addes a function handle
+        /// @param name the name of the function
+        /// @param fn the semantic info from the func
+        inline void add_function(string name, Func fn) {
+            function_list.insert({ name, fn }); 
+        }
+        /// @brief Looks up a function by a given name
+        /// @param name the name of the function
+        /// @returns an optional Func
+        inline optional<Func> lookup_func(string name) {
+            auto it = function_list.find(name);
+
+            if(it == function_list.end()) return std::nullopt;
+            return it->second;
+        }
         /// @brief Checks if we are in the global scope
         bool is_global_scope();
 

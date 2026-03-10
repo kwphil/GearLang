@@ -7,7 +7,7 @@ Build for clean, clear, and fast code.
 ## Usage
 
 ```
-Usage: gearlang [--help] [--version] [--output VAR] [--object] [--emit-llvm] [--verbose] [--version] [--dump-tokens] input
+Usage: gear [--help] [--version] [--output VAR] [--object] [--emit-llvm] [--verbose] [--version] [--dump-tokens] input
 
 Gearlang compiler
 
