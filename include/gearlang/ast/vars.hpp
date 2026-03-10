@@ -65,7 +65,7 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<ExprVar> parse(const Lexer::Token& name, Lexer::Stream& s);
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        unique_ptr<Value> generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 
@@ -84,7 +84,7 @@ namespace Ast::Nodes {
         virtual llvm::Value* access_alloca(Context& ctx) override;
         static std::unique_ptr<ExprStructParam> parse(const Lexer::Token& name, Lexer::Stream& s);
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        unique_ptr<Value> generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 
@@ -104,7 +104,7 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<ExprAssign> parse(unique_ptr<ExprVar>, Lexer::Stream& s);
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        unique_ptr<Value> generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 
@@ -124,7 +124,7 @@ namespace Ast::Nodes {
         static std::unique_ptr<ExprAddress> parse(Lexer::Stream& s);
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        unique_ptr<Value> generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 
@@ -143,7 +143,7 @@ namespace Ast::Nodes {
         static std::unique_ptr<ExprDeref> parse(Lexer::Stream& s);
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        unique_ptr<Value> generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 
@@ -161,7 +161,7 @@ namespace Ast::Nodes {
         static unique_ptr<Argument> parse(Lexer::Stream& s);
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        unique_ptr<Value> generate(Context& ctx) override { return nullptr; } 
+        llvm::Value* generate(Context& ctx) override { return nullptr; } 
         virtual std::string to_string() override;
     };
 }

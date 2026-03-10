@@ -52,7 +52,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(LLVM REQUIRED CONFIG)
 
 set(GEARLANG_CORE
-    ctx.cpp
     error.cpp
     func.cpp
     startup.cpp

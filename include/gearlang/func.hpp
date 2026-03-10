@@ -48,4 +48,4 @@ llvm::Function* declare_func(
     bool variadic
 );
 
-void call_exit(Context& ctx, Value* retVal);
+void call_exit(Context& ctx, llvm::Value* retVal);

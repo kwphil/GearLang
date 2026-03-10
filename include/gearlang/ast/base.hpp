@@ -56,6 +56,9 @@ namespace Ast::Nodes {
         /// @brief Parses the node into a string
         /// @return A string representation of the node
         virtual std::string to_string() = 0;
+
+        /// @brief Converts a node into an llvm::Value*. Print a nullptr if not to return anything
+        virtual llvm::Value* generate(Context& ctx) = 0;
     };
 };
 

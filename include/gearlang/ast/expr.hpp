@@ -81,8 +81,6 @@ namespace Ast::Nodes {
         /// @param analyzer A link to the analyzer
         /// @returns Some metadata about the expression that was parsed
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) = 0;
-        /// @brief Generates the llvm code
-        virtual unique_ptr<Value> generate(Context& ctx) = 0;
     };
 
     /// @brief Smart pointer type for expressions
@@ -100,7 +98,7 @@ namespace Ast::Nodes {
         : Expr(span, ty), type(type), left(std::move(left)), right(std::move(right)) {};
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        unique_ptr<Value> generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 
@@ -128,7 +126,7 @@ namespace Ast::Nodes {
         static std::unique_ptr<ExprLitInt> parse(Lexer::Stream& s);
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        virtual unique_ptr<Value> generate(Context& ctx) override;
+        virtual llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 
@@ -142,7 +140,7 @@ namespace Ast::Nodes {
         static std::unique_ptr<ExprLitFloat> parse(Lexer::Stream& s);
         
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        virtual unique_ptr<Value> generate(Context& ctx) override;
+        virtual llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 
@@ -156,7 +154,7 @@ namespace Ast::Nodes {
         static std::unique_ptr<ExprLitString> parse(Lexer::Stream& s);
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        virtual unique_ptr<Value> generate(Context& ctx) override;
+        virtual llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 
@@ -181,7 +179,7 @@ namespace Ast::Nodes {
         );
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        unique_ptr<Value> generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 
@@ -200,7 +198,7 @@ namespace Ast::Nodes {
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         // Will probably return the return variable
         // Will stay void until I get Function to return non-void
-        unique_ptr<Value> generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 }

@@ -39,34 +39,25 @@ SOFTWARE.
 #include <gearlang/sem/type.hpp>
 
 // Just generates an int constant and returns it
-unique_ptr<Value> Ast::Nodes::ExprLitInt::generate(Context& ctx) {
-    return std::make_unique<Value>(
-        llvm::ConstantInt::get(
-            ty->to_llvm(ctx),
-            this->value,
-            true
-        ),
+llvm::Value* Ast::Nodes::ExprLitInt::generate(Context& ctx) {
+    return llvm::ConstantInt::get(
         ty->to_llvm(ctx),
-        false
+        this->value,
+        true
     );
 }
 
-// TODO
-unique_ptr<Value> Ast::Nodes::ExprLitFloat::generate(Context& ctx) {
-    return std::make_unique<Value>(
-        llvm::ConstantFP::get(
-            ty->to_llvm(ctx),
-            this->value
-        ),
+llvm::Value* Ast::Nodes::ExprLitFloat::generate(Context& ctx) {
+    return llvm::ConstantFP::get(
         ty->to_llvm(ctx),
-        false
+        this->value
     );
 };
 
 // Converts a string into an array of constant i8s
 // Creates a constant array using that
 // Returns a pointer to the string
-unique_ptr<Value> Ast::Nodes::ExprLitString::generate(Context& ctx) {
+llvm::Value* Ast::Nodes::ExprLitString::generate(Context& ctx) {
     std::vector<llvm::Constant*> chars(string.size());
     llvm::Type* i8 = llvm::Type::getInt8Ty(ctx.llvmCtx);
     llvm::ArrayType* arr_i8 = llvm::ArrayType::get(i8, chars.size()+1); // Plus null terminator
@@ -82,18 +73,12 @@ unique_ptr<Value> Ast::Nodes::ExprLitString::generate(Context& ctx) {
         chars
     );
 
-    llvm::Value* val = new llvm::GlobalVariable(
+    return new llvm::GlobalVariable(
         *ctx.module,
         arr_i8,
         true,
         llvm::GlobalValue::PrivateLinkage,
         array,
         ".str"
-    );
-
-    return std::make_unique<Value>(
-        val,
-        arr_i8,
-        false
     );
 }

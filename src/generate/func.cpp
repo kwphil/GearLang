@@ -45,9 +45,8 @@ using namespace Ast::Nodes;
 // Creates the function and adds it to the module
 // Creates the entry basic block and sets the insert point
 // Generates the function body
-// Pops the scope and resets the current function
 // Sets the insert point back to the start block
-void Function::generate(Context& ctx) {
+llvm::Value* Function::generate(Context& ctx) {
     std::vector<llvm::Type*> param_types;
     param_types.reserve(args.size());
     for (auto& arg : args) {
@@ -77,7 +76,6 @@ void Function::generate(Context& ctx) {
     
     ctx.builder.SetInsertPoint(entry);
     ctx.current_fn = fn;
-    ctx.push_scope();
 
     idx = 0;
     for(auto& arg : fn->args()) {
@@ -109,13 +107,13 @@ void Function::generate(Context& ctx) {
         );
     }
 
-    ctx.pop_scope();
     ctx.current_fn = ctx.module->getFunction("main");
-
     ctx.builder.SetInsertPoint(*ctx.global_entry);
+
+    return nullptr;
 }
 
-void Ast::Nodes::ExternFn::generate(Context& ctx) {
+llvm::Value* Ast::Nodes::ExternFn::generate(Context& ctx) {
     std::vector<llvm::Type*> param_types;
     param_types.reserve(args.size());
     for (auto& arg : args) {
@@ -141,4 +139,6 @@ void Ast::Nodes::ExternFn::generate(Context& ctx) {
         callee,
         *ctx.module
     );
+
+    return nullptr;
 }
