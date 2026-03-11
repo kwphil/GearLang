@@ -35,7 +35,7 @@ SOFTWARE.
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/Type.h>
 
-#include <gearlang/ast/expr.hpp>
+#include <gearlang/ast/lit.hpp>
 #include <gearlang/sem/type.hpp>
 
 // Just generates an int constant and returns it

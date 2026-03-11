@@ -31,6 +31,7 @@ SOFTWARE.
 */
 
 #include <gearlang/ast/expr.hpp>
+#include <gearlang/ast/lit.hpp>
 #include <gearlang/sem/type.hpp>
 #include <gearlang/sem/val.hpp>
 

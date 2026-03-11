@@ -30,7 +30,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <gearlang/ast/expr.hpp>
+#include <gearlang/ast/lit.hpp>
 #include <gearlang/lex.hpp>
 
 #include <memory>

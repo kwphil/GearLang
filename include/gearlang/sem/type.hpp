@@ -32,6 +32,8 @@ SOFTWARE.
 
 #pragma once
 
+#define GEARLANG_TYPE_HPP
+
 #include <string>
 #include <vector>
 #include <memory>
@@ -180,33 +182,33 @@ namespace Sem {
         bool is_compatible(Type& other) { return is_compatible(static_cast<Type&&>(other)); }
         bool is_compatible(Type&& other);
     };
+}
 
-    constexpr Type::Type(const char* s) {
-        std::string str = s;
+constexpr Sem::Type::Type(const char* s) {
+    std::string str = s;
 
-        pointer = 0;
-        if(str.back() == '^') {
-            int count = 1;
-            int i;
+    pointer = 0;
+    if(str.back() == '^') {
+        int count = 1;
+        int i;
 
-            for(i = str.size()-1; i >= 0; i--) {
-                if(str[i] != '^') break;
+        for(i = str.size()-1; i >= 0; i--) {
+            if(str[i] != '^') break;
 
-                count++;
-            }
-
-            std::string prim_str = str.substr(0, str.size()-1);
-            prim_type = parse_primitive(prim_str);
-
-            pointer = count;
-
-            return;
+            count++;
         }
 
-        prim_type = parse_primitive(str);
+        std::string prim_str = str.substr(0, str.size()-1);
+        prim_type = parse_primitive(prim_str);
 
-        if(prim_type == PrimType::Invalid) {
-            throw std::runtime_error("Invalid type");
-        }
+        pointer = count;
+
+        return;
+    }
+
+    prim_type = parse_primitive(str);
+
+    if(prim_type == PrimType::Invalid) {
+        throw std::runtime_error("Invalid type");
     }
 }

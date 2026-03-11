@@ -37,7 +37,6 @@ SOFTWARE.
 
 #include <llvm/IR/Value.h>
 
-
 /// @brief Safe casting
 template<typename From, typename To>
 inline To* try_cast(From* from) {
