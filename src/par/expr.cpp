@@ -37,6 +37,7 @@ SOFTWARE.
 
 #include <gearlang/ast/expr.hpp>
 #include <gearlang/ast/vars.hpp>
+#include <gearlang/ast/lit.hpp>
 #include <gearlang/lex.hpp>
 #include <gearlang/error.hpp>
 

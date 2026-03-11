@@ -102,62 +102,6 @@ namespace Ast::Nodes {
         virtual std::string to_string() override;
     };
 
-    /// @brief Template base class for literal expressions
-    class Literal : public Expr {
-    protected:
-        llvm::Type* cast_type;
-        
-    public:
-        Literal(Span span, llvm::Type* cast) 
-        : Expr(span), cast_type(cast) { }
-        
-        virtual ~Literal() = default;
-    
-        static std::unique_ptr<Literal> parse(Lexer::Stream& s, llvm::Type* cast = nullptr);
-    };
-
-    /// @brief Expression node for integer literals
-    class ExprLitInt : public Literal {
-    private:
-        uint64_t value;
-
-    public:
-        ExprLitInt(uint64_t x, Span span) : Literal(span, nullptr), value(x) {}
-        static std::unique_ptr<ExprLitInt> parse(Lexer::Stream& s);
-
-        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        virtual llvm::Value* generate(Context& ctx) override;
-        virtual std::string to_string() override;
-    };
-
-    /// @brief Expression node for floating-point literals
-    class ExprLitFloat : public Literal {
-    private:
-        double value;
-
-    public:
-        ExprLitFloat(double x, Span span) : Literal(span, nullptr), value(x) { }
-        static std::unique_ptr<ExprLitFloat> parse(Lexer::Stream& s);
-        
-        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        virtual llvm::Value* generate(Context& ctx) override;
-        virtual std::string to_string() override;
-    };
-
-    /// @brief Expression node for C-strings 
-    class ExprLitString : public Literal {
-    private:
-        std::string string;
-
-    public:
-        ExprLitString(std::string& s, Span span) : Literal(span, nullptr), string(s) { }
-        static std::unique_ptr<ExprLitString> parse(Lexer::Stream& s);
-
-        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        virtual llvm::Value* generate(Context& ctx) override;
-        virtual std::string to_string() override;
-    };
-
     class ExprCall : public Expr {
     private:
         /// @brief the arguments

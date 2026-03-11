@@ -28,83 +28,25 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-cmake_minimum_required(VERSION 3.20)
-
-if( NOT DEFINED COMPILE_MODE )
-    set(COMPILE_MODE "executable")
-endif() 
-
-project(gearlang LANGUAGES C CXX)
-
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-include(CheckCXXCompilerFlag)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall -fsanitize=address")
-
-set(CMAKE_C_STANDARD 90)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_EXTENSIONS OFF)
-
-set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-find_package(LLVM REQUIRED CONFIG)
-
-set(GEARLANG_CORE
-    error.cpp
+set(GEARLANG_PARSE
+    base.cpp
+    expr.cpp
     func.cpp
-    setup.cpp
+    stmt.cpp
+    var.cpp
+    literal.cpp
+    expr_etc.cpp
+    func_head.cpp
 )
 
-set(GEARLANG_LEX
-    lex/char.cpp
-    lex/classify.cpp
-    lex/tokenize.cpp
-    lex/lex.cpp
-)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -fsanitize=address")
 
-set(GEARLANG_SEM
-    sem/analyze.cpp
-    sem/type/core.cpp
-    sem/type/llvm.cpp
-    sem/type/parse.cpp
-)
-
-set(GEARLANG_ANALYZE
-    ana/vars.cpp
-    ana/literal.cpp
-    ana/stmt.cpp
-    ana/ops.cpp
-    ana/expr.cpp
-)
-
-add_subdirectory(par ${CMAKE_BINARY_DIR}/CMakeFiles/par)
-add_subdirectory(gen ${CMAKE_BINARY_DIR}/CMakeFiles/gen) 
-
-add_library(libgear SHARED
-    ${GEARLANG_CORE}
-    ${GEARLANG_LEX}
-    ${GEARLANG_SEM}
-    ${GEARLANG_ANALYZE}
-    ${GEARLANG_GENERATE}
-    ${GEARLANG_PARSE}
-)
-
-add_executable(gear main.cpp)
-target_link_libraries(libgear gear_parse gear_gen LLVM)
-target_link_libraries(gear libgear)
-
-target_include_directories(libgear PRIVATE 
-    ${LLVM_INCLUDE_DIRS} 
+add_library(gear_parse STATIC ${GEARLANG_PARSE}) 
+target_include_directories(gear_parse PRIVATE 
+    ${LLVM_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/../include
 )
 
-target_include_directories(gear PRIVATE ${CMAKE_SOURCE_DIR}/../include ${LLVM_INCLUDE_DIRS})
-
-llvm_map_components_to_libnames(LLVM_LIBS
-    core
-    support
-    irreader
-)
-
+set_target_properties(gear_parse PROPERTIES
+    OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/CMakeFiles/gear_parse.dir"
+) 
