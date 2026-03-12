@@ -24,3 +24,6 @@ a.out
 # I use codespaces sometimes
 .vscode/
 compile_commands.json
+
+# Tests
+__pycache__

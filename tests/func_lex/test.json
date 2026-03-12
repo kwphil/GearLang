@@ -1,0 +1,20 @@
+{
+    "type": "lexer",
+    "return": 0,
+    "match": [
+        ["fn", 1, "Keyword"],
+        ["add", 1, "Identifier"],
+        ["(", 1, "ParenOpen"],
+        ["a", 1, "Identifier"],
+        [",", 1, "Comma"],
+        ["b", 1, "Identifier"],
+        [")", 1, "ParenClose"],
+        ["{", 1, "BraceOpen"],
+        ["return", 2, "Keyword"],
+        ["a", 2, "Identifier"],
+        ["+", 2, "Operator"],
+        ["b", 2, "Identifier"],
+        [";", 2, "Semi"],
+        ["}", 3, "BraceClose"]
+    ]
+}

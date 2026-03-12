@@ -1,0 +1,9 @@
+{
+    "type": "lexer",
+    "return": 0,
+    "match": [
+        ["a", 2, "Identifier"],
+        ["b", 3, "Identifier"],
+        ["c", 5, "Identifier"]
+    ]
+}

@@ -1,0 +1,18 @@
+{
+    "type": "lexer",
+    "return": 0,
+    "match": [
+        ["+", 1, "Operator"],
+        ["-", 1, "Operator"],
+        ["*", 1, "Operator"],
+        ["/", 1, "Operator"],
+        ["=>", 1, "Operator"],
+        [":", 1, "Operator"],
+        ["==", 1, "Operator"],
+        ["!=", 1, "Operator"],
+        [">=", 1, "Operator"],
+        ["<=", 1, "Operator"],
+        ["<", 1, "Operator"],
+        [">", 1, "Operator"]
+    ]
+}

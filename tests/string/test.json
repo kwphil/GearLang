@@ -1,0 +1,9 @@
+{
+    "type": "lexer",
+    "return": 0,
+    "match": [
+        ["hello", 1, "StringLiteral"],
+        ["world", 1, "StringLiteral"],
+        ["test string", 1, "StringLiteral"]
+    ]
+}

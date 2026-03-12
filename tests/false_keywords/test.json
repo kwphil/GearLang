@@ -1,0 +1,10 @@
+{
+    "type": "lexer",
+    "return": 0,
+    "match": [
+        ["fnx", 1, "Identifier"],
+        ["test123", 1, "Identifier"],
+        ["_value", 1, "Identifier"],
+        ["value_1", 1, "Identifier"]
+    ]
+}
