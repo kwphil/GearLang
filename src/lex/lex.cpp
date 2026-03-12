@@ -95,7 +95,7 @@ void Lexer::Stream::dump() {
 }
 
 std::string Lexer::Stream::to_string() {
-    std::string out;
+    std::string out = "[\n";
     
     for(auto& tok : content) {
         std::string token_type = print_type(tok.type);
@@ -126,7 +126,9 @@ std::string Lexer::Stream::to_string() {
         out += curr;
     }
 
-    return out;
+    out.pop_back();
+    out.pop_back();
+    return out + "\n]";
 }
 
 const char* Lexer::print_type(Lexer::Type ty) {

@@ -110,14 +110,14 @@ Lexer::Stream Lexer::tokenize(const std::string& source_path) {
             return;
         }
 
-        tok.type = classify(tok.content, state_old);
-
         tok.span = {
             .line  = token_start_line,
             .col   = token_start_col,
             .start = token_start_index,
             .end   = end_index
         };
+
+        tok.type = classify(tok.content, state_old, tok.span);
 
         out.content.push_back(tok);
         tok = Token{};

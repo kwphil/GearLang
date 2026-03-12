@@ -92,7 +92,7 @@ const char* print_type(Type ty);
 /// @param content Content of the token
 /// @param state Ending character type of the token
 /// @return Token type
-Type classify(std::string& content, CharType state);
+Type classify(std::string& content, CharType state, Span const& span);
 
 /// @brief Token representation
 class Token {

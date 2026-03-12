@@ -37,6 +37,7 @@ SOFTWARE.
 #include <tuple>
 
 #include <gearlang/lex.hpp>
+#include <gearlang/error.hpp>
 
 using std::tuple;
 using std::unordered_set;
@@ -45,7 +46,7 @@ using std::string;
 extern unordered_set<string> keywords;
 extern unordered_set<string> operators;
 
-Lexer::Type Lexer::classify(std::string& content, CharType state) {
+Lexer::Type Lexer::classify(std::string& content, CharType state, Span const& span) {
     switch(state) {
         case CharType::Alpha:
             return keywords.contains(content)
@@ -88,7 +89,11 @@ Lexer::Type Lexer::classify(std::string& content, CharType state) {
             if(operators.contains(content))
                 return Type::Operator;
 
-            return Type::Invalid;
+            Error::throw_error(
+                span,
+                std::format("Unexpected charcter: {}", content).c_str(),
+                Error::ErrorCodes::UNEXPECTED_TOKEN
+            );
 
         case CharType::Quote:
             return Type::StringLiteral;
