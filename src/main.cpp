@@ -1,35 +1,3 @@
-/*
-   _____                 _                       
-  / ____|               | |                      
- | |  __  ___  __ _ _ __| |     __ _ _ __   __ _ 
- | | |_ |/ _ \/ _` | '__| |    / _` | '_ \ / _` | Clean, Clear and Fast Code
- | |__| |  __/ (_| | |  | |___| (_| | | | | (_| | https://github.com/kwphil/gearlang
-  \_____|\___|\__,_|_|  |______\__,_|_| |_|\__, |
-                                            __/ |
-                                           |___/ 
-
-Licensed under the MIT License <https://opensource.org/licenses/MIT>.
-SPDX-License-Identifier: MIT
-
-Permission is hereby  granted, free of charge, to any  person obtaining a copy
-of this software and associated  documentation files (the "Software"), to deal
-in the Software  without restriction, including without  limitation the rights
-to  use, copy,  modify, merge,  publish, distribute,  sublicense, and/or  sell
-copies  of  the Software,  and  to  permit persons  to  whom  the Software  is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE  IS PROVIDED "AS  IS", WITHOUT WARRANTY  OF ANY KIND,  EXPRESS OR
-IMPLIED,  INCLUDING BUT  NOT  LIMITED TO  THE  WARRANTIES OF  MERCHANTABILITY,
-FITNESS FOR  A PARTICULAR PURPOSE AND  NONINFRINGEMENT. IN NO EVENT  SHALL THE
-AUTHORS  OR COPYRIGHT  HOLDERS  BE  LIABLE FOR  ANY  CLAIM,  DAMAGES OR  OTHER
-LIABILITY, WHETHER IN AN ACTION OF  CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*/
-
 #include <cstdlib>
 #include <string>
 #include <iostream>
@@ -40,22 +8,43 @@ SOFTWARE.
 #include <gearlang/lex.hpp>
 #include <gearlang/error.hpp>
 #include <gearlang/func.hpp>
+#include <gearlang/etc.hpp>
 #include <gearlang/sem/analyze.hpp>
 
 #include <argparse/argparse.hpp>
 
 #define VERSION "0.1.0"
 
+#define RUN_STEP(note, code) \
+    if(opts.verbose) std::cout << note << "...\n"; \
+    { code } \
+    if(opts.verbose) std::cout << "done\n";
+
 llvm::Function* build_runtime(Context& ctx);
 void init_program(argparse::ArgumentParser& program);
-void run_command(const char* cmd, bool verbose);
 
-#define RUN_STEP(note, code) \
-    if(verbose) std::cout << note << "..." << std::endl; \
-    { code } \
-    if(verbose) std::cout << "done\n";                   
+static Options parse_args(int argc, char** argv);
+static std::string compile_ir(const Options& opts);
+static void build_output(const Options& opts, const std::string& ir);
+static void run_command(const std::string& cmd, bool verbose);
+Ast::Program build_tree(const Options& opts);
 
 int main(int argc, char** argv) {
+    Options opts = parse_args(argc, argv);
+
+    Error::setup_error_manager(opts.input.c_str());
+
+    std::string ir = compile_ir(opts);
+
+    build_output(opts, ir);
+
+    if(opts.verbose)
+        std::cout << "Built successfully!\n";
+
+    return EXIT_SUCCESS;
+}
+
+static Options parse_args(int argc, char** argv) {
     argparse::ArgumentParser program("gearlang", VERSION);
 
     init_program(program);
@@ -66,51 +55,30 @@ int main(int argc, char** argv) {
     catch (const std::runtime_error& err) {
         std::cerr << err.what() << "\n";
         std::cerr << program;
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
 
-    std::string input_file  = program.get<std::string>("input");
-    std::string output_file = program.get<std::string>("--output");
-    bool verbose            = program.get<bool>("--verbose");
-    bool output_object      = program.get<bool>("--object");
-    bool output_llvm        = program.get<bool>("--emit-llvm");
-    bool dump_tokens        = program.get<bool>("--dump-tokens");
-    bool dump_ast           = program.get<bool>("--dump-ast");
+    Options opts;
 
-    if (input_file.empty()) {
+    opts.input       = program.get<std::string>("input");
+    opts.output      = program.get<std::string>("--output");
+    opts.verbose     = program.get<bool>("--verbose");
+    opts.emit_object = program.get<bool>("--object");
+    opts.emit_llvm   = program.get<bool>("--emit-llvm");
+    opts.dump_tokens = program.get<bool>("--dump-tokens");
+    opts.dump_ast    = program.get<bool>("--dump-ast");
+
+    if(opts.input.empty()) {
         std::cerr << "No input file provided\n";
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
 
-    Error::setup_error_manager(input_file.c_str());
+    return opts;
+}
 
+static std::string compile_ir(const Options& opts) {
     Lexer::Stream tokens;
-    Ast::Program root;
-    
-    RUN_STEP("tokenizing",
-        tokens = Lexer::tokenize(input_file);
-    );
-
-    if(dump_tokens) {
-        std::cout << tokens.to_string() << std::endl;
-        return EXIT_SUCCESS;
-    }
-
-    RUN_STEP("parsing",
-        root = Ast::Program::parse(tokens);
-    );
-
-    if(dump_ast) {
-        std::cout << root.to_string() << std::endl;
-        return EXIT_SUCCESS;
-    }
-
-    Sem::Analyzer analyzer;
-
-    RUN_STEP("analyzing",
-        analyzer.analyze(root.content);
-    );
-
+    Ast::Program root = build_tree(opts);
     Context ctx;
 
     RUN_STEP("generating", {
@@ -133,45 +101,48 @@ int main(int argc, char** argv) {
 
     std::string output;
 
-    RUN_STEP("rendering", 
-        output = ctx.render();    
+    RUN_STEP("rendering",
+        output = ctx.render();
     );
 
-    run_command("mkdir -p build", verbose);
-
-    std::ofstream out_file("build/build.llvm");
-    out_file << output;
-    out_file.close();
-
-    if(output_llvm) {
-        run_command("mv build/build.llvm build.llvm", verbose);
-        goto cleanup;
-    }
-
-    run_command("llvm-as build/build.llvm -o build/build.bc", verbose);
-    run_command("llc build/build.bc -filetype=obj -relocation-model=pic -o build/build.o", verbose);
-
-    if(output_object) {
-        run_command("mv build/build.o build.o", verbose);
-        goto cleanup;
-    }
-
-    {
-        std::string cc =
-            std::format("cc build/build.o -fPIE -o {}", output_file);
-        run_command(cc.c_str(), verbose);
-    }
-
-    if(verbose) std::cout << "Built successfully!\n";
-
-cleanup:
-    if(verbose) std::cout << "Cleanup...\n";
-    run_command("rm build/build*", verbose);
-
-    return EXIT_SUCCESS;
+    return output;
 }
 
-void run_command(const char* cmd, bool verbose) { 
-    if(verbose) std::cout << "> " << cmd << "\n"; 
-    if(std::system(cmd)) exit(1); 
+static void build_output(const Options& opts, const std::string& ir) {
+    run_command("mkdir -p build", opts.verbose);
+
+    std::ofstream out("build/build.llvm");
+    out << ir;
+    out.close();
+
+    if(opts.emit_llvm) {
+        run_command("mv build/build.llvm build.llvm", opts.verbose);
+        return;
+    }
+
+    run_command("llvm-as build/build.llvm -o build/build.bc", opts.verbose);
+    run_command("llc build/build.bc -filetype=obj -relocation-model=pic -o build/build.o", opts.verbose);
+
+    if(opts.emit_object) {
+        run_command("mv build/build.o build.o", opts.verbose);
+        return;
+    }
+
+    std::string cc =
+        std::format("cc build/build.o -fPIE -o {}", opts.output);
+
+    run_command(cc, opts.verbose);
+
+    if(opts.verbose)
+        std::cout << "Cleanup...\n";
+
+    run_command("rm build/build*", opts.verbose);
+}
+
+static void run_command(const std::string& cmd, bool verbose) {
+    if(verbose)
+        std::cout << "> " << cmd << "\n";
+
+    if(std::system(cmd.c_str()))
+        exit(EXIT_FAILURE);
 }

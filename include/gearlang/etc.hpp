@@ -35,6 +35,8 @@ SOFTWARE.
 #include <memory>
 #include <cassert>
 
+#include <llvm/IR/Value.h>
+
 /// @brief Safe casting
 template<typename From, typename To>
 inline To* try_cast(From* from) {
@@ -56,4 +58,16 @@ struct Span {
     size_t col;
     size_t start;
     size_t end;
+};
+
+struct Options {
+    std::string input;
+    std::string output;
+
+    bool verbose = false;
+    bool emit_object = false;
+    bool emit_llvm = false;
+
+    bool dump_tokens = false;
+    bool dump_ast = false;
 };

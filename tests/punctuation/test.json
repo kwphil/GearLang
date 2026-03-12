@@ -1,0 +1,16 @@
+{
+    "type": "lexer",
+    "return": 0,
+    "match": [
+        ["(", 1, "ParenOpen"],
+        [")", 1, "ParenClose"],
+        ["{", 1, "BraceOpen"],
+        ["}", 1, "BraceClose"],
+        ["...", 1, "Ellipsis"],
+        [",", 1, "Comma"],
+        [";", 1, "Semi"],
+        ["^", 1, "Caret"],
+        ["#", 1, "Hash"],
+        ["@", 1, "At"]
+    ]
+}

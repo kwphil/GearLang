@@ -57,4 +57,11 @@ namespace Sem {
         uint8_t is_global;
         Ast::Nodes::NodeBase* let_stmt = nullptr;
     };
+
+    struct Func {
+        std::string name;
+        Type ret;
+        vector<Type> args;
+        bool is_variadic;
+    };
 }

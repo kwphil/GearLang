@@ -81,8 +81,6 @@ namespace Ast::Nodes {
         /// @param analyzer A link to the analyzer
         /// @returns Some metadata about the expression that was parsed
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) = 0;
-        /// @brief Generates the llvm code
-        virtual unique_ptr<Value> generate(Context& ctx) = 0;
     };
 
     /// @brief Smart pointer type for expressions
@@ -100,63 +98,7 @@ namespace Ast::Nodes {
         : Expr(span, ty), type(type), left(std::move(left)), right(std::move(right)) {};
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        unique_ptr<Value> generate(Context& ctx) override;
-        virtual std::string to_string() override;
-    };
-
-    /// @brief Template base class for literal expressions
-    class Literal : public Expr {
-    protected:
-        llvm::Type* cast_type;
-        
-    public:
-        Literal(Span span, llvm::Type* cast) 
-        : Expr(span), cast_type(cast) { }
-        
-        virtual ~Literal() = default;
-    
-        static std::unique_ptr<Literal> parse(Lexer::Stream& s, llvm::Type* cast = nullptr);
-    };
-
-    /// @brief Expression node for integer literals
-    class ExprLitInt : public Literal {
-    private:
-        uint64_t value;
-
-    public:
-        ExprLitInt(uint64_t x, Span span) : Literal(span, nullptr), value(x) {}
-        static std::unique_ptr<ExprLitInt> parse(Lexer::Stream& s);
-
-        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        virtual unique_ptr<Value> generate(Context& ctx) override;
-        virtual std::string to_string() override;
-    };
-
-    /// @brief Expression node for floating-point literals
-    class ExprLitFloat : public Literal {
-    private:
-        double value;
-
-    public:
-        ExprLitFloat(double x, Span span) : Literal(span, nullptr), value(x) { }
-        static std::unique_ptr<ExprLitFloat> parse(Lexer::Stream& s);
-        
-        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        virtual unique_ptr<Value> generate(Context& ctx) override;
-        virtual std::string to_string() override;
-    };
-
-    /// @brief Expression node for C-strings 
-    class ExprLitString : public Literal {
-    private:
-        std::string string;
-
-    public:
-        ExprLitString(std::string& s, Span span) : Literal(span, nullptr), string(s) { }
-        static std::unique_ptr<ExprLitString> parse(Lexer::Stream& s);
-
-        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        virtual unique_ptr<Value> generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 
@@ -181,7 +123,7 @@ namespace Ast::Nodes {
         );
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        unique_ptr<Value> generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 
@@ -200,7 +142,7 @@ namespace Ast::Nodes {
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         // Will probably return the return variable
         // Will stay void until I get Function to return non-void
-        unique_ptr<Value> generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 }

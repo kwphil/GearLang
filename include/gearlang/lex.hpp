@@ -92,7 +92,7 @@ const char* print_type(Type ty);
 /// @param content Content of the token
 /// @param state Ending character type of the token
 /// @return Token type
-Type classify(std::string& content, CharType state);
+Type classify(std::string& content, CharType state, Span const& span);
 
 /// @brief Token representation
 class Token {
@@ -130,12 +130,19 @@ public:
     void back() { index--; }
     /// @brief Expect the next token to match a specific content
     /// @param should Expected token content
-    /// @param line_number Line expected for the error
+    /// @param span The span metadata
     void expect(const char* should, Span const& span);
     /// @brief Expect the next token to match a specific content
     /// @param should Expected token content
-    void expect(const char* should) { return expect(should, this->peek()->span); };
-
+    void expect(const char* should) { return expect(should, peek()->span); };
+    /// @brief Expect the next token to match a specific type
+    /// @param should Expected token type
+    /// @param span the span metadata
+    void expect(Type should, Span const& span);
+    /// @brief Expect the next token to match a specific type
+    /// @param should expected token type
+    void expect(Type should) { return expect(should, peek()->span); }
+    
     /// @brief Dumps the remaining unparsed text
     void dump();
     /// @brief Converts all output into a string, format as { content, line, type }
@@ -145,6 +152,6 @@ public:
 /// @brief Tokenize a source file into a token stream
 /// @param source_path Path to the source file
 /// @return Token stream
-Stream tokenize(std::string& source_path);
+Stream tokenize(const std::string& source_path);
 
 } 

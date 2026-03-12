@@ -1,48 +1,3 @@
-* [ ] Documentation
-  * [x] README
-    * [x] Project overview
-    * [x] Build instructions
-    * [x] Supported platforms
-  * [ ] User Guide
-    * [ ] Installation
-    * [ ] CLI usage
-      * [ ] Invocation patterns
-      * [x] Flags & options
-      * [ ] Input/output conventions
-      * [ ] Exit codes
-      * [ ] Environment variables
-    * [ ] Language basics
-    * [ ] Standard library overview
-    * [x] FFI / C interop
-    * [ ] Build modes (debug/release)
-  * [ ] Examples
-    * [x] Hello world
-    * [ ] Control flow
-    * [ ] Functions & parameters
-    * [ ] Structs / types
-    * [x] Interop with C
-    * [ ] Larger sample program
-  * [ ] Compiler Internals
-    * [ ] Architecture overview
-    * [x] Compiler pipeline (Lexer → Parser → LLVM)
-    * [ ] AST structure
-    * [ ] Type system design
-    * [ ] Error model
-    * [ ] Code generation strategy
-    * [ ] Optimization passes
-    * [ ] Design constraints
-    * [ ] Non-goals
-  * [ ] Contributor Guide
-    * [ ] Project layout
-    * [ ] How to build locally
-    * [ ] How to run tests
-    * [ ] Code style guidelines
-    * [ ] Adding a new language feature
-  * [ ] Language Reference
-    * [ ] Grammar (EBNF)
-    * [ ] Type rules
-    * [ ] Operator precedence table
-    * [ ] Memory model
 * [ ] **Frontend**
   * [ ] Compiler options
     * [x] `--verbose`
@@ -70,15 +25,14 @@
     * [ ] Colored
       * [ ] ANSI support
       * [ ] Disable color flag
-    * [ ] Context-binded error handling
+    * [X] Context-binded error handling
       * [X] Line/column tracking
-      * [ ] Source snippet highlighting
-  * [ ] Unicode handling
-  * [ ] Keyword vs identifier disambiguation
-* [ ] **Parser**
+      * [X] Source snippet highlighting
+  * [X] Keyword vs identifier disambiguation
+* [X] **Parser**
   * [x] Expression parsing
   * [x] Statement parsing
-  * [ ] Error recovery
+  * [X] Error recovery
   * [X] AST generation
     * [x] Typed AST
     * [x] Source span metadata
@@ -87,7 +41,7 @@
   * [x] Scope resolution
   * [X] Type checking
   * [X] Implicit casts
-  * [ ] Function signature validation
+  * [X] Function signature validation
   * [ ] Unreachable code detection
 * [ ] **Code Generation**
   * [x] Simple Expressions
@@ -109,16 +63,10 @@
   * [ ] Variables
     * [X] Basic types
     * [X] Pointers
-    * [ ] Structs
+    * [X] Structs
     * [ ] Generics
     * [x] Variable variable types
     * [X] Implicit matching
-    * [ ] Stack vs heap allocation (Needs to be worked)
-  * [ ] Memory
-    * [ ] Stack frame layout
-    * [ ] Alignment rules
-    * [ ] ABI compliance
-      * [X] SystemV
 * [ ] **Compatibility**
   * [x] Basic C Functions
     * [x] C Runtime

@@ -58,6 +58,8 @@ namespace Ast::Nodes {
         unique_ptr<NodeBase> block;
         /// @brief If the function is variadic
         bool is_variadic;
+        /// @brief Build with public linkage
+        bool is_public;
 
     public:
         Function(
@@ -66,16 +68,16 @@ namespace Ast::Nodes {
             deque<unique_ptr<Argument>>&& args, 
             unique_ptr<NodeBase> block, 
             bool is_variadic,
-            Span span
+            Span span,
+            bool is_public
         ) : 
             Stmt(span), name(name), ty(ty), args(std::move(args)),
-            block(std::move(block)), is_variadic(is_variadic) { } 
+            block(std::move(block)), is_variadic(is_variadic), is_public(is_public) { } 
 
         static unique_ptr<Function> parse(Lexer::Stream& s);
 
         virtual void analyze(Sem::Analyzer& analyzer) override;
-        // This has no use for generating code, so this always returns nullptr
-        void generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 
@@ -96,7 +98,7 @@ namespace Ast::Nodes {
         ExternFn(
             string& callee, 
             Sem::Type ty,
-            deque<unique_ptr<Argument>>& args, 
+            deque<unique_ptr<Argument>> args, 
             bool is_variadic,
             bool no_mangle,
             Span span
@@ -106,8 +108,7 @@ namespace Ast::Nodes {
         static unique_ptr<ExternFn> parse(Lexer::Stream& s);
 
         virtual void analyze(Sem::Analyzer& analyzer) override;
-        // This has no use for generating code, so this always returns nullptr
-        void generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 }

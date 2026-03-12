@@ -40,8 +40,6 @@ SOFTWARE.
 #include <llvm/IR/Module.h>
 #include <llvm/IR/IRBuilder.h>
 
-#include "value.hpp"
-
 /// @brief Code generation context
 class Context {
 public:
@@ -60,37 +58,31 @@ public:
     llvm::Function* current_fn;
 
     Context()
-    : builder(llvmCtx), module(std::make_unique<llvm::Module>("gearlang", llvmCtx)) {
-        scopes.emplace_back(); // global scope
-    }
-
-    /// @brief Stack of variable scopes
-    std::vector<std::unordered_map<std::string, Value*>> scopes;
+    : builder(llvmCtx), module(std::make_unique<llvm::Module>("gearlang", llvmCtx)) { }
 
     /// @brief Create an alloca instruction in the entry block of a function
     /// @param function Function in which to create the alloca
     /// @param name Name of the allocated variable
     /// @param type Type of the allocated variable
     /// @return Pointer to the created alloca instruction
-    llvm::AllocaInst* create_entry_block(
+    constexpr llvm::AllocaInst* create_entry_block(
         llvm::Function* function,
         const std::string& name,
         llvm::Type* type
-    );
+    ) {
+        llvm::IRBuilder<> tmpBuilder(
+            &function->getEntryBlock(),
+            function->getEntryBlock().begin()
+        );
+
+        return tmpBuilder.CreateAlloca(type, nullptr, name);
+    }
 
     /// @brief Render the current LLVM module to a string
-    std::string render();
-
-    /// @brief Push a new variable scope onto the stack
-    void push_scope();
-    /// @brief Pop the current variable scope from the stack
-    void pop_scope();
-    /// @brief Lookup a variable by name in the current scopes
-    /// @param name Name of the variable to lookup
-    /// @return Pointer to the LLVM value of the variable, or nullptr if not found
-    Value* lookup(const std::string& name);
-    /// @brief Bind a variable name to an LLVM value in the current scope
-    /// @param name Name of the variable
-    /// @param val Pointer to the LLVM value to bind
-    void bind(const std::string& name, Value* val);
+    constexpr std::string render() {
+        std::string out;
+        llvm::raw_string_ostream os(out);
+        module->print(os, nullptr);
+        return out;
+    }
 };

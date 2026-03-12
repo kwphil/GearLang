@@ -1,0 +1,16 @@
+{
+    "type": "lexer",
+    "return": 0,
+    "match": [
+        ["fn", 1, "Keyword"],
+        ["test", 1, "Keyword"],
+        ["let", 1, "Keyword"],
+        ["comptime", 1, "Keyword"],
+        ["assert", 1, "Keyword"],
+        ["if", 1, "Keyword"],
+        ["else", 1, "Keyword"],
+        ["extern", 1, "Keyword"],
+        ["return", 1, "Keyword"],
+        ["export", 1, "Keyword"]
+    ]
+}

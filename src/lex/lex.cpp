@@ -74,6 +74,20 @@ void Lexer::Stream::expect(
     }
 }
 
+void Lexer::Stream::expect(Type should, Span const& span) {
+    auto is = pop()->type;
+    if (is != should) {
+        Error::throw_error(
+            span,
+            std::format(
+                "Parser found an error. Expected `{}` but received `{}`",
+                print_type(should), print_type(is)
+            ).c_str(),
+            Error::ErrorCodes::EXPECT_VALUE
+        );
+    }
+}
+
 void Lexer::Stream::dump() {
     for (size_t i = index; i < content.size(); i++)
         std::cout << content[i].content << " ";
@@ -81,7 +95,7 @@ void Lexer::Stream::dump() {
 }
 
 std::string Lexer::Stream::to_string() {
-    std::string out;
+    std::string out = "[\n";
     
     for(auto& tok : content) {
         std::string token_type = print_type(tok.type);
@@ -112,7 +126,9 @@ std::string Lexer::Stream::to_string() {
         out += curr;
     }
 
-    return out;
+    out.pop_back();
+    out.pop_back();
+    return out + "\n]";
 }
 
 const char* Lexer::print_type(Lexer::Type ty) {

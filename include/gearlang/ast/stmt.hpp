@@ -65,10 +65,6 @@ namespace Ast::Nodes {
         /// @brief For the semantic analyzer
         /// @param analyzer The analyzer object
         virtual void analyze(Sem::Analyzer& analyzer) = 0;
-
-        /// @brief generate function that doesn't return anything
-        /// @param ctx the context
-        virtual void generate(Context& ctx) = 0;
     };
 
     /// @brief Node for defining structs
@@ -88,7 +84,7 @@ namespace Ast::Nodes {
         static unique_ptr<Struct> parse(Lexer::Stream& s);
         virtual std::string to_string() override;
         virtual void analyze(Sem::Analyzer& analyzer) override;
-        virtual void generate(Context& ctx) override { ty.struct_to_llvm(ty, ctx, name); }
+        virtual llvm::Value* generate(Context& ctx) override { ty.struct_to_llvm(ty, ctx, name); return nullptr; }
     };
 
     /// @brief Node for if statements
@@ -110,7 +106,7 @@ namespace Ast::Nodes {
         static unique_ptr<If> parse(Lexer::Stream& s);
 
         virtual void analyze(Sem::Analyzer& analyzer) override;
-        void generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
 
         virtual std::string to_string() override;
     };
@@ -133,7 +129,7 @@ namespace Ast::Nodes {
         );
 
         virtual void analyze(Sem::Analyzer& analyzer) override;
-        void generate(Context& ctx);
+        llvm::Value* generate(Context& ctx);
 
         virtual std::string to_string() override;
     };
@@ -153,15 +149,17 @@ namespace Ast::Nodes {
 
         /// @brief If the variable is to be generated as a global
         bool is_global = false;
+        /// @brief Run an error if not global and this is true. Will build with public linkage?
+        bool is_public;
 
-        Let(std::string& target, pExpr expr, unique_ptr<Sem::Type> ty, Span span)
-        : Stmt(span), target(target), expr(std::move(expr)), ty(std::move(ty)) {}
+        Let(std::string& target, pExpr expr, unique_ptr<Sem::Type> ty, Span span, bool is_public)
+        : Stmt(span), target(target), expr(std::move(expr)), ty(std::move(ty)), is_public(is_public) {}
 
         static std::unique_ptr<Let> parse(Lexer::Stream& s);
 
         std::string get_name() { return target; }
         Sem::Type get_type() { return *ty; }
-        void generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
         void analyze(Sem::Analyzer& analyzer) override; 
         virtual std::string to_string() override;
     };
@@ -179,7 +177,7 @@ namespace Ast::Nodes {
         static std::unique_ptr<Return> parse(Lexer::Stream& s);
 
         virtual void analyze(Sem::Analyzer& analyzer) override;
-        void generate(Context& ctx) override;
+        llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
 }

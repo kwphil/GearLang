@@ -39,6 +39,7 @@ SOFTWARE.
 
 namespace Error {
     enum class ErrorCodes {
+        reserved0,
         EXPECT_VALUE,
         UNEXPECTED_TOKEN,
         UNEXPECTED_EOF,
@@ -46,6 +47,8 @@ namespace Error {
         VARIABLE_ALREADY_DEFINED,
         VARIABLE_NOT_DEFINED,
         FUNCTION_NOT_DEFINED,
+        FUNCTION_INVALID_ARGS,
+        QUALIFIER_NOT_ALLOWED,
         INVALID_AST,
         BAD_TYPE,
     };
@@ -58,6 +61,14 @@ namespace Error {
         Span const& span,
         const char* err,
         ErrorCodes code
+    );
+
+    /// @brief Throws a warning based on a span.
+    /// @param span the span to throw at
+    /// @param err a specific message to throw
+    void throw_warning (
+        Span const& span,
+        const char* err
     );
 
     /// @brief Sets up the error management system

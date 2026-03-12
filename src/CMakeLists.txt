@@ -30,9 +30,9 @@
 
 cmake_minimum_required(VERSION 3.20)
 
-if( !COMPILE_MODE )
+if( NOT DEFINED COMPILE_MODE )
     set(COMPILE_MODE "executable")
-endif()
+endif() 
 
 project(gearlang LANGUAGES C CXX)
 
@@ -40,7 +40,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 include(CheckCXXCompilerFlag)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fsanitize=address")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall -fsanitize=address")
 
 set(CMAKE_C_STANDARD 90)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -52,77 +52,59 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(LLVM REQUIRED CONFIG)
 
 set(GEARLANG_CORE
-    ctx.cpp
     error.cpp
     func.cpp
-    startup.cpp
+    setup.cpp
 )
 
 set(GEARLANG_LEX
     lex/char.cpp
-    lex/fsm.cpp
+    lex/classify.cpp
+    lex/tokenize.cpp
     lex/lex.cpp
 )
 
 set(GEARLANG_SEM
     sem/analyze.cpp
-    sem/type.cpp
-    sem/type_parse.cpp
+    sem/type/core.cpp
+    sem/type/llvm.cpp
+    sem/type/parse.cpp
 )
 
 set(GEARLANG_ANALYZE
-    analyze/vars.cpp
-    analyze/literal.cpp
-    analyze/stmt.cpp
-    analyze/ops.cpp
-    analyze/expr.cpp
+    ana/vars.cpp
+    ana/literal.cpp
+    ana/stmt.cpp
+    ana/ops.cpp
+    ana/expr.cpp
 )
 
-set(GEARLANG_GENERATE
-    generate/base.cpp
-    generate/expr.cpp
-    generate/literal.cpp
-    generate/func.cpp
+add_subdirectory(par ${CMAKE_BINARY_DIR}/CMakeFiles/par)
+add_subdirectory(gen ${CMAKE_BINARY_DIR}/CMakeFiles/gen) 
+
+add_library(libgear SHARED
+    ${GEARLANG_CORE}
+    ${GEARLANG_LEX}
+    ${GEARLANG_SEM}
+    ${GEARLANG_ANALYZE}
+    ${GEARLANG_GENERATE}
+    ${GEARLANG_PARSE}
 )
 
-set(GEARLANG_PARSE
-    parse/base.cpp
-    parse/expr.cpp
-    parse/func.cpp
-    parse/stmt.cpp
+add_executable(gear main.cpp)
+target_link_libraries(libgear gear_parse gear_gen LLVM)
+target_link_libraries(gear libgear)
+
+target_include_directories(libgear PRIVATE 
+    ${LLVM_INCLUDE_DIRS} 
+    ${CMAKE_SOURCE_DIR}/../include
 )
 
-if( COMPILE_MODE STREQUAL "executable" ) 
-    add_executable(gearlang
-        main.cpp
-        ${GEARLANG_CORE}
-        ${GEARLANG_LEX}
-        ${GEARLANG_SEM}
-        ${GEARLANG_ANALYZE}
-        ${GEARLANG_GENERATE}
-        ${GEARLANG_PARSE}
-    )
-else( COMPILE_MODE STREQUAL "library" )
-    add_library(gearlang SHARED
-        ${GEARLANG_CORE}
-        ${GEARLANG_LEX}
-        ${GEARLANG_SEM}
-        ${GEARLANG_ANALYZE}
-        ${GEARLANG_GENERATE}
-        ${GEARLANG_PARSE}
-    )
-endif()
-
-target_include_directories(gearlang PRIVATE 
-    ${LLVM_INCLUDE_DIRS}
-    ${CMAKE_CURRENT_SOURCE_DIR}/../include
-)
+target_include_directories(gear PRIVATE ${CMAKE_SOURCE_DIR}/../include ${LLVM_INCLUDE_DIRS})
 
 llvm_map_components_to_libnames(LLVM_LIBS
     core
     support
     irreader
 )
-
-target_link_libraries(gearlang PRIVATE LLVM)
 

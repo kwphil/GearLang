@@ -4,6 +4,7 @@
     "match": [
         [ "a", 1, "Identifier" ],
         [ "=", 1, "Equal" ],
+        [ "a", 1, "Identifier" ],
         [ "+", 1, "Operator" ],
         [ "3", 1, "IntegerLiteral" ],
         [ ";", 1, "Semi" ],
@@ -14,7 +15,7 @@
         [ "7", 2, "IntegerLiteral" ],
         [ ";", 2, "Semi" ],
         [ "c", 3, "Identifier" ],
-        [ "=", 3, "Operator" ],
+        [ "=", 3, "Equal" ],
         [ "c", 3, "Identifier" ],
         [ "+", 3, "Operator" ], 
         [ "8", 3, "IntegerLiteral" ],

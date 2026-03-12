@@ -32,13 +32,13 @@ SOFTWARE.
 
 #include <gearlang/func.hpp>
 #include <gearlang/ctx.hpp>
-#include <gearlang/value.hpp>
 
 llvm::Function* declare_func(
     llvm::Type* ret_type,
     llvm::ArrayRef<llvm::Type*> args,
     const char* name, Context& ctx,
-    bool variadic
+    bool variadic,
+    bool is_public 
 ) {
     llvm::FunctionType* fn_type = llvm::FunctionType::get(
         ret_type,
@@ -48,12 +48,14 @@ llvm::Function* declare_func(
 
     return llvm::Function::Create(
         fn_type,
-        llvm::GlobalValue::ExternalLinkage,
+        is_public 
+        ? llvm::GlobalValue::ExternalLinkage
+        : llvm::GlobalValue::PrivateLinkage,
         name, *ctx.module
     );
 }
 
-void call_exit(Context& ctx, Value* retVal) {
+void call_exit(Context& ctx, llvm::Value* retVal) {
     static llvm::Function* exit_fn;
 
     if(!exit_fn) { // If exit hasn't been created yet
@@ -64,6 +66,6 @@ void call_exit(Context& ctx, Value* retVal) {
         );
     }
 
-    ctx.builder.CreateCall(exit_fn, { retVal->ir });
+    ctx.builder.CreateCall(exit_fn, { retVal });
     ctx.builder.CreateUnreachable();
 }
