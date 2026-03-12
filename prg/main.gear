@@ -14,9 +14,12 @@ a = 10;
 let complex = a - (b - 1); // should be 6 = 10 - ((3 + 2) - 1)
 
 //higher order operators
-let higher = (complex / 3) * 2; // should be 4 = (6 / 3) * 2
+// This should linked with public linkage
+export let higher = (complex / 3) * 2; // should be 4 = (6 / 3) * 2
 
-fn foo(
+// A basic function handling parameters and return
+// Should be exported
+export fn foo(
     _a i32, 
     _b i32,
 ) returns i32
@@ -40,7 +43,7 @@ fn main(argc i32, argv char^) {
     }
 
     printf("Hello, World! %d, %d\n", x, higher);
-    return foo(x, y, 3);
+    return foo(x, y);
 }
 
 

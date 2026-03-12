@@ -81,7 +81,7 @@ llvm::Function* build_runtime(Context& ctx) {
     llvm::Type* raw_ptr = llvm::PointerType::get(ctx.llvmCtx, 0);
 
     llvm::Function* global_fn = declare_func(
-        i32, { i32, raw_ptr }, "main", ctx, false
+        i32, { i32, raw_ptr }, "main", ctx, false, true
     );
 
     global_fn->getArg(0)->setName("argc");

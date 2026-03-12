@@ -68,6 +68,12 @@ namespace Ast::Nodes {
 void generate_node(Ast::Nodes::NodeBase* node, Context& ctx);
 
 namespace Ast {
+    extern std::vector<std::string> keyword_list;
+
+    inline bool check_keyword(std::string target) {
+        return std::find(keyword_list.begin(), keyword_list.end(), target) != keyword_list.end();
+    }
+    
     class Program {
     public:
         std::vector<std::unique_ptr<Nodes::NodeBase>> content;

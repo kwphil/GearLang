@@ -33,6 +33,7 @@ SOFTWARE.
 #include <string>
 #include <memory>
 
+#include <gearlang/ast/base.hpp>
 #include <gearlang/ast/stmt.hpp>
 #include <gearlang/ast/expr.hpp>
 #include <gearlang/ast/func.hpp>
@@ -44,6 +45,9 @@ SOFTWARE.
 using namespace Ast::Nodes;
 using std::unique_ptr;
 using std::string;
+using std::vector;
+
+vector<string> Ast::keyword_list = { }; 
 
 unique_ptr<NodeBase> NodeBase::parse(Lexer::Stream& s) {
     if(!s.has()) {
@@ -56,6 +60,11 @@ unique_ptr<NodeBase> NodeBase::parse(Lexer::Stream& s) {
 
     auto curr = s.peek();
     const string& tok = curr->content;
+
+    if(tok == "export") {
+        keyword_list.push_back(s.pop()->content);
+        return parse(s);
+    }
 
     // no semicolon statements
     if(tok == "fn") return Function::parse(s);
@@ -87,8 +96,10 @@ unique_ptr<NodeBase> NodeBase::parse(Lexer::Stream& s) {
 Ast::Program Ast::Program::parse(Lexer::Stream& s) {
     Program program;
 
-    while(s.has())
+    while(s.has()) {
+        keyword_list.clear();
         program.content.push_back(NodeBase::parse(s));
+    }
 
     return program;
 }

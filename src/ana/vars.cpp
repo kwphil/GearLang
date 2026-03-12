@@ -69,10 +69,22 @@ void Let::analyze(Analyzer& analyzer) {
         }
     }
 
+    if(is_public && !analyzer.is_global_scope()) {
+        Error::throw_error(
+            span_meta,
+            "`export` can not be used on a non-global variable!",
+            Error::ErrorCodes::QUALIFIER_NOT_ALLOWED
+        );
+    }
+
+    is_global = is_public 
+        ? is_public
+        : static_cast<uint8_t>(analyzer.is_global_scope()*2); 
+
     Variable var = {
         .name=target,
         .type=*ty,
-        .is_global=static_cast<uint8_t>(analyzer.is_global_scope()*2),
+        .is_global=is_global,
         .let_stmt=this
     };
 

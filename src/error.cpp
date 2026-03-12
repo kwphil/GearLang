@@ -62,6 +62,22 @@ void Error::throw_error (
     exit((int)code);
 }
 
+void Error::throw_warning(
+    Span const& span,
+    const char* warning
+) {
+    std::string number = std::format("{}:{}", span.line, span.col);
+    std::string highlight;
+
+    for(size_t i = 0; i < span.col+number.size()+1; i++) highlight.push_back(' ');
+    for(size_t i = 0; i < span.end-span.start; i++) highlight.push_back('^');
+
+    std::cerr << "Warning: " << warning << '\n' <<
+        span.line << ":" << span.col << ": " << 
+        error_split_file[span.line-1] << '\n' <<
+        highlight << std::endl;
+}
+
 void Error::setup_error_manager (const char* filename) {
     input_file.open(filename);
 

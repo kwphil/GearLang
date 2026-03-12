@@ -149,9 +149,11 @@ namespace Ast::Nodes {
 
         /// @brief If the variable is to be generated as a global
         bool is_global = false;
+        /// @brief Run an error if not global and this is true. Will build with public linkage?
+        bool is_public;
 
-        Let(std::string& target, pExpr expr, unique_ptr<Sem::Type> ty, Span span)
-        : Stmt(span), target(target), expr(std::move(expr)), ty(std::move(ty)) {}
+        Let(std::string& target, pExpr expr, unique_ptr<Sem::Type> ty, Span span, bool is_public)
+        : Stmt(span), target(target), expr(std::move(expr)), ty(std::move(ty)), is_public(is_public) {}
 
         static std::unique_ptr<Let> parse(Lexer::Stream& s);
 

@@ -45,7 +45,8 @@ llvm::Function* declare_func(
     llvm::Type* ret_type,
     llvm::ArrayRef<llvm::Type*> args,
     const char* name, Context& ctx,
-    bool variadic
+    bool variadic,
+    bool is_public = false
 );
 
 void call_exit(Context& ctx, llvm::Value* retVal);

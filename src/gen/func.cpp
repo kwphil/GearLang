@@ -64,7 +64,7 @@ llvm::Value* Function::generate(Context& ctx) {
         ctx.main_entry = std::make_unique<llvm::BasicBlock*>(entry);
     } else {
         fn = declare_func(
-            ty.to_llvm(ctx), param_types, name.c_str(), ctx, is_variadic
+            ty.to_llvm(ctx), param_types, name.c_str(), ctx, is_variadic, is_public
         );
 
         entry = llvm::BasicBlock::Create(ctx.llvmCtx, "entry", fn);
