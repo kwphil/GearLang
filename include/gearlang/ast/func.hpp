@@ -58,6 +58,8 @@ namespace Ast::Nodes {
         unique_ptr<NodeBase> block;
         /// @brief If the function is variadic
         bool is_variadic;
+        /// @brief Build with public linkage
+        bool is_public;
 
     public:
         Function(
@@ -66,10 +68,11 @@ namespace Ast::Nodes {
             deque<unique_ptr<Argument>>&& args, 
             unique_ptr<NodeBase> block, 
             bool is_variadic,
-            Span span
+            Span span,
+            bool is_public
         ) : 
             Stmt(span), name(name), ty(ty), args(std::move(args)),
-            block(std::move(block)), is_variadic(is_variadic) { } 
+            block(std::move(block)), is_variadic(is_variadic), is_public(is_public) { } 
 
         static unique_ptr<Function> parse(Lexer::Stream& s);
 

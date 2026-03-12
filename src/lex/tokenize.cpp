@@ -31,9 +31,20 @@ SOFTWARE.
 */
 
 #include <string>
+#include <sstream>
 #include <fstream>
+#include <tuple>
+#include <string>
+#include <unordered_set>
 
 #include <gearlang/lex.hpp>
+
+using std::tuple;
+using std::unordered_set;
+using std::string;
+
+unordered_set<string> keywords;
+unordered_set<string> operators;
 
 static char get_escape(char c) {
     switch(c) {
@@ -45,9 +56,27 @@ static char get_escape(char c) {
 
 bool is_single_char_token(Lexer::CharType t);
 
+unordered_set<string> split_string(const string& str, char delimiter) {
+    unordered_set<string> tokens;
+    std::stringstream ss(str);
+    string token;
+    while (std::getline(ss, token, delimiter)) {
+        tokens.insert(token);
+    }
+    return tokens;
+}
+
 Lexer::Stream Lexer::tokenize(const std::string& source_path) {
     std::ifstream file(source_path);
     Stream out;
+    std::ifstream token_list("data/tokens.txt");
+    assert(token_list.is_open());
+
+    string buf;
+    std::getline(token_list, buf);
+    keywords = split_string(buf, ' ');
+    std::getline(token_list, buf);
+    operators = split_string(buf, ' ');
 
     char c;
 

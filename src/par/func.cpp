@@ -96,7 +96,8 @@ unique_ptr<Function> Function::parse(Lexer::Stream& s) {
         std::move(args),
         std::move(block),
         is_variadic,
-        span
+        span,
+        check_keyword("export")
     );
 }
 

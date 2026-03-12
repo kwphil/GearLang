@@ -37,7 +37,8 @@ llvm::Function* declare_func(
     llvm::Type* ret_type,
     llvm::ArrayRef<llvm::Type*> args,
     const char* name, Context& ctx,
-    bool variadic
+    bool variadic,
+    bool is_public 
 ) {
     llvm::FunctionType* fn_type = llvm::FunctionType::get(
         ret_type,
@@ -47,7 +48,9 @@ llvm::Function* declare_func(
 
     return llvm::Function::Create(
         fn_type,
-        llvm::GlobalValue::ExternalLinkage,
+        is_public 
+        ? llvm::GlobalValue::ExternalLinkage
+        : llvm::GlobalValue::PrivateLinkage,
         name, *ctx.module
     );
 }

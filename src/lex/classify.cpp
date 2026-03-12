@@ -34,17 +34,16 @@ SOFTWARE.
 #include <algorithm>
 #include <format>
 #include <cctype>
+#include <tuple>
 
 #include <gearlang/lex.hpp>
 
-static const std::unordered_set<std::string> keywords = {
-    "fn","let","comptime","assert","test","if","else","extern","return"
-};
+using std::tuple;
+using std::unordered_set;
+using std::string;
 
-static const std::unordered_set<std::string> operators = {
-    "+","-","*","/","=>",":","==","!=",
-    ">=","<=","<",">"
-};
+extern unordered_set<string> keywords;
+extern unordered_set<string> operators;
 
 Lexer::Type Lexer::classify(std::string& content, CharType state) {
     switch(state) {

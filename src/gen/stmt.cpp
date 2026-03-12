@@ -86,7 +86,9 @@ llvm::Value* Ast::Nodes::Let::generate(Context& ctx) {
             *(ctx.module),
             ty->to_llvm(ctx),
             false,
-            llvm::GlobalValue::ExternalLinkage,
+            is_public 
+            ? llvm::GlobalValue::ExternalLinkage
+            : llvm::GlobalValue::PrivateLinkage,
             placeholder,
             target
         );

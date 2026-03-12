@@ -78,7 +78,10 @@ unique_ptr<Let> Let::parse(Lexer::Stream& s) {
     Span new_span = start_span;
     new_span.end = s.peek()->span.end;
 
-    return std::make_unique<Let>(target, std::move(expr), std::move(ty), new_span);
+    return std::make_unique<Let>(
+        target, std::move(expr), std::move(ty), new_span,
+        check_keyword("export")
+    );
 }
 
 string Let::to_string() {
