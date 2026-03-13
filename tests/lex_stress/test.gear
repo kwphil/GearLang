@@ -1,4 +1,4 @@
-fn test(x1 i32, _y i32) {
+fn testfn(x1 i32, _y i32) {
     if(x1>=10 and x1<=20){
         printf("value: %d\n", x1);
     }

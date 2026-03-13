@@ -89,7 +89,7 @@
   * [ ] Source maps
   * [ ] Test suite
     * [ ] Documentation for adding tests
-    * [ ] Lexer
+    * [X] Lexer
     * [ ] Ast
     * [ ] Analyzer
     * [ ] Generator 

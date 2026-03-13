@@ -30,7 +30,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <cctype>
+#include "gearlang/error.hpp"
 #include <string>
 #include <sstream>
 #include <fstream>
@@ -188,9 +188,19 @@ Lexer::Stream Lexer::tokenize(const std::string& source_path) {
             line++;
             col = 1;
             is_comment = false;
+
+            if(is_string) {
+                Span span { .line=token_start_line, .col=token_start_col, .start=token_start_index, .end=index };
+                Error::throw_error(span, "Unterminated string", Error::ErrorCodes::UNEXPECTED_TOKEN);
+            }
         } else {
             col++;
         }
+    }
+
+    if(is_string) {
+        Span span { .line=token_start_line, .col=token_start_col, .start=token_start_index, .end=index };
+        Error::throw_error(span, "Unterminated string", Error::ErrorCodes::UNEXPECTED_TOKEN);
     }
 
     flush(index);
