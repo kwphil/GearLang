@@ -45,18 +45,25 @@ fail_count = 0
 pass_count = 0
 test_count = 0
 test_name: str
+test_type: str
 
 def print_test(passes: bool, fail_str: str):
     global test_count
     global test_name
+    global test_type
+
+    match test_type:
+        case 'lexer':
+            test_header = f'{Fore.CYAN}LEX{Style.RESET_ALL}'
 
     if passes:
-        print(f"{test_name} --- {Fore.GREEN}PASSED.{Style.RESET_ALL}")
+        print(f"{test_header} {test_name} --- {Fore.GREEN}PASSED.{Style.RESET_ALL}")
     else:
-        print(f"{test_name} --- {Fore.RED}FAILED.{Style.RESET_ALL} {fail_str}")
+        print(f"{test_header} {test_name} --- {Fore.RED}FAILED.{Style.RESET_ALL} {fail_str}")
 
 def run_test(test_data: Path, test_code: Path):
     global test_count
+    global test_type
 
     test_count += 1
 
@@ -77,7 +84,7 @@ def run_test(test_data: Path, test_code: Path):
 
     output = subprocess.run([ executable, test_flag, test_code ], capture_output=True)
 
-    match_output(output, test_type, data)
+    match_output(output, data)
 
 def lexer_match(test_output: json.JSONDecoder, test_data: json.JSONDecoder):
     global fail_count
@@ -112,10 +119,11 @@ def lexer_match(test_output: json.JSONDecoder, test_data: json.JSONDecoder):
     print_test(True, "")
     pass_count+=1
 
-def match_output(output: subprocess.CompletedProcess, test_type: str, test_data: json.JSONDecoder):
+def match_output(output: subprocess.CompletedProcess, test_data: json.JSONDecoder):
     global fail_count
     global pass_count
     global test_name
+    global test_type
 
     if output.returncode != test_data['return']:
         print_test(False, f"Expected return: {test_data['return']} received: {output.returncode}")
@@ -133,8 +141,11 @@ def match_output(output: subprocess.CompletedProcess, test_type: str, test_data:
 
     try:
         data = json.loads(output.stdout)
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as err:
         print_test(False, "Malformed output")
+        print("===== JSON Decoder ===============")
+        print(err)
+        print("==================================")
         fail_count += 1
         return
 
