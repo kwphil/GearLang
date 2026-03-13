@@ -13,6 +13,8 @@
         [">=", 1, "Operator"],
         ["<=", 1, "Operator"],
         ["<", 1, "Operator"],
-        [">", 1, "Operator"]
+        [">", 1, "Operator"],
+        ["^", 2, "Caret"],
+        [";", 2, "Semi"]
     ]
 }

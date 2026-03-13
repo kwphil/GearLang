@@ -15,6 +15,16 @@
         ["+", 2, "Operator"],
         ["b", 2, "Identifier"],
         [";", 2, "Semi"],
-        ["}", 3, "BraceClose"]
+        ["}", 3, "BraceClose"],
+        ["add", 5, "Identifier"],
+        ["(", 5, "ParenOpen"],
+        [")", 5, "ParenClose"],
+        ["add", 6, "Identifier"],
+        ["(", 6, "ParenOpen"],
+        ["3", 6, "IntegerLiteral"],
+        [",", 6, "Comma"],
+        ["4", 6, "IntegerLiteral"],
+        [")", 6, "ParenClose"],
+        [";", 6, "Semi"]
     ]
 }
