@@ -34,12 +34,11 @@ SOFTWARE.
 #include <algorithm>
 #include <format>
 #include <cctype>
-#include <tuple>
 
 #include <gearlang/lex.hpp>
 #include <gearlang/error.hpp>
 
-using std::tuple;
+using namespace Lexer;
 using std::unordered_set;
 using std::string;
 
@@ -74,12 +73,24 @@ Lexer::Type Lexer::classify(std::string& content, CharType state, Span const& sp
                         static_cast<unsigned char>(c));
                 });
 
-            if(has_alpha)
+            if(has_alpha) {
                 return Type::Identifier;
+            }
 
-            return content.contains('.')
-                ? Type::FloatLiteral
-                : Type::IntegerLiteral;
+            if(content.contains('.')) {
+                if(std::count(
+                    content.begin(), content.end(), '.'
+                ) > 1) {
+                    Error::throw_error(span, 
+                        "Invalid number",
+                        Error::ErrorCodes::UNEXPECTED_TOKEN
+                    );
+                }
+
+                return Type::FloatLiteral;
+            }
+
+            return Type::IntegerLiteral;
         }
 
         case CharType::Sym:

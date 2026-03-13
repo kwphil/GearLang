@@ -63,8 +63,11 @@ def run_test(test_data: Path, test_code: Path):
     try:
         with open(test_data, 'r', encoding='utf-8') as json_file:
             data = json.load(json_file)
-    except json.JSONDecodeError:
-        print(f"Test {test_count} --- Error: failed to decode test data. Skipping.")
+    except json.JSONDecodeError as err:
+        print(f"Test {test_name} --- Error: failed to decode test data. Skipping.")
+        print("========= json output ============")
+        print(err)
+        print("==================================")
         return
 
     match data['type']:
@@ -132,6 +135,7 @@ def match_output(output: subprocess.CompletedProcess, test_type: str, test_data:
         data = json.loads(output.stdout)
     except json.JSONDecodeError:
         print_test(False, "Malformed output")
+        return
 
     match test_type:
         case 'lexer':

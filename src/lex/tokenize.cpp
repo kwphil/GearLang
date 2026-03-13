@@ -30,16 +30,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <cctype>
 #include <string>
 #include <sstream>
 #include <fstream>
-#include <tuple>
 #include <string>
 #include <unordered_set>
 
 #include <gearlang/lex.hpp>
 
-using std::tuple;
 using std::unordered_set;
 using std::string;
 
@@ -174,7 +173,7 @@ Lexer::Stream Lexer::tokenize(const std::string& source_path) {
             col++;
             continue;
         }
-
+        
         if(!is_string && tok.content == "/" && c == '/')
             is_comment = true;
 

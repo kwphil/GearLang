@@ -34,7 +34,6 @@ SOFTWARE.
 #include <gearlang/error.hpp>
 
 #include <iostream>
-#include <fstream>
 #include <format>
 
 Lexer::CharType Lexer::getCharType(char c);

@@ -4,6 +4,21 @@
     "match": [
         ["a", 2, "Identifier"],
         ["b", 3, "Identifier"],
-        ["c", 5, "Identifier"]
+        ["c", 5, "Identifier"],
+        ["foo", 7, "Identifier"],
+        ["bar", 7, "Identifier"],
+        ["foo", 8, "Identifier"],
+        ["bar", 9, "Identifier"],
+        ["foo", 10, "Identifier"],
+        ["if", 13, "Keyword"],
+        ["(", 13, "ParenOpen"],
+        ["x", 13, "Identifier"],
+        ["==", 13, "Operator"],
+        ["1", 13, "IntegerLiteral"],
+        [")", 13, "ParenClose"],
+        ["{", 13, "BraceOpen"],
+        ["y", 13, "Identifier"],
+        ["=", 13, "Equal"],
+        ["2", 13, "Operator"]
     ]
 }
