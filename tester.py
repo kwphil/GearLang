@@ -135,6 +135,7 @@ def match_output(output: subprocess.CompletedProcess, test_type: str, test_data:
         data = json.loads(output.stdout)
     except json.JSONDecodeError:
         print_test(False, "Malformed output")
+        fail_count += 1
         return
 
     match test_type:
