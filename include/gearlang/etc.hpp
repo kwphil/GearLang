@@ -34,6 +34,7 @@ SOFTWARE.
 
 #include <memory>
 #include <cassert>
+#include <functional>
 
 #include <llvm/IR/Value.h>
 
@@ -71,3 +72,11 @@ struct Options {
     bool dump_tokens = false;
     bool dump_ast = false;
 };
+
+// If successfully casts, do x with it
+template<typename Ret, typename From, typename To>
+inline Ret if_cast_then_do(From* from, std::function<Ret(To*)> lambda) {
+    To* to = dynamic_cast<To*>(from);
+    if(to) return lambda(to);
+    return NULL;
+}

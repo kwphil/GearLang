@@ -30,17 +30,15 @@
 
 cmake_minimum_required(VERSION 3.20)
 
-if( NOT DEFINED COMPILE_MODE )
+if(NOT DEFINED COMPILE_MODE)
     set(COMPILE_MODE "executable")
-endif() 
+endif()
 
 project(gearlang LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-include(CheckCXXCompilerFlag)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall -fsanitize=address")
 
 set(CMAKE_C_STANDARD 90)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -49,7 +47,14 @@ set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+include(CheckCXXCompilerFlag)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall -fsanitize=address")
+
 find_package(LLVM REQUIRED CONFIG)
+find_package(Clang REQUIRED CONFIG)
+
+llvm_map_components_to_libnames(llvm_libs support core irreader)
+
 
 set(GEARLANG_CORE
     error.cpp
@@ -79,32 +84,44 @@ set(GEARLANG_ANALYZE
     ana/expr.cpp
 )
 
-add_subdirectory(par ${CMAKE_BINARY_DIR}/CMakeFiles/par)
-add_subdirectory(gen ${CMAKE_BINARY_DIR}/CMakeFiles/gen) 
+set(GEARLANG_FFI
+    ffi/c_header.cpp
+)
 
-add_library(libgear SHARED
+add_subdirectory(par ${CMAKE_BINARY_DIR}/CMakeFiles/par)
+add_subdirectory(gen ${CMAKE_BINARY_DIR}/CMakeFiles/gen)
+
+add_library(gearlib SHARED
     ${GEARLANG_CORE}
     ${GEARLANG_LEX}
     ${GEARLANG_SEM}
     ${GEARLANG_ANALYZE}
-    ${GEARLANG_GENERATE}
-    ${GEARLANG_PARSE}
+    ${GEARLANG_FFI}
 )
 
 add_executable(gear main.cpp)
-target_link_libraries(libgear gear_parse gear_gen LLVM)
-target_link_libraries(gear libgear)
 
-target_include_directories(libgear PRIVATE 
-    ${LLVM_INCLUDE_DIRS} 
+target_link_libraries(gearlib
+    gear_parse
+    gear_gen
+    LLVM
+    ${Clang_LIBRARIES}
+    clangAST
+    clangBasic
+    clangFrontend
+    clangTooling
+)
+
+target_link_libraries(gear gearlib)
+
+target_include_directories(gearlib SYSTEM PUBLIC
+    ${LLVM_INCLUDE_DIRS}
+)
+target_include_directories(gearlib PUBLIC
     ${CMAKE_SOURCE_DIR}/../include
 )
 
-target_include_directories(gear PRIVATE ${CMAKE_SOURCE_DIR}/../include ${LLVM_INCLUDE_DIRS})
-
-llvm_map_components_to_libnames(LLVM_LIBS
-    core
-    support
-    irreader
+target_include_directories(gear PRIVATE
+    ${CMAKE_SOURCE_DIR}/../include
+    ${LLVM_INCLUDE_DIRS}
 )
-
