@@ -58,15 +58,33 @@ int Type::pointer_level() const {
 std::string Type::dump() {
     std::string s;
 
+    if(is_array()) {
+        s = "array(";
+        s += array_type->dump();
+        s += ")";
+        return s;
+    }
+
     if(is_struct()) {
         for(auto& entry : struct_list) {
             if(entry.second == struct_type) {
-                s = entry.first;
+                s = entry.first; // Just get the name if not anonymous
                 goto pointer_dump;
             }
         }
 
-        s = "invalid";
+        // If it's anonymous we're printing the definition
+        s = "struct { ";
+        
+        for(auto& entry : *struct_type) {
+            s += entry.first;
+            s += " ";
+            s += entry.second.dump();
+            s += " ; ";
+        }
+
+        s += " } ";
+
         goto pointer_dump;
     }
 
@@ -78,6 +96,11 @@ std::string Type::dump() {
         case(I8): s = "i8"; break;
         case(I16): s = "i16"; break;
         case(I32): s = "i32"; break;
+        case(I64): s = "i64"; break;
+        case(U8): s = "u8"; break;
+        case(U16): s = "u16"; break;
+        case(U32): s = "u32"; break;
+        case(U64): s = "u64"; break;
         case(F32): s = "f32"; break;
         case(F64): s = "f64"; break;
         default: s = "invalid"; break; 
@@ -154,5 +177,11 @@ Type Type::deref() {
 
     Type new_type = *this;
     new_type.pointer -= 1;
+    return new_type;
+}
+
+Type Type::array() {
+    Type new_type;
+    new_type.array_type = std::make_shared<Type>(*this);
     return new_type;
 }

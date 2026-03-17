@@ -65,9 +65,22 @@ unordered_set<string> split_string(const string& str, char delimiter) {
     return tokens;
 }
 
+#include <sstream>
+
 Lexer::Stream Lexer::tokenize(const std::string& source_path) {
     std::ifstream file(source_path);
+
+    std::string out;
+    std::string buf; 
+    while(std::getline(file, buf)) out += buf;
+    return tokenize_by_string(out);
+}
+
+Lexer::Stream Lexer::tokenize_by_string(std::string& str) {
+    std::stringstream file;
+    file << str;
     Stream out;
+
     std::ifstream token_list("data/tokens.txt");
     assert(token_list.is_open());
 

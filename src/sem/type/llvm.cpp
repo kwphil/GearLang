@@ -74,9 +74,14 @@ llvm::Type* Type::primitive_to_llvm(PrimType ty, Context& ctx) {
     switch (ty) {
         case PrimType::Bool: return llvm::Type::getInt1Ty(ctx.llvmCtx);
         case PrimType::Char: // Same as i8
+        case PrimType::U8:   // same as i8
         case PrimType::I8: return llvm::Type::getInt8Ty(ctx.llvmCtx);
+        case PrimType::U16:  // Same as i16
         case PrimType::I16: return llvm::Type::getInt16Ty(ctx.llvmCtx);
+        case PrimType::U32:  // Same as i32
         case PrimType::I32:  return llvm::Type::getInt32Ty(ctx.llvmCtx);
+        case PrimType::U64:  // Same as i64
+        case PrimType::I64:  return llvm::Type::getInt64Ty(ctx.llvmCtx);
         case PrimType::F32:  return llvm::Type::getFloatTy(ctx.llvmCtx);
         case PrimType::F64:  return llvm::Type::getDoubleTy(ctx.llvmCtx);
         case PrimType::Void: return llvm::Type::getVoidTy(ctx.llvmCtx);
@@ -102,7 +107,9 @@ llvm::Type* Type::to_llvm(Context& ctx) const {
 }
 
 llvm::Type* Type::get_underlying_type(Context& ctx) const {
-    if (!is_pointer_ty()) return nullptr;
+    if (!is_pointer_ty()) {
+        if(is_array()) return array_type->to_llvm(ctx);
+    };
 
     if(pointer > 1) {
         return llvm::PointerType::getUnqual(ctx.llvmCtx);

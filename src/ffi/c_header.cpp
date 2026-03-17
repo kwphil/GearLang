@@ -55,6 +55,8 @@ using std::unique_ptr;
 using std::string;
 using std::format;
 
+vector<unique_ptr<Ast::Nodes::NodeBase>> nodes;
+
 const vector<string> C_FFI_ARGS = {
     "-I.",
     "-std=c99"
@@ -72,15 +74,22 @@ Type c_builtin_to_gear(const clang::BuiltinType* ty) {
         case BuiltinType::Long: return Type("i64");
         case BuiltinType::LongLong: return Type("i128");
         case BuiltinType::Char_S: return Type("i8");
+        case BuiltinType::Void: return Type("void");
+        case BuiltinType::ULong: return Type("u64");
+        case BuiltinType::UInt: return Type("u32");
 
-        default: throw std::runtime_error("ah"); 
+        default: 
+            clang::LangOptions LO;  // default language options
+            clang::PrintingPolicy policy(LO);
+            throw std::runtime_error(ty->getName(policy).str()); 
     }
 }
 
 Type c_to_gear_ty(clang::QualType* qt);
 
 Type c_record_to_gear(const clang::RecordDecl* ty) {
-    std::string parse_str = "struct {";
+    std::string parse_str = "struct ";
+    parse_str += " {";
 
     for(auto* field : ty->fields()) {
         parse_str += field->getNameAsString() + ' ';
@@ -88,7 +97,10 @@ Type c_record_to_gear(const clang::RecordDecl* ty) {
         parse_str += c_to_gear_ty(&field_ty).dump() + ';';
     }
 
-    return Type(parse_str.c_str());
+    parse_str += "}";
+
+    Ast::Nodes::Struct strct(ty->getNameAsString(), Type(parse_str), { 0, 0, 0, 0 });
+    return Type(parse_str);
 }
 
 Type c_to_gear_ty(clang::QualType* qt) {
@@ -105,9 +117,12 @@ Type c_to_gear_ty(clang::QualType* qt) {
         QualType underlying = pt->getPointeeType();
         result = c_to_gear_ty(&underlying).ref();
     } else if(const auto* rt = dyn_cast<RecordType>(ty)) {
-        llvm::outs() << "Record: " << rt->getDecl()->getName() << "\n";
+        return c_record_to_gear(rt->getDecl());
+    } else if(const auto* at = dyn_cast<ArrayType>(ty)) {
+        QualType elem = at->getElementType();
+        result = c_to_gear_ty(&elem).array();
     } else {
-        throw std::runtime_error("bleh");
+        throw std::runtime_error(ty->getTypeClassName());
     }
 
     return result;
@@ -148,15 +163,31 @@ public:
                 true,
                 { 0, 0, 0, 0 }   
             );
-            
-            std::cout << fn.to_string();
+
+            nodes.push_back(std::make_unique<Ast::Nodes::ExternFn>(std::move(fn)));
+
+            std::cout << fn.to_string() << std::endl;
         }
         return true;
     }
 
     bool VisitRecordDecl(clang::RecordDecl* record) {
-        if (record->isCompleteDefinition())
-            std::cout << "Struct: " << record->getNameAsString() << "\n";
+        if (record->isCompleteDefinition()) {
+            std::string parse_str = "struct ";
+            if(record->getNameAsString() == "") return true; 
+            parse_str += " {";
+
+            for(auto* field : record->fields()) {
+                parse_str += field->getNameAsString() + ' ';
+                auto field_ty = field->getType();
+                parse_str += c_to_gear_ty(&field_ty).dump() + ';';
+            }
+
+            parse_str += "}";
+
+            Ast::Nodes::Struct(record->getNameAsString(), Type(parse_str), { 0, 0, 0, 0 });
+        }
+
         return true;
     }
 
@@ -199,7 +230,7 @@ vector<unique_ptr<Ast::Nodes::NodeBase>> C_Ffi::compile_headers() {
         std::cerr << "Failed to parse C FFI: \n";
     }
 
-    return { };
+    return std::move(nodes);
 }
 
 vector<std::string> splitStringstream(const string& input, char delimiter) {

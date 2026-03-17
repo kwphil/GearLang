@@ -48,6 +48,7 @@ using std::vector;
 using std::string;
 using std::pair;
 using std::shared_ptr;
+using std::optional;
 using std::unordered_map;
 
 namespace Sem {
@@ -61,6 +62,11 @@ namespace Sem {
             I8,
             I16,
             I32,
+            I64,
+            U8,
+            U16,
+            U32,
+            U64,
             F32,
             F64,
             Invalid
@@ -74,6 +80,8 @@ namespace Sem {
         shared_ptr<Struct> struct_type;
         string struct_name;
         unsigned int pointer;
+
+        shared_ptr<Type> array_type;
 
         static PrimType parse_primitive(std::string& s);
         static PrimType parse_primitive(Lexer::Stream& s);
@@ -95,9 +103,13 @@ namespace Sem {
             string struct_name = ""
         )
         = delete;
-        /// @brief Builds the type with a constant string
+        /// @brief Builds the type with a string
         /// @param s the string
-        constexpr explicit Type(const char* s);
+        explicit inline Type(const char* s) { *this = Type((std::string)s); } 
+        inline Type(std::string s) {
+            Lexer::Stream stream = Lexer::tokenize_by_string(s);
+            *this = Type(stream);
+        }
         /// @brief Builds the type from a list of pairs of strings and Types, creating a struct
         /// @param s the struct object
         /// @param name the name of the struct
@@ -107,7 +119,8 @@ namespace Sem {
         
         bool operator==(Type&& other) {
             return 
-                struct_type == other.struct_type && 
+                struct_type == other.struct_type &&
+                array_type == other.array_type && 
                 prim_type == other.prim_type &&
                 pointer == other.pointer;
         }
@@ -117,11 +130,13 @@ namespace Sem {
         }
 
         /// @brief Checks if the type is a primitive (no pointer)
-        bool is_primitive() const { return !(pointer || struct_type); }
+        bool is_primitive() const { return !(pointer || struct_type || array_type); }
         /// @brief Checks if the type is a primitive (does not account for pointers)
-        bool is_underlying_primitive() const { return !struct_type; }
+        bool is_underlying_primitive() const { return !(struct_type || array_type); }
         /// @brief Checks if the type is a struct type (does not account for pointers)
         bool is_struct() const { return struct_type.get(); }
+        /// @brief Checks if the type is an array type (does not account for pointers)
+        bool is_array() const { return array_type.get(); }
         /// @brief Checks if the type is a pointer
         bool is_pointer_ty() const;
         /// @brief How many pointers stacked on top of eachother. T^ would return 1, T^^ = 2, ...
@@ -130,6 +145,8 @@ namespace Sem {
         Type ref();
         /// @brief Unwraps a pointer type
         Type deref();
+        /// @brief Wraps an array around the type and returns it
+        Type array();
         /// @brief Checks if the type is an fxx type
         bool is_float() const;
         /// @brief Checks if the type is an ixx type
@@ -148,7 +165,7 @@ namespace Sem {
         /// @param ctx The global context (GearLang context, not llvm)
         /// @return The returning type
         llvm::Type* to_llvm(Context& ctx) const;
-        /// @brief If the type is a pointer, grabs the underlying type (returns nullptr if not)
+        /// @brief If the type is a pointer OR array, grabs the underlying type (returns nullptr if not)
         /// @param ctx The global context (GearLang context, not llvm)
         /// @return The returning type
         llvm::Type* get_underlying_type(Context& ctx) const;
@@ -182,33 +199,4 @@ namespace Sem {
         bool is_compatible(Type& other) { return is_compatible(static_cast<Type&&>(other)); }
         bool is_compatible(Type&& other);
     };
-}
-
-constexpr Sem::Type::Type(const char* s) {
-    std::string str = s;
-
-    pointer = 0;
-    if(str.back() == '^') {
-        int count = 1;
-        int i;
-
-        for(i = str.size()-1; i >= 0; i--) {
-            if(str[i] != '^') break;
-
-            count++;
-        }
-
-        std::string prim_str = str.substr(0, str.size()-1);
-        prim_type = parse_primitive(prim_str);
-
-        pointer = count;
-
-        return;
-    }
-
-    prim_type = parse_primitive(str);
-
-    if(prim_type == PrimType::Invalid) {
-        throw std::runtime_error("Invalid type");
-    }
 }

@@ -103,6 +103,8 @@ llvm::Function* build_runtime(Context& ctx) {
     return global_fn;
 }
 
+#include <gearlang/ffi/c.hpp>
+
 Ast::Program build_tree(const Options& opts) {
     Lexer::Stream tokens;
     Ast::Program root;
@@ -126,6 +128,13 @@ Ast::Program build_tree(const Options& opts) {
     }
 
     Sem::Analyzer analyzer;
+
+    C_Ffi ffi_test;
+    ffi_test.add_header("sys/stdio.h");
+
+    RUN_STEP("C file parsing", {
+        root.add_nodes(ffi_test.compile_headers());
+    })
 
     RUN_STEP("analyzing",
         analyzer.analyze(root.content);

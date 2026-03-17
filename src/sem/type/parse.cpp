@@ -44,6 +44,11 @@ Type::PrimType Type::parse_primitive(string& s) {
     if (s == "i8")   return PrimType::I8;
     if (s == "i16")  return PrimType::I16;
     if (s == "i32")  return PrimType::I32;
+    if (s == "i64")  return PrimType::I64;
+    if (s == "u8")   return PrimType::U8;
+    if (s == "u16")  return PrimType::U16;
+    if (s == "u32")  return PrimType::U32;
+    if (s == "u64")  return PrimType::U64;
     if (s == "f32")  return PrimType::F32;
     if (s == "f64")  return PrimType::F64;
     return PrimType::Invalid;
@@ -57,7 +62,25 @@ Type::Type(Lexer::Stream& s) {
     auto tok = s.peek();
     pointer = 0;
 
+    if (!s.has()) {
+        Error::throw_error(
+            {0, 0, 0, 0},
+            "Stream ended unexpectedly.",
+            Error::ErrorCodes::INVALID_AST
+        );
+    }
+
+    if(s.peek()->content == "array") {
+        s.pop(); // array
+        s.expect(Lexer::Type::ParenOpen);
+        array_type = std::make_shared<Type>(s);
+        s.expect(Lexer::Type::ParenClose);
+
+        return;
+    }
+
     if(s.peek()->content == "struct") {
+        s.dump();
         string name = "unnamed_struct";
         s.pop();
 
@@ -78,7 +101,7 @@ Type::Type(Lexer::Stream& s) {
             struct_type->push_back(arg);
         }
 
-        s.pop(); // }
+        s.expect("}");
         
         struct_list.insert({ name, struct_type });
         struct_name = name;
@@ -97,8 +120,9 @@ Type::Type(Lexer::Stream& s) {
     prim_type = parse_primitive(s);
 
 pointer_parse:
+    if(!s.has()) return;
     if (s.peek()->type == Lexer::Type::Caret) {
-        while (s.peek()->type == Lexer::Type::Caret) {
+        while (s.has() && s.peek()->type == Lexer::Type::Caret) {
             s.pop();
             pointer++;
         }
