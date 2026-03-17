@@ -73,6 +73,7 @@ unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
     auto it = args.begin();
     for(auto& a : handle.args) {
         auto curr_type = (*it)->get_type();
+        assert(curr_type != std::nullopt);
         if(analyzer.type_is_compatible(a, curr_type.value())) { it++; continue; }
 
         Error::throw_error(
@@ -85,6 +86,7 @@ unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
         );
     }
 
+    ty = std::make_unique<Type>(handle.ret);
     return std::make_unique<ExprValue>(false, handle.ret);
 }
 
@@ -102,6 +104,7 @@ unique_ptr<ExprValue> ExprBlock::analyze(Analyzer& analyzer) {
 
 unique_ptr<ExprValue> ExprAddress::analyze(Analyzer& analyzer) {
     var->analyze(analyzer);
+    assert(var->get_type() != std::nullopt);
     ty = std::make_unique<Type>(var->get_type().value().ref());
 
     return std::make_unique<ExprValue>(false, *ty);
@@ -109,6 +112,7 @@ unique_ptr<ExprValue> ExprAddress::analyze(Analyzer& analyzer) {
 
 unique_ptr<ExprValue> ExprDeref::analyze(Analyzer& analyzer) {
     var->analyze(analyzer);
+    assert(var->get_type() != std::nullopt);
     ty = std::make_unique<Type>(var->get_type().value().deref());
 
     return std::make_unique<ExprValue>(false, *ty);

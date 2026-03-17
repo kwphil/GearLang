@@ -38,9 +38,6 @@ SOFTWARE.
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/Type.h>          
                                    
-#include <stdexcept>               
-#include <memory>                  
-                                   
 #include <gearlang/ast/base.hpp>   
 #include <gearlang/ast/stmt.hpp>   
 #include <gearlang/ast/expr.hpp>   

@@ -50,6 +50,7 @@ void Let::analyze(Analyzer& analyzer) {
 
     if(expr) {
         unique_ptr<ExprValue> rvalue = expr->analyze(analyzer);
+        assert(expr->get_type() != std::nullopt);
         Type rvalue_ty = expr->get_type().value();
         
         if(!ty) 
@@ -112,6 +113,7 @@ unique_ptr<ExprValue> ExprVar::analyze(Analyzer& analyzer) {
 
 unique_ptr<ExprValue> ExprAssign::analyze(Analyzer& analyzer) {
     var->analyze(analyzer);
+    assert(var->get_type() != std::nullopt);
     ty = std::make_unique<Type>(var->get_type().value());
 
     expr->set_type(*ty); // implicit casting
