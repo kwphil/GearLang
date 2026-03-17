@@ -153,5 +153,6 @@ public:
 /// @param source_path Path to the source file
 /// @return Token stream
 Stream tokenize(const std::string& source_path);
+Stream tokenize_by_string(std::string& str);
 
 } 

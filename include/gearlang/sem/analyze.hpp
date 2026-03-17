@@ -35,6 +35,7 @@ SOFTWARE.
 #include <optional>
 #include <unordered_map>
 #include <string>
+#include <deque>
 
 #include <gearlang/ast/base.hpp>
 #include <gearlang/ast/stmt.hpp>
@@ -67,7 +68,7 @@ namespace Sem {
     public: 
         Analyzer() { new_scope(); }
 
-        void analyze(std::vector<std::unique_ptr<NodeBase>>& nodes);
+        void analyze(std::deque<std::unique_ptr<NodeBase>>& nodes);
 
         // ---------- DECLARATIONS ---------------
         

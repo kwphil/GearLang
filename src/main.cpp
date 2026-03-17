@@ -134,10 +134,6 @@ static std::string compile_ir(const Options& opts) {
 
     std::string output;
 
-    C_Ffi ffi_test;
-    ffi_test.add_header("sys/stdio.h");
-    ffi_test.compile_headers();
-
     RUN_STEP("rendering",
         output = ctx.render();
     );

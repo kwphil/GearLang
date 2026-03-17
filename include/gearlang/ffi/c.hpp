@@ -45,9 +45,6 @@ using std::ofstream;
 using std::string;
 
 class C_Ffi : public Ffi {
-private:
-    vector<unique_ptr<Ast::Nodes::NodeBase>> nodes;
-
 public:
     virtual void add_header(string filename) override;
     virtual vector<unique_ptr<Ast::Nodes::NodeBase>> compile_headers() override;
