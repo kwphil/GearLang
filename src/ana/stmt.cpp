@@ -58,7 +58,9 @@ void Function::analyze(Analyzer& analyzer) {
 
     for(auto& arg : args) { // Won't matter too much to change values 
         arg->analyze(analyzer);
-        arg_handle.push_back(arg->get_type().value());
+        auto ty_wrap = arg->get_type();
+        assert(ty_wrap != std::nullopt);
+        arg_handle.push_back(ty_wrap.value());
     }
     
     analyze_nodebase(&block, analyzer);
@@ -78,7 +80,9 @@ void Function::analyze(Analyzer& analyzer) {
 void ExternFn::analyze(Analyzer& analyzer) {
     vector<Type> arg_handle;
     for(auto& a : args) {
-        arg_handle.push_back(a->get_type().value());
+        auto ty_wrap = a->get_type();
+        assert(ty_wrap != std::nullopt);
+        arg_handle.push_back(ty_wrap.value());
     }
     
     Sem::Func handle = {

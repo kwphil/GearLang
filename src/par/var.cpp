@@ -32,7 +32,6 @@ SOFTWARE.
 
 #include <memory>
 #include <string>
-#include <vector>
 #include <format>
 
 #include <gearlang/ast/expr.hpp>

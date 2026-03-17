@@ -32,11 +32,13 @@ SOFTWARE.
 
 #include <clang/AST/AST.h>
 #include <clang/AST/RecursiveASTVisitor.h>
+#include <clang/AST/Type.h>
 #include <clang/Frontend/ASTUnit.h>
 #include <clang/Tooling/Tooling.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/FrontendActions.h>
 #include <clang/Basic/Diagnostic.h>
+#include <llvm/Support/Casting.h>
 #include <llvm/Support/MemoryBuffer.h>
 
 #include <gearlang/ffi/c.hpp>
@@ -68,11 +70,25 @@ Type c_builtin_to_gear(const clang::BuiltinType* ty) {
         case BuiltinType::Double: return Type("f64");
         case BuiltinType::Bool: return Type("bool");
         case BuiltinType::Long: return Type("i64");
-        case BuiltinType::LongLong: return Type("128");
-        case Bui
+        case BuiltinType::LongLong: return Type("i128");
+        case BuiltinType::Char_S: return Type("i8");
 
         default: throw std::runtime_error("ah"); 
     }
+}
+
+Type c_to_gear_ty(clang::QualType* qt);
+
+Type c_record_to_gear(const clang::RecordDecl* ty) {
+    std::string parse_str = "struct {";
+
+    for(auto* field : ty->fields()) {
+        parse_str += field->getNameAsString() + ' ';
+        auto field_ty = field->getType();
+        parse_str += c_to_gear_ty(&field_ty).dump() + ';';
+    }
+
+    return Type(parse_str.c_str());
 }
 
 Type c_to_gear_ty(clang::QualType* qt) {
@@ -88,6 +104,8 @@ Type c_to_gear_ty(clang::QualType* qt) {
     } else if(const auto* pt = dyn_cast<PointerType>(ty)) {
         QualType underlying = pt->getPointeeType();
         result = c_to_gear_ty(&underlying).ref();
+    } else if(const auto* rt = dyn_cast<RecordType>(ty)) {
+        llvm::outs() << "Record: " << rt->getDecl()->getName() << "\n";
     } else {
         throw std::runtime_error("bleh");
     }

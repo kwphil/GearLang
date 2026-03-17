@@ -48,7 +48,7 @@ set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(CheckCXXCompilerFlag)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall -fsanitize=address")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall -g -O0 -fsanitize=undefined,leak,address")
 
 find_package(LLVM REQUIRED CONFIG)
 find_package(Clang REQUIRED CONFIG)
@@ -106,10 +106,8 @@ target_link_libraries(gearlib
     gear_gen
     LLVM
     ${Clang_LIBRARIES}
-    clangAST
-    clangBasic
-    clangFrontend
-    clangTooling
+    clang
+    clang-cpp
 )
 
 target_link_libraries(gear gearlib)

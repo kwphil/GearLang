@@ -33,7 +33,6 @@ SOFTWARE.
 #include <gearlang/sem/type.hpp>
 #include <gearlang/error.hpp>
 #include <string>
-#include <format>
 
 using namespace Sem;
 using std::string;
