@@ -66,15 +66,9 @@ std::string Type::dump() {
     }
 
     if(is_struct()) {
-        for(auto& entry : struct_list) {
-            if(entry.second == struct_type) {
-                s = entry.first; // Just get the name if not anonymous
-                goto pointer_dump;
-            }
-        }
-
-        // If it's anonymous we're printing the definition
-        s = "struct { ";
+        s = "struct ";
+        s += struct_name;
+        s += "{ ";
         
         for(auto& entry : *struct_type) {
             s += entry.first;

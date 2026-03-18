@@ -45,11 +45,13 @@ SOFTWARE.
 #include <gearlang/ast/func.hpp>
 #include <iostream>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 #include <string>
 #include <sstream>
 #include <format>
 
+using std::unordered_map;
 using std::vector;
 using std::unique_ptr;
 using std::string;
@@ -87,8 +89,20 @@ Type c_builtin_to_gear(const clang::BuiltinType* ty) {
 
 Type c_to_gear_ty(clang::QualType* qt);
 
+static unordered_map<const clang::Type*, Sem::Type> type_cache;
+static int anon_struct = 0;
+
 Type c_record_to_gear(const clang::RecordDecl* ty) {
-    std::string parse_str = "struct ";
+    string name = ty->getNameAsString();
+
+    if(name == "") {
+        name = "__GEAR_anonymous_struct_";
+        name += std::to_string(anon_struct++);
+        std::cout << name << std::endl;
+    }
+
+    string parse_str = "struct ";
+    parse_str += name;
     parse_str += " {";
 
     for(auto* field : ty->fields()) {
@@ -107,17 +121,21 @@ Type c_to_gear_ty(clang::QualType* qt) {
     using namespace clang;
     using llvm::dyn_cast;
 
-    Sem::Type result;
+    auto ty = qt->getCanonicalType().getTypePtr();
 
-    auto ty = qt->getCanonicalType();
+    if(type_cache.contains(ty)) {
+        return type_cache[ty];
+    }
+
+    Sem::Type result;
 
     if(const auto* bt = dyn_cast<BuiltinType>(ty)) {
         result = c_builtin_to_gear(bt);
     } else if(const auto* pt = dyn_cast<PointerType>(ty)) {
         QualType underlying = pt->getPointeeType();
         result = c_to_gear_ty(&underlying).ref();
-    } else if(const auto* rt = dyn_cast<RecordType>(ty)) {
-        return c_record_to_gear(rt->getDecl());
+    } else if(dyn_cast<RecordType>(ty)) {
+        result = type_cache[ty];
     } else if(const auto* at = dyn_cast<ArrayType>(ty)) {
         QualType elem = at->getElementType();
         result = c_to_gear_ty(&elem).array();
@@ -125,6 +143,7 @@ Type c_to_gear_ty(clang::QualType* qt) {
         throw std::runtime_error(ty->getTypeClassName());
     }
 
+    type_cache[ty] = result;
     return result;
 }
 
@@ -173,19 +192,7 @@ public:
 
     bool VisitRecordDecl(clang::RecordDecl* record) {
         if (record->isCompleteDefinition()) {
-            std::string parse_str = "struct ";
-            if(record->getNameAsString() == "") return true; 
-            parse_str += " {";
-
-            for(auto* field : record->fields()) {
-                parse_str += field->getNameAsString() + ' ';
-                auto field_ty = field->getType();
-                parse_str += c_to_gear_ty(&field_ty).dump() + ';';
-            }
-
-            parse_str += "}";
-
-            Ast::Nodes::Struct(record->getNameAsString(), Type(parse_str), { 0, 0, 0, 0 });
+            c_record_to_gear(record);
         }
 
         return true;

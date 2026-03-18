@@ -36,6 +36,15 @@ endif()
 
 project(gearlang LANGUAGES C CXX)
 
+find_program(CCACHE_PROGRAM ccache)
+if (CCACHE_PROGRAM)
+    set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    message(STATUS "Using CCache")
+else()
+    message(STATUS "Not using CCache, consider installing it for faster compilation")
+endif()
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)

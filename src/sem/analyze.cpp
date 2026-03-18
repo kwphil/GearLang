@@ -30,7 +30,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <vector>
 #include <memory>
 #include <deque>
 #include <unordered_map>
@@ -45,7 +44,6 @@ SOFTWARE.
 
 using namespace Sem;
 using std::string;
-using std::vector;
 using std::deque;
 using std::unique_ptr;
 using std::shared_ptr;
