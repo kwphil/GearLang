@@ -101,11 +101,11 @@ add_subdirectory(par ${CMAKE_BINARY_DIR}/CMakeFiles/par)
 add_subdirectory(gen ${CMAKE_BINARY_DIR}/CMakeFiles/gen)
 
 add_library(gearlib SHARED
+    ${GEARLANG_FFI}
     ${GEARLANG_CORE}
     ${GEARLANG_LEX}
     ${GEARLANG_SEM}
     ${GEARLANG_ANALYZE}
-    ${GEARLANG_FFI}
 )
 
 add_executable(gear main.cpp)

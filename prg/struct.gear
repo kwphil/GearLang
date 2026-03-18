@@ -3,6 +3,7 @@ extern("C") fn printf(s char^, ...);
 struct foo {
     x i16;
     y i16;
+    z foo^;
 };
 
 let s: foo;
