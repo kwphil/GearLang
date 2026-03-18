@@ -39,12 +39,6 @@ set(GEARLANG_PARSE
     func_head.cpp
 )
 
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall -g -O0 -fsanitize=undefined,leak,address")
-
 add_library(gear_parse STATIC ${GEARLANG_PARSE}) 
 target_include_directories(gear_parse PRIVATE 
     ${LLVM_INCLUDE_DIRS}

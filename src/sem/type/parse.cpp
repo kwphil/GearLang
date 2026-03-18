@@ -33,9 +33,12 @@ SOFTWARE.
 #include <gearlang/sem/type.hpp>
 #include <gearlang/error.hpp>
 #include <string>
+#include <memory>
 
 using namespace Sem;
 using std::string;
+using std::shared_ptr;
+using std::make_shared;
 
 Type::PrimType Type::parse_primitive(string& s) {
     if (s == "void") return PrimType::Void;
@@ -58,10 +61,13 @@ Type::PrimType Type::parse_primitive(Lexer::Stream& s) {
     return parse_primitive(s.pop()->content);
 }
 
+static int anon_struct = 0;
+#include <iostream>
 Type::Type(Lexer::Stream& s) {
     auto tok = s.peek();
     pointer = 0;
 
+    s.dump();
     if (!s.has()) {
         Error::throw_error(
             {0, 0, 0, 0},
@@ -74,51 +80,117 @@ Type::Type(Lexer::Stream& s) {
         s.pop(); // array
         s.expect(Lexer::Type::ParenOpen);
         array_type = std::make_shared<Type>(s);
+
+        if(s.peek()->type == Lexer::Type::Comma) {
+            s.pop(); // ,
+            array_size = std::stoi(s.pop()->content);
+        }
+
         s.expect(Lexer::Type::ParenClose);
+
+        return;
+    }
+
+    if(s.peek()->content == "union") {
+        string name;
+        s.pop();
+        record_is_struct = false;
+
+        if(s.peek()->type == Lexer::Type::Identifier) name = s.pop()->content;
+        else {
+            name = "__GEAR_struct_anonymous_";
+            name += std::to_string(anon_struct++);
+        }
+
+        record_type = std::make_shared<Struct>();
+        union_list.insert({ name, record_type });
+        record_name = name;
+
+        s.expect("{");
+
+        while(s.peek()->type != Lexer::Type::BraceClose) {
+            pair<string, shared_ptr<Type>> arg;
+
+            arg.first = s.pop()->content;
+            arg.second = make_shared<Type>(s);
+
+            s.expect(";");
+
+            record_type->push_back(arg);
+        }
+
+        s.expect("}");
 
         return;
     }
 
     if(s.peek()->content == "struct") {
         s.dump();
-        string name = "unnamed_struct";
+        string name;
         s.pop();
+        record_is_struct = true;
 
         if(s.peek()->type == Lexer::Type::Identifier) name=s.pop()->content;
+        else {
+            name = "__GEAR_struct_anonymous_";
+            name += std::to_string(anon_struct++);
+        }
+
+        record_type = std::make_shared<Struct>();
+        struct_list.insert({ name, record_type });
+        record_name = name;
 
         s.expect("{");
 
-        struct_type = std::make_shared<Struct>();
-
         while(s.peek()->type != Lexer::Type::BraceClose) {
-            pair<string, Type> arg;
+            pair<string, shared_ptr<Type>> arg;
 
             arg.first = s.pop()->content;
-            arg.second = Type(s);
+            arg.second = make_shared<Type>(s);
 
             s.expect(";");
 
-            struct_type->push_back(arg);
+            record_type->push_back(arg);
         }
 
         s.expect("}");
-        
-        struct_list.insert({ name, struct_type });
-        struct_name = name;
+    
         return;
     }
 
     // First see if there's a defined struct
     auto _struct = struct_list.find(s.peek()->content);
+    auto _union = union_list.find(s.peek()->content);
     if(_struct != struct_list.end()) {
-        struct_type = _struct->second;
-        struct_name = _struct->first;
+        record_type = _struct->second;
+        record_name = _struct->first;
+        s.pop();
+        goto pointer_parse;
+    }
+
+    if(_union != union_list.end()) {
+        record_type = _union->second;
+        record_name = _union->first;
         s.pop();
         goto pointer_parse;
     }
 
     prim_type = parse_primitive(s);
 
+    if (prim_type == PrimType::Invalid) {
+        std::cout << "===============================\n";
+        for(auto& t : s.content) {
+            std::cout << t.content << '\n';
+        }
+
+        std::cout << std::endl;
+
+        Error::throw_error(
+            tok->span,
+            "Unknown type",
+            Error::ErrorCodes::UNKNOWN_TYPE
+        );
+    }
 pointer_parse:
     if(!s.has()) return;
     if (s.peek()->type == Lexer::Type::Caret) {
@@ -128,13 +200,5 @@ pointer_parse:
         }
 
         return;
-    }
-
-    if (prim_type == PrimType::Invalid && !struct_type) {
-        Error::throw_error(
-            tok->span,
-            "Unknown type",
-            Error::ErrorCodes::UNKNOWN_TYPE
-        );
     }
 }

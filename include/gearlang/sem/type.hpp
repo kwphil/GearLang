@@ -72,16 +72,19 @@ namespace Sem {
             Invalid
         };
 
-        using Struct = vector<pair<string, Type>>; 
+        using Struct = vector<pair<string, shared_ptr<Type>>>; 
     private:
         static unordered_map<string, shared_ptr<Struct>> struct_list;
+        static unordered_map<string, shared_ptr<Struct>> union_list;
 
         PrimType prim_type = PrimType::Invalid;
-        shared_ptr<Struct> struct_type;
-        string struct_name;
-        unsigned int pointer;
+        shared_ptr<Struct> record_type;
+        string record_name;
+        bool record_is_struct; // is false if union 
+        unsigned int pointer = 0;
 
         shared_ptr<Type> array_type;
+        unsigned int array_size = -1;
 
         static PrimType parse_primitive(std::string& s);
         static PrimType parse_primitive(Lexer::Stream& s);
@@ -90,11 +93,11 @@ namespace Sem {
         /// @param ctx the global context (GearLang)
         /// @returns the llvm type
         inline llvm::Type* underlying_to_llvm(Context& ctx) const {
-            if(struct_type) return get_llvm_struct();
+            if(record_type) return get_llvm_struct();
             return primitive_to_llvm(prim_type, ctx);
         }
     public:
-        Type() = default;
+        Type() : prim_type(PrimType::Invalid) { };
         Type(Lexer::Stream& s);
         Type(
             PrimType prim_type, 
@@ -114,12 +117,13 @@ namespace Sem {
         /// @param s the struct object
         /// @param name the name of the struct
         Type(Struct s, string name="unnamed_struct")
-        : struct_type(std::make_shared<Struct>(s)) 
-        { struct_list.insert({ name, struct_type }); }
+        : record_type(std::make_shared<Struct>(s)) 
+        { struct_list.insert({ name, record_type }); }
         
         bool operator==(Type&& other) {
             return 
-                struct_type == other.struct_type &&
+                record_type == other.record_type &&
+                record_is_struct == other.record_is_struct &&
                 array_type == other.array_type && 
                 prim_type == other.prim_type &&
                 pointer == other.pointer;
@@ -130,11 +134,13 @@ namespace Sem {
         }
 
         /// @brief Checks if the type is a primitive (no pointer)
-        bool is_primitive() const { return !(pointer || struct_type || array_type); }
+        bool is_primitive() const { return !(pointer || record_type || array_type); }
         /// @brief Checks if the type is a primitive (does not account for pointers)
-        bool is_underlying_primitive() const { return !(struct_type || array_type); }
+        bool is_underlying_primitive() const { return !(record_type || array_type); }
         /// @brief Checks if the type is a struct type (does not account for pointers)
-        bool is_struct() const { return struct_type.get(); }
+        bool is_struct() const { return record_type.get() && record_is_struct; }
+        /// @brief Checks if the type is a union type (does not account for pointers)
+        bool is_union() const { return record_type.get() && !record_is_struct; }
         /// @brief Checks if the type is an array type (does not account for pointers)
         bool is_array() const { return array_type.get(); }
         /// @brief Checks if the type is a pointer
@@ -147,6 +153,9 @@ namespace Sem {
         Type deref();
         /// @brief Wraps an array around the type and returns it
         Type array();
+        /// @brief Wraps an array around the type and returns it
+        /// @param size The size of the array
+        Type array(int size);
         /// @brief Checks if the type is an fxx type
         bool is_float() const;
         /// @brief Checks if the type is an ixx type
@@ -173,7 +182,7 @@ namespace Sem {
         /// @brief Checks the type of a parameter at a given index.
         /// @param index The index
         inline Type struct_param_ty(int index) {
-            return struct_type->at(index).second;
+            return *record_type->at(index).second;
         }
 
         /// @brief Takes a primitive and converts it directly to an llvm type

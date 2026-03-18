@@ -41,32 +41,32 @@ using std::unordered_map;
 using std::string;
 using namespace Sem;
 
-static unordered_map<string, llvm::StructType*> struct_type_list;
+static unordered_map<string, llvm::StructType*> record_type_list;
 
 llvm::Type* Type::struct_to_llvm(Type& obj, Context& ctx, string name) {
     // gather the types together and convert
     vector<llvm::Type*> tys;
-    tys.reserve(obj.struct_type->size());
+    tys.reserve(obj.record_type->size());
     
-    for(auto& param : *obj.struct_type) {
-        tys.push_back(param.second.to_llvm(ctx));
+    for(auto& param : *obj.record_type) {
+        tys.push_back(param.second->to_llvm(ctx));
     }
 
     llvm::StructType* ty = llvm::StructType::create(tys, name);
 
-    struct_type_list.insert({ name, ty });
+    record_type_list.insert({ name, ty });
     return ty;
 }
 
 llvm::Type* Type::get_llvm_struct(string name, Struct& obj) {
-    auto it = struct_type_list.find(name);
-    assert(it != struct_type_list.end());
+    auto it = record_type_list.find(name);
+    assert(it != record_type_list.end());
     return it->second;
 }
 
 llvm::Type* Type::get_llvm_struct() const {
-    auto it = struct_type_list.find(struct_name);
-    assert(it != struct_type_list.end());
+    auto it = record_type_list.find(record_name);
+    assert(it != record_type_list.end());
     return it->second;
 }
 
