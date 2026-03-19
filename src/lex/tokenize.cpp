@@ -147,8 +147,15 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str) {
             );
 
         if(!is_string &&
-           state_old == CharType::Alpha &&
-           state_new == CharType::Num
+            state_old == CharType::Alpha &&
+            state_new == CharType::Num
+        ) {
+            boundary = false;
+        }
+
+        if(!is_string &&
+            state_old == CharType::Num &&
+            state_new == CharType::Alpha
         ) {
             boundary = false;
         }

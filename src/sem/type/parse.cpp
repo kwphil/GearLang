@@ -61,7 +61,7 @@ Type::PrimType Type::parse_primitive(Lexer::Stream& s) {
     return parse_primitive(s.pop()->content);
 }
 
-static int anon_struct = 0;
+int anon_struct = 0;
 #include <iostream>
 Type::Type(Lexer::Stream& s) {
     auto tok = s.peek();
@@ -98,9 +98,11 @@ Type::Type(Lexer::Stream& s) {
 
         if(s.peek()->type == Lexer::Type::Identifier) name = s.pop()->content;
         else {
-            name = "__GEAR_struct_anonymous_";
+            name = "__GEAR_union_anonymous_";
             name += std::to_string(anon_struct++);
         }
+
+        if(s.peek()->type != Lexer::Type::BraceOpen) goto find_parse;
 
         record_type = std::make_shared<Struct>();
         union_list.insert({ name, record_type });
@@ -136,6 +138,8 @@ Type::Type(Lexer::Stream& s) {
             name += std::to_string(anon_struct++);
         }
 
+        if(s.peek()->type != Lexer::Type::BraceOpen) goto find_parse;
+
         record_type = std::make_shared<Struct>();
         struct_list.insert({ name, record_type });
         record_name = name;
@@ -158,6 +162,7 @@ Type::Type(Lexer::Stream& s) {
         return;
     }
 
+find_parse:
     // First see if there's a defined struct
     auto _struct = struct_list.find(s.peek()->content);
     auto _union = union_list.find(s.peek()->content);

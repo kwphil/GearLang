@@ -59,7 +59,11 @@ void Error::throw_error (
         error_split_file[span.line-1] << '\n' <<
         highlight << std::endl;
 
-    exit((int)code);
+    #ifdef _DEBUG
+        abort();
+    #else
+        exit((int)code);
+    #endif
 }
 
 void Error::throw_warning(
