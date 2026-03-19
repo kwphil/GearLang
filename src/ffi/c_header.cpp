@@ -73,16 +73,18 @@ Sem::Type c_builtin_to_gear(const BuiltinType* ty) {
     using clang::BuiltinType;
 
     switch(ty->getKind()) {
-        case BuiltinType::Int: return Sem::Type("i32");
-        case BuiltinType::Float: return Sem::Type("f32");
-        case BuiltinType::Double: return Sem::Type("f64");
-        case BuiltinType::Bool: return Sem::Type("bool");
-        case BuiltinType::Long: return Sem::Type("i64");
-        // case BuiltinType::LongLong: return Sem::Type("i128");
-        case BuiltinType::Char_S: return Sem::Type("i8");
-        case BuiltinType::Void: return Sem::Type("void");
-        case BuiltinType::ULong: return Sem::Type("u64");
-        case BuiltinType::UInt: return Sem::Type("u32");
+        case BuiltinType::Int: return Sem::Type("i32");     
+        case BuiltinType::Float: return Sem::Type("f32");   
+        case BuiltinType::Double: return Sem::Type("f64");  
+        case BuiltinType::Bool: return Sem::Type("bool");   
+        case BuiltinType::Long: return Sem::Type("i64");   
+        case BuiltinType::LongLong: return Sem::Type("i64");
+        case BuiltinType::Char_S: return Sem::Type("i8");   
+        case BuiltinType::Void: return Sem::Type("void");   
+        case BuiltinType::ULong: return Sem::Type("u64");   
+        case BuiltinType::UInt: return Sem::Type("u32");    
+        case BuiltinType::UShort: return Sem::Type("u16");
+        case BuiltinType::SChar: return Sem::Type("i8");
 
         default: 
             LangOptions LO;  // default language options
@@ -94,34 +96,28 @@ Sem::Type c_builtin_to_gear(const BuiltinType* ty) {
 Sem::Type c_to_gear_ty(QualType* qt);
 
 static unordered_map<const clang::Type*, Sem::Type> type_cache;
-unordered_set<const RecordDecl*> visited;
+static unordered_map<const RecordDecl*, string> visited;
 
 Sem::Type c_record_to_gear(const RecordDecl* ty) {
-    ty->dump();
-    std::cout << "hi" << std::endl;
-    
+    if (visited.count(ty)) {
+        return Sem::Type(visited[ty]); 
+    }
+
     string name = ty->getNameAsString();
 
-    if (visited.count(ty)) {
-        return Sem::Type(ty->getNameAsString()); 
-    }
-
-    visited.insert(ty);
-
-    string parse_str = "struct ";
-    parse_str += name;
-    parse_str += " {"; 
+    Sem::Type sem_ty;
+    sem_ty.create_record(ty->getNameAsString(), ty->isUnion());
+    visited[ty] = sem_ty.record_get_name();
 
     for(auto* field : ty->fields()) {
-        parse_str += field->getNameAsString() + ' ';
         auto field_ty = field->getType();
-        parse_str += c_to_gear_ty(&field_ty).dump() + ';';
+        sem_ty.record_add_param(
+            field->getNameAsString(), 
+            c_to_gear_ty(&field_ty)
+        );
     }
 
-    parse_str += "}";
-
-    std::cout << parse_str << std::endl;
-    return Sem::Type(parse_str);
+    return sem_ty;
 }
 
 Sem::Type c_to_gear_ty(QualType* qt) {
@@ -142,10 +138,7 @@ Sem::Type c_to_gear_ty(QualType* qt) {
         QualType underlying = pt->getPointeeType();
         result = c_to_gear_ty(&underlying).ref();
     } else if(const auto* rt = dyn_cast<RecordType>(ty)) {
-        result = type_cache[ty];
-        if(result == Sem::Type()) {
-            c_record_to_gear(rt->getDecl());
-        }
+        result = c_record_to_gear(rt->getDecl());
     } else if (const auto* cat = dyn_cast<ConstantArrayType>(ty)) {
         QualType elem = cat->getElementType();
         uint64_t size = cat->getSize().getZExtValue();
@@ -198,9 +191,9 @@ public:
                 { 0, 0, 0, 0 }   
             );
 
-            nodes.push_back(std::make_unique<ExternFn>(std::move(fn)));
-
             std::cout << fn.to_string() << std::endl;
+
+            nodes.push_back(std::make_unique<ExternFn>(std::move(fn)));
         }
         return true;
     }

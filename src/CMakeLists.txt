@@ -57,7 +57,8 @@ set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(CheckCXXCompilerFlag)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall -g -O0 -fsanitize=undefined,leak,address")
+set(DEBUG_FLAGS "-fsanitize=undefined,address -O0 -g -D_DEBUG")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall ${DEBUG_FLAGS}")
 
 find_package(LLVM REQUIRED CONFIG)
 find_package(Clang REQUIRED CONFIG)

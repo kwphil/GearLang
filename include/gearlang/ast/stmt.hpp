@@ -87,6 +87,21 @@ namespace Ast::Nodes {
         virtual llvm::Value* generate(Context& ctx) override { ty.struct_to_llvm(ty, ctx, name); return nullptr; }
     };
 
+    class Include : public Stmt {
+    private:
+        string lang;
+        string file;
+
+    public:
+        Include(string lang, string file, Span span)
+        : Stmt(span), lang(lang), file(file) { }
+
+        static unique_ptr<Include> parse(Lexer::Stream& s) { }
+        virtual std::string to_string() override { return ""; } 
+        virtual void analyze(Sem::Analyzer& analyzer) override { }
+        virtual llvm::Value* generate(Context& ctx) override { return nullptr; }
+    };
+
     /// @brief Node for if statements
     class If : public Stmt {
     protected:

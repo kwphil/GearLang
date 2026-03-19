@@ -51,6 +51,8 @@ using std::shared_ptr;
 using std::optional;
 using std::unordered_map;
 
+extern int anon_struct;
+
 namespace Sem {
     class Type {
     public:
@@ -133,6 +135,32 @@ namespace Sem {
             return *this == Type(other);
         }
 
+        /// @brief Creates a record type
+        /// @param name The name of the record
+        /// @param type true if struct, false if union
+        void create_record(string name, bool type) {
+            record_type = std::make_shared<Struct>();
+            record_name = name;
+            
+            if(type) {
+                if(record_name == "") {
+                    record_name = "__GEAR_struct_anonymous_";
+                    record_name += std::to_string(anon_struct++);
+                }
+                struct_list.insert({ record_name, record_type });
+                record_is_struct = true;
+                return;
+            } 
+
+            if(record_name == "") {
+                record_name = "__GEAR_union_anonymous_";
+                record_name += std::to_string(anon_struct++);
+            }
+
+            union_list.insert({ record_name, record_type });
+            record_is_struct = false;
+        }
+
         /// @brief Checks if the type is a primitive (no pointer)
         bool is_primitive() const { return !(pointer || record_type || array_type); }
         /// @brief Checks if the type is a primitive (does not account for pointers)
@@ -185,6 +213,13 @@ namespace Sem {
             return *record_type->at(index).second;
         }
 
+        /// @brief Adds a parameter to the current record object
+        /// @param name The name of the parameter
+        /// @param type The type of the parameter
+        inline void record_add_param(string name, Type ty) {
+            record_type->push_back({ name, std::make_shared<Type>(ty) });
+        }
+
         /// @brief Takes a primitive and converts it directly to an llvm type
         /// @param ty the type to convert
         /// @param ctx the global context (GearLang context, not llvm)
@@ -200,6 +235,9 @@ namespace Sem {
         /// @brief Get an already translated struct
         static llvm::Type* get_llvm_struct(string name, Struct& obj);
         llvm::Type* get_llvm_struct() const;
+
+        /// @brief Get the name of a record type
+        inline string record_get_name() const { return record_name; } 
 
         /// @brief String representation of the type
         std::string dump();
