@@ -105,6 +105,8 @@ llvm::Function* build_runtime(Context& ctx) {
 
 #include <gearlang/ffi/c.hpp>
 
+std::unordered_map<std::string, std::unique_ptr<Ffi>> ffi_list;
+
 Ast::Program build_tree(const Options& opts) {
     Lexer::Stream tokens;
     Ast::Program root;
@@ -129,11 +131,16 @@ Ast::Program build_tree(const Options& opts) {
 
     Sem::Analyzer analyzer;
 
-    C_Ffi ffi_test;
-    ffi_test.add_header("sys/stdio.h");
+    RUN_STEP("Ffi management", {
+        for(auto& curr : ffi_list) {
+            auto new_nodes = curr.second->compile_headers();
+            
+            if(opts.verbose) for(auto& t : new_nodes) {
+                std::cout << t->to_string() << std::endl;
+            }
 
-    RUN_STEP("C file parsing", {
-        root.add_nodes(ffi_test.compile_headers());
+            root.add_nodes(std::move(new_nodes));
+        }
     })
 
     RUN_STEP("analyzing",

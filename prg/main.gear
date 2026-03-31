@@ -1,5 +1,5 @@
-// External function
-extern("C") fn printf(s char^, ...);
+// Grabbing C stdio
+include("C", "sys", "stdio.h");
 
 //simple assignment
 let a = 3;

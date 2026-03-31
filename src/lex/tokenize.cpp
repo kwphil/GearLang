@@ -72,7 +72,7 @@ Lexer::Stream Lexer::tokenize(const std::string& source_path) {
 
     std::string out;
     std::string buf; 
-    while(std::getline(file, buf)) out += buf;
+    while(std::getline(file, buf)) out += buf + '\n';
     return tokenize_by_string(out);
 }
 
@@ -103,6 +103,7 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str) {
     size_t token_start_line  = 1;
     size_t token_start_col   = 1;
 
+    bool token_is_string = false;
     bool is_string  = false;
     bool is_comment = false;
 
@@ -129,7 +130,11 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str) {
             .end   = end_index
         };
 
-        tok.type = classify(tok.content, state_old, tok.span);
+        if (token_is_string) {
+            tok.type = Type::StringLiteral;
+        } else {
+            tok.type = classify(tok.content, state_old, tok.span);
+        }
 
         out.content.push_back(tok);
         tok = Token{};
@@ -186,6 +191,20 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str) {
         }
 
         if(state_new == CharType::Quote) {
+            if (!is_string) {
+                // starting string
+                tok = Token{};
+                token_is_string = true;
+
+                token_start_index = index;
+                token_start_line  = line;
+                token_start_col   = col;
+            } else {
+                // ending string
+                flush(index);
+                token_is_string = false;
+            }
+
             is_string = !is_string;
 
             state_old = state_new;

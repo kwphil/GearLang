@@ -53,11 +53,13 @@ set(CMAKE_C_STANDARD 90)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if(DEBUG AND NOT NO_DEBUG)
+    set(CMAKE_BUILD_TYPE Debug)
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+    include(CheckCXXCompilerFlag)
+    set(DEBUG_FLAGS "-fsanitize=undefined,address -O0 -g -D_DEBUG")
+endif()
 
-include(CheckCXXCompilerFlag)
-set(DEBUG_FLAGS "-fsanitize=undefined,address -O0 -g -D_DEBUG")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall ${DEBUG_FLAGS}")
 
 find_package(LLVM REQUIRED CONFIG)
@@ -70,13 +72,6 @@ set(GEARLANG_CORE
     error.cpp
     func.cpp
     setup.cpp
-)
-
-set(GEARLANG_LEX
-    lex/char.cpp
-    lex/classify.cpp
-    lex/tokenize.cpp
-    lex/lex.cpp
 )
 
 set(GEARLANG_SEM
@@ -100,6 +95,7 @@ set(GEARLANG_FFI
 
 add_subdirectory(par ${CMAKE_BINARY_DIR}/CMakeFiles/par)
 add_subdirectory(gen ${CMAKE_BINARY_DIR}/CMakeFiles/gen)
+add_subdirectory(lex ${CMAKE_BINARY_DIR}/CMakeFiles/lex)
 
 add_library(gearlib SHARED
     ${GEARLANG_FFI}
@@ -114,6 +110,7 @@ add_executable(gear main.cpp)
 target_link_libraries(gearlib
     gear_parse
     gear_gen
+    gear_lex
     LLVM
     ${Clang_LIBRARIES}
     clang

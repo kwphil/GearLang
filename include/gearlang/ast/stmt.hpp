@@ -35,9 +35,12 @@ SOFTWARE.
 #include <memory>
 #include <optional>
 #include <string>
+#include <format>
 
 #include <gearlang/ctx.hpp>
 #include <gearlang/lex.hpp>
+#include <gearlang/error.hpp>
+#include <gearlang/ffi/c.hpp>
 
 #include "base.hpp"
 #include "expr.hpp"
@@ -90,14 +93,38 @@ namespace Ast::Nodes {
     class Include : public Stmt {
     private:
         string lang;
+        string type;
         string file;
 
-    public:
-        Include(string lang, string file, Span span)
-        : Stmt(span), lang(lang), file(file) { }
+        inline void ffi_setup(Span& span) {
+            if(!ffi_list.contains(lang)) {
+                if(lang == "C") {
+                    ffi_list[lang] = std::make_unique<C_Ffi>();
+                    return;
+                }
 
-        static unique_ptr<Include> parse(Lexer::Stream& s) { }
-        virtual std::string to_string() override { return ""; } 
+                Error::throw_error(
+                    span,
+                    std::format("Unknown language: {}", lang).c_str(),
+                    Error::ErrorCodes::UNKNOWN_FILE
+                );
+            }
+        }
+
+    public:
+        Include(string lang, string type, string file, Span span)
+        : Stmt(span), lang(lang), type(type), file(file) {
+            ffi_setup(span);
+            ffi_list[lang]->add_header(file);
+        }
+
+        static unique_ptr<Include> parse(Lexer::Stream& s);
+        virtual std::string to_string() override { 
+            return std::format(
+                "{{ \"type\": \"Include\", \"lang\":\"{}\", \"type\":\"{}\", \"file\":\"{}\" }}",
+                lang, type, file
+            ); 
+        } 
         virtual void analyze(Sem::Analyzer& analyzer) override { }
         virtual llvm::Value* generate(Context& ctx) override { return nullptr; }
     };

@@ -36,6 +36,7 @@ SOFTWARE.
 
 #include <gearlang/ast/expr.hpp>
 #include <gearlang/ast/vars.hpp>
+#include <gearlang/ast/stmt.hpp>
 #include <gearlang/lex.hpp>
 #include <gearlang/error.hpp>
 
@@ -65,5 +66,33 @@ string ExprStructParam::to_string() {
     return std::format(
         "{{ \"type\"=\"ExprStructParam\", \"struct_name\":\"{}\", \"param_name\":\"{}\"}}",
         struct_name, name
+    );
+}
+
+unique_ptr<Let> Let::parse(Lexer::Stream& s) {
+    Span start_span = s.peek()->span;
+    
+    s.expect("let", start_span);
+    string target = s.peek()->content;
+    s.expect(Lexer::Type::Identifier);
+    unique_ptr<Sem::Type> ty;
+
+    if(s.peek()->content[0] == ':') {
+        s.pop();
+        ty = std::make_unique<Sem::Type>(s);
+    }
+
+    unique_ptr<Expr> expr;
+    if(!ty || s.peek()->type == Lexer::Type::Equal) {
+        s.expect("=", start_span);
+        expr = Expr::parse(s);
+    }
+
+    Span new_span = start_span;
+    new_span.end = s.peek()->span.end;
+
+    return std::make_unique<Let>(
+        target, std::move(expr), std::move(ty), new_span,
+        check_keyword("export")
     );
 }

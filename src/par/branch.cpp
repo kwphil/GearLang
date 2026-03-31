@@ -30,46 +30,46 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <memory>
+#include <vector>
+#include <string>
+#include <format>
 
-#include "etc.hpp"
+#include <gearlang/ast/stmt.hpp>
 
-namespace Error {
-    enum class ErrorCodes {
-        reserved0,
-        EXPECT_VALUE,
-        UNEXPECTED_TOKEN,
-        UNEXPECTED_EOF,
-        UNKNOWN_TYPE,
-        VARIABLE_ALREADY_DEFINED,
-        VARIABLE_NOT_DEFINED,
-        FUNCTION_NOT_DEFINED,
-        FUNCTION_INVALID_ARGS,
-        QUALIFIER_NOT_ALLOWED,
-        INVALID_AST,
-        UNKNOWN_FILE,
-        BAD_TYPE,
-    };
+using namespace Ast::Nodes;
+using Sem::Type;
+using std::unique_ptr;
+using std::string;
+using std::vector;
 
-    /// @brief throws an error based on a span. 
-    /// @param span the span to throw at
-    /// @param err a specific message to throw
-    /// @param code the error code to throw
-    [[noreturn]] void throw_error (
-        Span const& span,
-        const char* err,
-        ErrorCodes code
+unique_ptr<If> If::parse(Lexer::Stream& s) {
+    Span span = s.peek()->span; // Get it here on the line of the if statement itself
+    s.expect("if", span);
+    pExpr cond = Expr::parse(s);
+    unique_ptr<NodeBase> expr = NodeBase::parse(s);
+
+    span.end = expr->span_meta.end;
+    return std::make_unique<If>(std::move(expr), std::move(cond), span);
+}
+
+string If::to_string() {
+    return std::format("{{ \"type\":\"If\", \"cond\"={}, \"expr\"={} }}", cond->to_string(), expr->to_string());
+}
+
+unique_ptr<Else> Else::parse(
+    unique_ptr<If> if_expr,
+    Lexer::Stream& s
+) {
+    Span span = s.peek()->span;
+    s.expect("else", span);
+    unique_ptr<NodeBase> expr = NodeBase::parse(s);
+
+    return std::make_unique<Else>(std::move(expr), std::move(*if_expr));
+}
+
+string Else::to_string() {
+    return std::format("{{ \"type\":\"Else\", \"cond\":{}, \"exprtrue\":{}, \"exprfalse\":{} }}",
+        cond->to_string(), expr->to_string(), else_expr->to_string()
     );
-
-    /// @brief Throws a warning based on a span.
-    /// @param span the span to throw at
-    /// @param err a specific message to throw
-    void throw_warning (
-        Span const& span,
-        const char* err
-    );
-
-    /// @brief Sets up the error management system
-    /// @param filename the name of the file to open
-    void setup_error_manager (const char* filename);
 }

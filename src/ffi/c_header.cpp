@@ -43,7 +43,7 @@ SOFTWARE.
 
 #include <gearlang/ffi/c.hpp>
 #include <gearlang/ast/func.hpp>
-#include <iostream>
+#include <gearlang/error.hpp>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -154,7 +154,7 @@ Sem::Type c_to_gear_ty(QualType* qt) {
     type_cache[ty] = result;
     return result;
 }
-
+#include <iostream>
 class FunctionVisitor : public RecursiveASTVisitor<FunctionVisitor> {
 public:
     bool VisitFunctionDecl(FunctionDecl* func) {
@@ -164,15 +164,10 @@ public:
             using Ast::Nodes::Argument;
 
             std::deque<unique_ptr<Argument>> args;
-            bool is_variadic = false;
+            bool is_variadic = func->isVariadic();
 
             for (unsigned i = 0; i < func->getNumParams(); ++i) {
                 QualType qt = func->getParamDecl(i)->getType();
-                
-                if (const auto* fn = qt->getAs<FunctionProtoType>()) {
-                    is_variadic = fn->isVariadic();
-                    continue;
-                }
 
                 args.push_back(std::make_unique<Argument>(Argument(
                     "",
@@ -191,8 +186,6 @@ public:
                 { 0, 0, 0, 0 }   
             );
 
-            std::cout << fn.to_string() << std::endl;
-
             nodes.push_back(std::make_unique<ExternFn>(std::move(fn)));
         }
         return true;
@@ -207,8 +200,8 @@ public:
     }
 
     bool VisitEnumDecl(EnumDecl* enm) {
-        if (enm->isComplete())
-            std::cout << "Enum: " << enm->getNameAsString() << "\n";
+        // if (enm->isComplete())
+        //     std::cout << "Enum: " << enm->getNameAsString() << "\n";
         return true;
     }
 
@@ -242,7 +235,11 @@ vector<unique_ptr<NodeBase>> C_Ffi::compile_headers() {
         consumer.HandleTranslationUnit(ast->getASTContext());
         asts.push_back(std::move(ast));
     } else {
-        std::cerr << "Failed to parse C FFI: \n";
+        Error::throw_error(
+            {0, 0, 0, 0},
+            "Unable to parse C header",
+            Error::ErrorCodes::INVALID_AST
+        );
     }
 
     return std::move(nodes);
@@ -258,7 +255,7 @@ vector<std::string> splitStringstream(const string& input, char delimiter) {
 }
 
 void C_Ffi::add_header(string filename) {
-    auto split = splitStringstream(filename, '/');
+    auto split = splitStringstream(filename, ':');
     if (split.size() == 1 || split[0] == "loc") {
         add_header_to_file(format("#include \"{}\"", split.back()));
     } else if (split[0] == "sys") {
