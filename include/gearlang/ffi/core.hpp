@@ -53,3 +53,5 @@ public:
     virtual void add_header(string header_name) = 0;
     virtual vector<unique_ptr<Ast::Nodes::NodeBase>> compile_headers() = 0;
 };
+
+extern std::unordered_map<std::string, std::unique_ptr<Ffi>> ffi_list;

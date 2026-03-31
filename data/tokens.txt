@@ -1,2 +1,2 @@
-fn let comptime assert test if else extern return export and or not xor array
+fn let comptime assert test if else extern return export and or not xor array include
 + - * / => : == != >= <= < >

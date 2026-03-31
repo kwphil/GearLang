@@ -102,7 +102,7 @@ Lexer::Type Lexer::classify(std::string& content, CharType state, Span const& sp
 
             Error::throw_error(
                 span,
-                std::format("Unexpected charcter: {}", content).c_str(),
+                std::format("Unexpected character: {}", content).c_str(),
                 Error::ErrorCodes::UNEXPECTED_TOKEN
             );
 

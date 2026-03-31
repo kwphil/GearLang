@@ -56,34 +56,6 @@ std::string Struct::to_string() {
     return "{ \"type\":\"Struct\", \"name\":\"\" }";
 }
 
-unique_ptr<Let> Let::parse(Lexer::Stream& s) {
-    Span start_span = s.peek()->span;
-    
-    s.expect("let", start_span);
-    string target = s.peek()->content;
-    s.expect(Lexer::Type::Identifier);
-    unique_ptr<Sem::Type> ty;
-
-    if(s.peek()->content[0] == ':') {
-        s.pop();
-        ty = std::make_unique<Sem::Type>(s);
-    }
-
-    unique_ptr<Expr> expr;
-    if(!ty || s.peek()->type == Lexer::Type::Equal) {
-        s.expect("=", start_span);
-        expr = Expr::parse(s);
-    }
-
-    Span new_span = start_span;
-    new_span.end = s.peek()->span.end;
-
-    return std::make_unique<Let>(
-        target, std::move(expr), std::move(ty), new_span,
-        check_keyword("export")
-    );
-}
-
 string Let::to_string() {
     return std::format(
         "{{ \"type\":\"Let\", \"target\":\"{}\", \"expr\":{} }}",
@@ -144,33 +116,21 @@ unique_ptr<Return> Return::parse(Lexer::Stream& s) {
 
 string Return::to_string() { return std::format("{{ \"type\":\"Return\", \"expr\":{} }}", expr->to_string()); }
 
-unique_ptr<If> If::parse(Lexer::Stream& s) {
-    Span span = s.peek()->span; // Get it here on the line of the if statement itself
-    s.expect("if", span);
-    pExpr cond = Expr::parse(s);
-    unique_ptr<NodeBase> expr = NodeBase::parse(s);
-
-    span.end = expr->span_meta.end;
-    return std::make_unique<If>(std::move(expr), std::move(cond), span);
-}
-
-string If::to_string() {
-    return std::format("{{ \"type\":\"If\", \"cond\"={}, \"expr\"={} }}", cond->to_string(), expr->to_string());
-}
-
-unique_ptr<Else> Else::parse(
-    unique_ptr<If> if_expr,
-    Lexer::Stream& s
-) {
+unique_ptr<Include> Include::parse(Lexer::Stream& s) {
     Span span = s.peek()->span;
-    s.expect("else", span);
-    unique_ptr<NodeBase> expr = NodeBase::parse(s);
 
-    return std::make_unique<Else>(std::move(expr), std::move(*if_expr));
-}
+    s.expect("include");
+    
+    s.expect(Lexer::Type::ParenOpen);
+    string lang = s.peek()->content;
+    s.expect(Lexer::Type::StringLiteral);
+    s.expect(Lexer::Type::Comma);
+    string type = s.peek()->content;
+    s.expect(Lexer::Type::StringLiteral);
+    s.expect(Lexer::Type::Comma);
+    string file = s.peek()->content;
+    s.expect(Lexer::Type::StringLiteral);
+    s.expect(Lexer::Type::ParenClose);
 
-string Else::to_string() {
-    return std::format("{{ \"type\":\"Else\", \"cond\":{}, \"exprtrue\":{}, \"exprfalse\":{} }}",
-        cond->to_string(), expr->to_string(), else_expr->to_string()
-    );
+    return std::make_unique<Include>(lang, type, file, span);
 }

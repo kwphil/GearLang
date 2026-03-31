@@ -62,12 +62,11 @@ Type::PrimType Type::parse_primitive(Lexer::Stream& s) {
 }
 
 int anon_struct = 0;
-#include <iostream>
+
 Type::Type(Lexer::Stream& s) {
     auto tok = s.peek();
     pointer = 0;
 
-    s.dump();
     if (!s.has()) {
         Error::throw_error(
             {0, 0, 0, 0},
@@ -127,7 +126,6 @@ Type::Type(Lexer::Stream& s) {
     }
 
     if(s.peek()->content == "struct") {
-        s.dump();
         string name;
         s.pop();
         record_is_struct = true;
@@ -183,12 +181,12 @@ find_parse:
     prim_type = parse_primitive(s);
 
     if (prim_type == PrimType::Invalid) {
-        std::cout << "===============================\n";
-        for(auto& t : s.content) {
-            std::cout << t.content << '\n';
-        }
+        // std::cout << "===============================\n";
+        // for(auto& t : s.content) {
+        //     std::cout << t.content << '\n';
+        // }
 
-        std::cout << std::endl;
+        // std::cout << std::endl;
 
         Error::throw_error(
             tok->span,

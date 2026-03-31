@@ -82,7 +82,7 @@ namespace Sem {
         PrimType prim_type = PrimType::Invalid;
         shared_ptr<Struct> record_type;
         string record_name;
-        bool record_is_struct; // is false if union 
+        bool record_is_struct = false; // is false if union 
         unsigned int pointer = 0;
 
         shared_ptr<Type> array_type;

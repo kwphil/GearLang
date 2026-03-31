@@ -28,24 +28,34 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-set(GEARLANG_PARSE
-    base.cpp
-    expr.cpp
-    func.cpp
-    stmt.cpp
-    var.cpp
-    literal.cpp
-    expr_etc.cpp
-    func_head.cpp
-    branch.cpp
+# find_program(RE2C_EXECUTABLE re2c REQUIRED)
+
+# set(LEXER_RE ${CMAKE_SOURCE_DIR}/lex/tokenize.cpp)
+# set(LEXER_CPP re2c.cpp)
+
+# add_custom_command(
+#     OUTPUT ${LEXER_CPP}
+#     COMMAND ${RE2C_EXECUTABLE}
+#             -o ${LEXER_CPP}
+#             ${LEXER_RE}
+#     DEPENDS ${LEXER_RE}
+#     COMMENT "Generating lexer with re2c"
+# )
+
+set(GEARLANG_LEX
+    char.cpp
+    classify.cpp
+    lex.cpp
+    tokenize.cpp
+    ${LEXER_CPP}
 )
 
-add_library(gear_parse STATIC ${GEARLANG_PARSE}) 
-target_include_directories(gear_parse PRIVATE 
+add_library(gear_lex STATIC ${GEARLANG_LEX}) 
+target_include_directories(gear_lex PRIVATE 
     ${LLVM_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/../include
 )
 
-set_target_properties(gear_parse PROPERTIES
-    OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/CMakeFiles/gear_parse.dir"
-) 
+set_target_properties(gear_lex PROPERTIES
+    OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/CMakeFiles/gear_lex.dir"
+)
