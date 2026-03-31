@@ -159,6 +159,7 @@ namespace Sem {
 
             union_list.insert({ record_name, record_type });
             record_is_struct = false;
+            return;
         }
 
         /// @brief Checks if the type is a primitive (no pointer)
@@ -218,6 +219,13 @@ namespace Sem {
         /// @param type The type of the parameter
         inline void record_add_param(string name, Type ty) {
             record_type->push_back({ name, std::make_shared<Type>(ty) });
+        }
+
+        /// @brief Adds a parameter to the current record object
+        /// @param name The name of the parameter
+        /// @param type The type of the parameter
+        inline void record_add_param(string name, shared_ptr<Type> ty) {
+            record_type->push_back({ name, ty });
         }
 
         /// @brief Takes a primitive and converts it directly to an llvm type
