@@ -22,8 +22,7 @@ export let higher = (complex / 3) * 2; // should be 4 = (6 / 3) * 2
 export fn foo(
     _a i32, 
     _b i32,
-) returns i32
-{
+) returns i32 {
     return _a + _b;
 }
 

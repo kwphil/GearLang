@@ -93,26 +93,27 @@ Sem::Type c_builtin_to_gear(const BuiltinType* ty) {
     }
 }
 
-Sem::Type c_to_gear_ty(QualType* qt);
+shared_ptr<Sem::Type> c_to_gear_ty(QualType* qt);
+shared_ptr<Sem::Type> c_record_to_gear(const RecordDecl* ty);
 
-static unordered_map<const clang::Type*, Sem::Type> type_cache;
-static unordered_map<const RecordDecl*, string> visited;
+unordered_map<const clang::Type*, shared_ptr<Sem::Type>> type_cache;
+unordered_map<const RecordDecl*, shared_ptr<Sem::Type>> visited;
 
-Sem::Type c_record_to_gear(const RecordDecl* ty) {
-    if (visited.count(ty)) {
-        return Sem::Type(visited[ty]); 
-    }
+// Fix create_record usage:
+std::shared_ptr<Sem::Type> c_record_to_gear(const RecordDecl* ty) {
+    if (visited.count(ty))
+        return visited[ty];
 
-    string name = ty->getNameAsString();
+    auto _sem_ty = Sem::Type();
+    _sem_ty.create_record(ty->getNameAsString(), ty->isUnion());
+    auto sem_ty = std::make_shared<Sem::Type>(std::move(_sem_ty));
 
-    Sem::Type sem_ty;
-    sem_ty.create_record(ty->getNameAsString(), ty->isUnion());
-    visited[ty] = sem_ty.record_get_name();
+    visited[ty] = sem_ty;
 
-    for(auto* field : ty->fields()) {
-        auto field_ty = field->getType();
-        sem_ty.record_add_param(
-            field->getNameAsString(), 
+    for (auto* field : ty->fields()) {
+        QualType field_ty = field->getType();
+        sem_ty->record_add_param(
+            field->getNameAsString(),
             c_to_gear_ty(&field_ty)
         );
     }
@@ -120,40 +121,45 @@ Sem::Type c_record_to_gear(const RecordDecl* ty) {
     return sem_ty;
 }
 
-Sem::Type c_to_gear_ty(QualType* qt) {
+std::shared_ptr<Sem::Type> c_to_gear_ty(QualType* qt) {
     using namespace clang;
     using llvm::dyn_cast;
 
     auto ty = qt->getCanonicalType().getTypePtr();
 
-    if(type_cache.contains(ty)) {
+    if (type_cache.contains(ty)) {
         return type_cache[ty];
     }
 
-    Sem::Type result;
+    std::shared_ptr<Sem::Type> result;
 
-    if(const auto* bt = dyn_cast<BuiltinType>(ty)) {
-        result = c_builtin_to_gear(bt);
-    } else if(const auto* pt = dyn_cast<PointerType>(ty)) {
+    if (auto* bt = dyn_cast<BuiltinType>(ty)) {
+        result = std::make_shared<Sem::Type>(c_builtin_to_gear(bt));
+    } 
+    else if (auto* pt = dyn_cast<PointerType>(ty)) {
         QualType underlying = pt->getPointeeType();
-        result = c_to_gear_ty(&underlying).ref();
-    } else if(const auto* rt = dyn_cast<RecordType>(ty)) {
+        result = std::make_shared<Sem::Type>(c_to_gear_ty(&underlying)->ref());
+    } 
+    else if (auto* rt = dyn_cast<RecordType>(ty)) {
         result = c_record_to_gear(rt->getDecl());
-    } else if (const auto* cat = dyn_cast<ConstantArrayType>(ty)) {
+    } 
+    else if (auto* cat = dyn_cast<ConstantArrayType>(ty)) {
         QualType elem = cat->getElementType();
         uint64_t size = cat->getSize().getZExtValue();
-
-        result = c_to_gear_ty(&elem).array(size);
-    } else if(const auto* at = dyn_cast<ArrayType>(ty)) {
+        result = std::make_shared<Sem::Type>(c_to_gear_ty(&elem)->array(size));
+    } 
+    else if (auto* at = dyn_cast<ArrayType>(ty)) {
         QualType elem = at->getElementType();
-        result = c_to_gear_ty(&elem).array();
-    } else {
+        result = std::make_shared<Sem::Type>(c_to_gear_ty(&elem)->array());
+    } 
+    else {
         throw std::runtime_error(ty->getTypeClassName());
     }
 
     type_cache[ty] = result;
     return result;
 }
+
 #include <iostream>
 class FunctionVisitor : public RecursiveASTVisitor<FunctionVisitor> {
 public:
@@ -171,7 +177,7 @@ public:
 
                 args.push_back(std::make_unique<Argument>(Argument(
                     "",
-                    c_to_gear_ty(&qt),
+                    *c_to_gear_ty(&qt),
                     { 0, 0, 0, 0 }
                 )));
             }
@@ -179,7 +185,7 @@ public:
             QualType ret = func->getReturnType();
             ExternFn fn(
                 func->getNameAsString(), 
-                c_to_gear_ty(&ret),
+                *c_to_gear_ty(&ret),
                 std::move(args),
                 is_variadic,
                 true,
@@ -223,6 +229,11 @@ private:
 
 vector<unique_ptr<NodeBase>> C_Ffi::compile_headers() {
     vector<unique_ptr<ASTUnit>> asts;
+
+    // Clearing stale cache
+    type_cache.clear();
+    visited.clear();
+    nodes.clear();
 
     auto ast = tooling::buildASTFromCodeWithArgs(
         src.str(), 
