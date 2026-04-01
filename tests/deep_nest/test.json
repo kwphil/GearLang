@@ -1,0 +1,7 @@
+{
+  "type": "ast",
+  "return": 0,
+  "match": [
+    { "type": "ExprLitInt", "value": 1 }
+  ]
+}

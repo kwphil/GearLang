@@ -1,0 +1,11 @@
+{
+  "type": "ast",
+  "return": 0,
+  "match": [
+    {
+      "type": "ExprAssign",
+      "var": { "type": "ExprVar", "name": "a" },
+      "expr": { "type": "ExprVar", "name": "b" }
+    }
+  ]
+}
