@@ -59,9 +59,9 @@ def print_test(passes: bool, fail_str: str = ""):
             test_header = f'{Fore.GREEN}AST{Style.RESET_ALL}'
 
     if passes:
-        print(f"{test_header} {test_name} --- {Fore.GREEN}PASSED.{Style.RESET_ALL}")
+        print(f"{test_header} {test_name} --- {Fore.GREEN}PASSED.{Style.RESET_ALL}", flush=True)
     else:
-        print(f"{test_header} {test_name} --- {Fore.RED}FAILED.{Style.RESET_ALL} {fail_str}")
+        print(f"{test_header} {test_name} --- {Fore.RED}FAILED.{Style.RESET_ALL} {fail_str}", flush=True)
 
 def run_test(test_data: Path, test_code: Path):
     global test_count

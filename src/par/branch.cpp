@@ -54,7 +54,7 @@ unique_ptr<If> If::parse(Lexer::Stream& s) {
 }
 
 string If::to_string() {
-    return std::format("{{ \"type\":\"If\", \"cond\"={}, \"expr\"={} }}", cond->to_string(), expr->to_string());
+    return std::format("{{ \"type\":\"If\", \"cond\":{}, \"expr\":{} }}", cond->to_string(), expr->to_string());
 }
 
 unique_ptr<Else> Else::parse(

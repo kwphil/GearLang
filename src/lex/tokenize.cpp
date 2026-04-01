@@ -108,7 +108,7 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str) {
     bool is_comment = false;
 
     auto flush = [&](size_t end_index) {
-        if(tok.content.empty())
+        if(tok.content.empty() && !token_is_string) // Strings can be empty
             return;
 
         if(state_old == CharType::Invalid ||
