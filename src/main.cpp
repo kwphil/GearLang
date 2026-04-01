@@ -138,6 +138,8 @@ static std::string compile_ir(const Options& opts) {
         output = ctx.render();
     );
 
+    Sem::Type::clear_records();
+
     return output;
 }
 

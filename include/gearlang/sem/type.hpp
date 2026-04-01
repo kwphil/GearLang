@@ -76,11 +76,11 @@ namespace Sem {
 
         using Struct = vector<pair<string, shared_ptr<Type>>>; 
     private:
-        static unordered_map<string, shared_ptr<Struct>> struct_list;
-        static unordered_map<string, shared_ptr<Struct>> union_list;
+        static unordered_map<string, Struct*> struct_list;
+        static unordered_map<string, Struct*> union_list;
 
         PrimType prim_type = PrimType::Invalid;
-        shared_ptr<Struct> record_type;
+        Struct* record_type = nullptr;
         string record_name;
         bool record_is_struct = false; // is false if union 
         unsigned int pointer = 0;
@@ -101,13 +101,6 @@ namespace Sem {
     public:
         Type() : prim_type(PrimType::Invalid) { };
         Type(Lexer::Stream& s);
-        Type(
-            PrimType prim_type, 
-            int pointer, 
-            shared_ptr<Struct> struct_type = { }, 
-            string struct_name = ""
-        )
-        = delete;
         /// @brief Builds the type with a string
         /// @param s the string
         explicit inline Type(const char* s) { *this = Type((std::string)s); } 
@@ -118,9 +111,9 @@ namespace Sem {
         /// @brief Builds the type from a list of pairs of strings and Types, creating a struct
         /// @param s the struct object
         /// @param name the name of the struct
-        Type(Struct s, string name="unnamed_struct")
-        : record_type(std::make_shared<Struct>(s)) 
-        { struct_list.insert({ name, record_type }); }
+        Type(Struct& s, string name="unnamed_struct") { 
+            record_type = struct_list.insert({ name, new Struct(s) }).first->second; 
+        }
         
         bool operator==(Type&& other) {
             return 
@@ -138,38 +131,18 @@ namespace Sem {
         /// @brief Creates a record type
         /// @param name The name of the record
         /// @param type true if struct, false if union
-        void create_record(string name, bool type) {
-            record_type = std::make_shared<Struct>();
-            record_name = name;
-            
-            if(type) {
-                if(record_name == "") {
-                    record_name = "__GEAR_struct_anonymous_";
-                    record_name += std::to_string(anon_struct++);
-                }
-                struct_list.insert({ record_name, record_type });
-                record_is_struct = true;
-                return;
-            } 
+        void create_record(string name, bool type) = delete;
 
-            if(record_name == "") {
-                record_name = "__GEAR_union_anonymous_";
-                record_name += std::to_string(anon_struct++);
-            }
-
-            union_list.insert({ record_name, record_type });
-            record_is_struct = false;
-            return;
-        }
+        static Type new_record(string name, bool type);
 
         /// @brief Checks if the type is a primitive (no pointer)
         bool is_primitive() const { return !(pointer || record_type || array_type); }
         /// @brief Checks if the type is a primitive (does not account for pointers)
         bool is_underlying_primitive() const { return !(record_type || array_type); }
         /// @brief Checks if the type is a struct type (does not account for pointers)
-        bool is_struct() const { return record_type.get() && record_is_struct; }
+        bool is_struct() const { return record_type && record_is_struct; }
         /// @brief Checks if the type is a union type (does not account for pointers)
-        bool is_union() const { return record_type.get() && !record_is_struct; }
+        bool is_union() const { return record_type && !record_is_struct; }
         /// @brief Checks if the type is an array type (does not account for pointers)
         bool is_array() const { return array_type.get(); }
         /// @brief Checks if the type is a pointer
@@ -253,5 +226,15 @@ namespace Sem {
         /// @brief Checks if another type is compatible with this one
         bool is_compatible(Type& other) { return is_compatible(static_cast<Type&&>(other)); }
         bool is_compatible(Type&& other);
+
+        static inline void clear_records() {
+            for(auto& _struct : struct_list) {
+                delete _struct.second;
+            }
+
+            for(auto& _union : union_list) {
+                delete _union.second;
+            }
+        }
     };
 }

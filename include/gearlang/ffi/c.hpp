@@ -32,20 +32,34 @@ SOFTWARE.
 
 #pragma once
 
+#include <clang/AST/Type.h>
+#include <clang/AST/Decl.h>
+
 #include <vector>
 #include <memory>
 #include <string>
 #include <fstream>
+#include <unordered_map>
 #include <gearlang/ast/base.hpp>
+#include <gearlang/sem/type.hpp>
 #include "core.hpp"
 
 using std::vector;
 using std::unique_ptr;
 using std::ofstream;
 using std::string;
+using std::unordered_map;
 
 class C_Ffi : public Ffi {
+private:
+    vector<unique_ptr<Ast::Nodes::NodeBase>> nodes;
+    unordered_map<const clang::Type*, shared_ptr<Sem::Type>> type_cache;
+
 public:
     virtual void add_header(string filename) override;
     virtual vector<unique_ptr<Ast::Nodes::NodeBase>> compile_headers() override;
+
+    shared_ptr<Sem::Type> c_to_gear_ty(clang::QualType* qt);
+    shared_ptr<Sem::Type> c_record_to_gear(const clang::RecordDecl* ty);
+    inline void add_node(unique_ptr<Ast::Nodes::NodeBase> node) { nodes.push_back(std::move(node)); }
 };

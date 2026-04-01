@@ -62,8 +62,6 @@ using std::format;
 using namespace Ast::Nodes;
 using namespace clang;
 
-vector<unique_ptr<NodeBase>> nodes;
-
 const vector<string> C_FFI_ARGS = {
     "-I.",
     "-std=c99"
@@ -93,24 +91,17 @@ Sem::Type c_builtin_to_gear(const BuiltinType* ty) {
     }
 }
 
-shared_ptr<Sem::Type> c_to_gear_ty(QualType* qt);
-shared_ptr<Sem::Type> c_record_to_gear(const RecordDecl* ty);
+std::shared_ptr<Sem::Type> C_Ffi::c_record_to_gear(const RecordDecl* decl) {
+    const clang::Type* canonical = decl->getTypeForDecl();
+    if (type_cache.count(canonical))
+        return type_cache[canonical];
 
-unordered_map<const clang::Type*, shared_ptr<Sem::Type>> type_cache;
-unordered_map<const RecordDecl*, shared_ptr<Sem::Type>> visited;
-
-// Fix create_record usage:
-std::shared_ptr<Sem::Type> c_record_to_gear(const RecordDecl* ty) {
-    if (visited.count(ty))
-        return visited[ty];
-
-    auto _sem_ty = Sem::Type();
-    _sem_ty.create_record(ty->getNameAsString(), ty->isUnion());
-    auto sem_ty = std::make_shared<Sem::Type>(std::move(_sem_ty));
-
-    visited[ty] = sem_ty;
-
-    for (auto* field : ty->fields()) {
+    auto sem_ty = std::make_shared<Sem::Type>(
+        Sem::Type::new_record(decl->getNameAsString(), decl->isUnion())
+    );
+    type_cache[canonical] = sem_ty; 
+    
+    for (auto* field : decl->fields()) {
         QualType field_ty = field->getType();
         sem_ty->record_add_param(
             field->getNameAsString(),
@@ -121,7 +112,7 @@ std::shared_ptr<Sem::Type> c_record_to_gear(const RecordDecl* ty) {
     return sem_ty;
 }
 
-std::shared_ptr<Sem::Type> c_to_gear_ty(QualType* qt) {
+std::shared_ptr<Sem::Type> C_Ffi::c_to_gear_ty(QualType* qt) {
     using namespace clang;
     using llvm::dyn_cast;
 
@@ -162,7 +153,12 @@ std::shared_ptr<Sem::Type> c_to_gear_ty(QualType* qt) {
 
 #include <iostream>
 class FunctionVisitor : public RecursiveASTVisitor<FunctionVisitor> {
+private:
+    C_Ffi& manager;
+
 public:
+    FunctionVisitor(C_Ffi& manager) : manager(manager) { }
+
     bool VisitFunctionDecl(FunctionDecl* func) {
         using clang::QualType;
 
@@ -177,7 +173,7 @@ public:
 
                 args.push_back(std::make_unique<Argument>(Argument(
                     "",
-                    *c_to_gear_ty(&qt),
+                    *manager.c_to_gear_ty(&qt),
                     { 0, 0, 0, 0 }
                 )));
             }
@@ -185,21 +181,21 @@ public:
             QualType ret = func->getReturnType();
             ExternFn fn(
                 func->getNameAsString(), 
-                *c_to_gear_ty(&ret),
+                *manager.c_to_gear_ty(&ret),
                 std::move(args),
                 is_variadic,
                 true,
                 { 0, 0, 0, 0 }   
             );
 
-            nodes.push_back(std::make_unique<ExternFn>(std::move(fn)));
+            manager.add_node(std::make_unique<ExternFn>(std::move(fn)));
         }
         return true;
     }
 
     bool VisitRecordDecl(RecordDecl* record) {
         if (record->isCompleteDefinition()) {
-            c_record_to_gear(record);
+            manager.c_record_to_gear(record);
         }
 
         return true;
@@ -219,6 +215,8 @@ public:
 
 class CFfiConsumer : public ASTConsumer {
 public:
+    CFfiConsumer(C_Ffi& manager) : visitor(manager) { }
+
     void HandleTranslationUnit(ASTContext& context) override {
         visitor.TraverseDecl(context.getTranslationUnitDecl());
     }
@@ -230,11 +228,6 @@ private:
 vector<unique_ptr<NodeBase>> C_Ffi::compile_headers() {
     vector<unique_ptr<ASTUnit>> asts;
 
-    // Clearing stale cache
-    type_cache.clear();
-    visited.clear();
-    nodes.clear();
-
     auto ast = tooling::buildASTFromCodeWithArgs(
         src.str(), 
         C_FFI_ARGS,
@@ -242,7 +235,7 @@ vector<unique_ptr<NodeBase>> C_Ffi::compile_headers() {
     );
 
     if (ast) {
-        CFfiConsumer consumer;
+        CFfiConsumer consumer(*this);
         consumer.HandleTranslationUnit(ast->getASTContext());
         asts.push_back(std::move(ast));
     } else {
@@ -252,6 +245,8 @@ vector<unique_ptr<NodeBase>> C_Ffi::compile_headers() {
             Error::ErrorCodes::INVALID_AST
         );
     }
+
+    type_cache.clear();
 
     return std::move(nodes);
 }
