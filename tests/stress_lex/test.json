@@ -21,7 +21,7 @@
         ["x1", 2, "Identifier"],
         ["<=", 2, "Operator"],
         ["20", 2, "IntegerLiteral"],
-        [")", 2, "ParenOpen"],
+        [")", 2, "ParenClose"],
         ["{", 2, "BraceOpen"],
         ["printf", 3, "Identifier"],
         ["(", 3, "ParenOpen"],

@@ -19,6 +19,8 @@
         ["{", 13, "BraceOpen"],
         ["y", 13, "Identifier"],
         ["=", 13, "Equal"],
-        ["2", 13, "Operator"]
+        ["2", 13, "IntegerLiteral"],
+        [";", 13, "Semi"],
+        ["}", 13, "BraceClose"]
     ]
 }

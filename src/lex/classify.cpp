@@ -46,11 +46,16 @@ extern unordered_set<string> keywords;
 extern unordered_set<string> operators;
 
 Lexer::Type Lexer::classify(std::string& content, CharType state, Span const& span) {
+    if (keywords.contains(content)) {
+        return Type::Keyword;
+    }
+
+    if (operators.contains(content)) {
+        return Type::Operator;
+    }
+
     switch(state) {
-        case CharType::Alpha:
-            return keywords.contains(content)
-                ? Type::Keyword
-                : Type::Identifier;
+        case CharType::Alpha: return Type::Identifier;
 
         case CharType::Paren:
             if(content == "(") return Type::ParenOpen;
@@ -96,9 +101,6 @@ Lexer::Type Lexer::classify(std::string& content, CharType state, Span const& sp
         case CharType::Sym:
             if(content == ",") return Type::Comma;
             if(content == "=") return Type::Equal;
-
-            if(operators.contains(content))
-                return Type::Operator;
 
             Error::throw_error(
                 span,
