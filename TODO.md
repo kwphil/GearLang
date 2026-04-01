@@ -73,7 +73,8 @@
     * [x] Basic data
     * [x] C Strings
     * [x] Variadic Args
-    * [ ] Header-based bindings
+    * [X] Header-based bindings
+    * [ ] Typedefs
   * [ ] Basic C++ Functionality
     * [ ] Common Name Mangling
     * [ ] Extern "C++" support

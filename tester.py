@@ -47,7 +47,7 @@ test_count = 0
 test_name: str
 test_type: str
 
-def print_test(passes: bool, fail_str: str):
+def print_test(passes: bool, fail_str: str = ""):
     global test_count
     global test_name
     global test_type
@@ -55,6 +55,8 @@ def print_test(passes: bool, fail_str: str):
     match test_type:
         case 'lexer':
             test_header = f'{Fore.CYAN}LEX{Style.RESET_ALL}'
+        case 'ast':
+            test_header = f'{Fore.GREEN}AST{Style.RESET_ALL}'
 
     if passes:
         print(f"{test_header} {test_name} --- {Fore.GREEN}PASSED.{Style.RESET_ALL}")
@@ -79,12 +81,67 @@ def run_test(test_data: Path, test_code: Path):
 
     match data['type']:
         case 'lexer':
-            test_type = 'lexer'
             test_flag = '--dump-tokens'
+        case 'ast':
+            test_flag = '--dump-ast'
+
+    test_type = data['type']
 
     output = subprocess.run([ executable, test_flag, test_code ], capture_output=True)
 
     match_output(output, data)
+
+def recurse_ast(a, b, key) -> bool:
+    global fail_count
+    global pass_count
+
+    if type(a) != type(b):
+        print_test(False, f"Expected type: {type(b)}, received type {type(a)} in key {key}")
+        fail_count+=1
+        return False
+
+    if isinstance(a, dict):
+        if set(a.keys()) != set(b.keys()):
+            print_test(False, f"Expected form for object: {set(b.keys())}, received: {set(a.keys())} in key {key}")
+            fail_count+=1
+            return False
+        return all(recurse_ast(a[k], b[k], k) for k in a)
+
+    elif isinstance(a, list):
+        if len(a) != len(b):
+            print_test(False, f"Expected array to contain {len(b)} elements, but received {len(a)} in key {key}")
+            fail_count+=1
+            return False
+        return all(recurse_ast(x, y, key) for x, y in zip(a, b))
+
+    else:
+        if a != b:
+            print_test(False, f"Expected primitive: {b}, received {a} in key {key}")
+            fail_count+=1
+            return False
+        
+        return True
+    
+def ast_match(test_output: json.JSONDecoder, test_data: json.JSONDecoder):
+    global fail_count
+    global pass_count
+
+    test_match = test_data['match']
+
+    if len(test_output) != len(test_match):
+        print_test(False, f"expected length {len(test_match)}, received {len(test_output)}")
+        fail_count+=1
+        return
+    
+    index = 0
+    for curr in test_match:
+        if not recurse_ast(test_output[index], curr, ""): 
+            return
+
+        index+=1
+
+    print_test(True)
+    pass_count+=1
 
 def lexer_match(test_output: json.JSONDecoder, test_data: json.JSONDecoder):
     global fail_count
@@ -152,6 +209,8 @@ def match_output(output: subprocess.CompletedProcess, test_data: json.JSONDecode
     match test_type:
         case 'lexer':
             return lexer_match(data, test_data)
+        case 'ast':
+            return ast_match(data, test_data)
 
 for curr_test in test_path.iterdir():
     if not curr_test.is_dir():
