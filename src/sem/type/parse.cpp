@@ -103,7 +103,7 @@ Type::Type(Lexer::Stream& s) {
 
         if(s.peek()->type != Lexer::Type::BraceOpen) goto find_parse;
 
-        record_type = std::make_shared<Struct>();
+        record_type = new Struct;
         union_list.insert({ name, record_type });
         record_name = name;
 
@@ -138,7 +138,7 @@ Type::Type(Lexer::Stream& s) {
 
         if(s.peek()->type != Lexer::Type::BraceOpen) goto find_parse;
 
-        record_type = std::make_shared<Struct>();
+        record_type = new Struct;
         struct_list.insert({ name, record_type });
         record_name = name;
 

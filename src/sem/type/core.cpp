@@ -39,8 +39,8 @@ SOFTWARE.
 
 using namespace Sem;
 
-unordered_map<string, shared_ptr<Type::Struct>> Type::struct_list = { };
-unordered_map<string, shared_ptr<Type::Struct>> Type::union_list = { };
+unordered_map<string, Type::Struct*> Type::struct_list = { };
+unordered_map<string, Type::Struct*> Type::union_list = { };
 
 /* ============================
    Queries
@@ -54,6 +54,32 @@ int Type::pointer_level() const {
     if(!is_pointer_ty()) return -1;
 
     return pointer;
+}
+
+Type Type::new_record(string name, bool type) {
+    Type ty; 
+
+    ty.record_type = new Struct;
+    ty.record_name = name;
+    
+    if(type) {
+        if(ty.record_name == "") {
+            ty.record_name = "__GEAR_struct_anonymous_";
+            ty.record_name += std::to_string(anon_struct++);
+        }
+        struct_list.insert({ ty.record_name, ty.record_type });
+        ty.record_is_struct = true;
+        return ty;
+    } 
+
+    if(ty.record_name == "") {
+        ty.record_name = "__GEAR_union_anonymous_";
+        ty.record_name += std::to_string(anon_struct++);
+    }
+
+    union_list.insert({ ty.record_name, ty.record_type });
+    ty.record_is_struct = false;
+    return ty;
 }
 
 std::string Type::dump() {

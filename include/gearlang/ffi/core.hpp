@@ -50,6 +50,8 @@ protected:
     }
 
 public:
+    virtual ~Ffi() = default;
+    
     virtual void add_header(string header_name) = 0;
     virtual vector<unique_ptr<Ast::Nodes::NodeBase>> compile_headers() = 0;
 };

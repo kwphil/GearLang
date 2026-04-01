@@ -141,7 +141,7 @@ Ast::Program build_tree(const Options& opts) {
 
             root.add_nodes(std::move(new_nodes));
         }
-    })
+    });
 
     RUN_STEP("analyzing",
         analyzer.analyze(root.content);
