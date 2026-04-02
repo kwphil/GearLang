@@ -121,7 +121,7 @@ namespace Ast::Nodes {
         static unique_ptr<Include> parse(Lexer::Stream& s);
         virtual std::string to_string() override { 
             return std::format(
-                "{{ \"type\": \"Include\", \"lang\":\"{}\", \"type\":\"{}\", \"file\":\"{}\" }}",
+                "{{ \"type\": \"Include\", \"lang\":\"{}\", \"extra\":\"{}\", \"file\":\"{}\" }}",
                 lang, type, file
             ); 
         } 

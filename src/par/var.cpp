@@ -64,7 +64,7 @@ unique_ptr<ExprStructParam> ExprStructParam::parse(const Lexer::Token& token, Le
 
 string ExprStructParam::to_string() { 
     return std::format(
-        "{{ \"type\"=\"ExprStructParam\", \"struct_name\":\"{}\", \"param_name\":\"{}\"}}",
+        "{{ \"type\":\"ExprStructParam\", \"struct_name\":\"{}\", \"param_name\":\"{}\"}}",
         struct_name, name
     );
 }
