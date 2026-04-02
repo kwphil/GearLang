@@ -54,9 +54,9 @@ def print_test(passes: bool, fail_str: str = ""):
 
     match test_type:
         case 'lexer':
-            test_header = f'{Fore.CYAN}LEX{Style.RESET_ALL}'
-        case 'ast':
-            test_header = f'{Fore.GREEN}AST{Style.RESET_ALL}'
+            test_header = f'{Fore.CYAN}LEXER{Style.RESET_ALL}'
+        case 'parser':
+            test_header = f'{Fore.GREEN}PARSE{Style.RESET_ALL}'
 
     if passes:
         print(f"{test_header} {test_name} --- {Fore.GREEN}PASSED.{Style.RESET_ALL}", flush=True)
@@ -66,6 +66,7 @@ def print_test(passes: bool, fail_str: str = ""):
 def run_test(test_data: Path, test_code: Path):
     global test_count
     global test_type
+    global test_name
 
     test_count += 1
 
@@ -79,11 +80,17 @@ def run_test(test_data: Path, test_code: Path):
         print("==================================")
         return
 
+    def print_type(color, str):
+        return f"{color}{str}{Style.RESET_ALL}"
+
     match data['type']:
         case 'lexer':
             test_flag = '--dump-tokens'
-        case 'ast':
+        case 'parser':
             test_flag = '--dump-ast'
+        case _:
+            print(f"{print_type(Fore.RED, "INVAL")} {test_name} --- {print_type(Fore.LIGHTBLACK_EX, "SKIPPED.")} Unknown type: {data['type']}")
+            return
 
     test_type = data['type']
 
@@ -209,7 +216,7 @@ def match_output(output: subprocess.CompletedProcess, test_data: json.JSONDecode
     match test_type:
         case 'lexer':
             return lexer_match(data, test_data)
-        case 'ast':
+        case 'parser':
             return ast_match(data, test_data)
 
 for curr_test in test_path.iterdir():
