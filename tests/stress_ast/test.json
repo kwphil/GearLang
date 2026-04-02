@@ -1,5 +1,5 @@
 {
-  "type": "ast",
+  "type": "parser",
   "return": 0,
   "match": [
     { 
