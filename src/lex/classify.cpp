@@ -34,12 +34,11 @@ SOFTWARE.
 #include <algorithm>
 #include <format>
 #include <cctype>
-#include <tuple>
 
 #include <gearlang/lex.hpp>
 #include <gearlang/error.hpp>
 
-using std::tuple;
+using namespace Lexer;
 using std::unordered_set;
 using std::string;
 
@@ -47,11 +46,16 @@ extern unordered_set<string> keywords;
 extern unordered_set<string> operators;
 
 Lexer::Type Lexer::classify(std::string& content, CharType state, Span const& span) {
+    if (keywords.contains(content)) {
+        return Type::Keyword;
+    }
+
+    if (operators.contains(content)) {
+        return Type::Operator;
+    }
+
     switch(state) {
-        case CharType::Alpha:
-            return keywords.contains(content)
-                ? Type::Keyword
-                : Type::Identifier;
+        case CharType::Alpha: return Type::Identifier;
 
         case CharType::Paren:
             if(content == "(") return Type::ParenOpen;
@@ -74,24 +78,33 @@ Lexer::Type Lexer::classify(std::string& content, CharType state, Span const& sp
                         static_cast<unsigned char>(c));
                 });
 
-            if(has_alpha)
+            if(has_alpha) {
                 return Type::Identifier;
+            }
 
-            return content.contains('.')
-                ? Type::FloatLiteral
-                : Type::IntegerLiteral;
+            if(content.contains('.')) {
+                if(std::count(
+                    content.begin(), content.end(), '.'
+                ) > 1) {
+                    Error::throw_error(span, 
+                        "Invalid number",
+                        Error::ErrorCodes::UNEXPECTED_TOKEN
+                    );
+                }
+
+                return Type::FloatLiteral;
+            }
+
+            return Type::IntegerLiteral;
         }
 
         case CharType::Sym:
             if(content == ",") return Type::Comma;
             if(content == "=") return Type::Equal;
 
-            if(operators.contains(content))
-                return Type::Operator;
-
             Error::throw_error(
                 span,
-                std::format("Unexpected charcter: {}", content).c_str(),
+                std::format("Unexpected character: {}", content).c_str(),
                 Error::ErrorCodes::UNEXPECTED_TOKEN
             );
 

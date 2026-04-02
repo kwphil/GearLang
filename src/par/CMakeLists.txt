@@ -37,9 +37,8 @@ set(GEARLANG_PARSE
     literal.cpp
     expr_etc.cpp
     func_head.cpp
+    branch.cpp
 )
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -fsanitize=address")
 
 add_library(gear_parse STATIC ${GEARLANG_PARSE}) 
 target_include_directories(gear_parse PRIVATE 

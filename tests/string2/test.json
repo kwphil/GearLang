@@ -1,0 +1,12 @@
+{
+    "type": "lexer",
+    "return": 0,
+    "match": [
+        ["\n", 1, "StringLiteral"],
+        ["\t", 2, "StringLiteral"],
+        ["\\", 3, "StringLiteral"],
+        ["hello \"world\"", 4, "StringLiteral"],
+        ["", 5, "StringLiteral"],
+        ["hello+world", 6, "StringLiteral"]
+    ]
+}

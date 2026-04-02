@@ -103,6 +103,10 @@ llvm::Function* build_runtime(Context& ctx) {
     return global_fn;
 }
 
+#include <gearlang/ffi/c.hpp>
+
+std::unordered_map<std::string, std::unique_ptr<Ffi>> ffi_list;
+
 Ast::Program build_tree(const Options& opts) {
     Lexer::Stream tokens;
     Ast::Program root;
@@ -126,6 +130,18 @@ Ast::Program build_tree(const Options& opts) {
     }
 
     Sem::Analyzer analyzer;
+
+    RUN_STEP("Ffi management", {
+        for(auto& curr : ffi_list) {
+            auto new_nodes = curr.second->compile_headers();
+            
+            if(opts.verbose) for(auto& t : new_nodes) {
+                std::cout << t->to_string() << std::endl;
+            }
+
+            root.add_nodes(std::move(new_nodes));
+        }
+    });
 
     RUN_STEP("analyzing",
         analyzer.analyze(root.content);

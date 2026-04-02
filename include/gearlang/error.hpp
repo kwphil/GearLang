@@ -32,9 +32,6 @@ SOFTWARE.
 
 #pragma once
 
-#include <string>
-#include <fstream>
-#include <vector>
 #include "etc.hpp"
 
 namespace Error {
@@ -50,6 +47,7 @@ namespace Error {
         FUNCTION_INVALID_ARGS,
         QUALIFIER_NOT_ALLOWED,
         INVALID_AST,
+        UNKNOWN_FILE,
         BAD_TYPE,
     };
 

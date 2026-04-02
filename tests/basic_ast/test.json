@@ -1,0 +1,63 @@
+{
+  "type": "parser",
+  "return": 0,
+  "match": [
+    { 
+      "type":"ExprAssign", 
+      "var":{ 
+        "type":"ExprVar", 
+        "name":"a" 
+        }, 
+        "expr":{ 
+          "type":"ExprOp", 
+          "oper":"Add", 
+          "left":{ 
+            "type":"ExprVar", 
+            "name":"a" 
+          }, 
+          "right":{ 
+            "type":"ExprLitInt", 
+            "value":3 
+          } 
+        } 
+    },
+    { 
+      "type":"ExprAssign", 
+      "var":{ 
+        "type":"ExprVar", 
+        "name":"b" 
+      }, 
+      "expr":{ 
+        "type":"ExprOp", 
+        "oper":"Add", 
+        "left":{ 
+          "type":"ExprVar", 
+          "name":"b" 
+        }, 
+        "right":{ 
+          "type":"ExprLitInt", 
+          "value":7 
+        } 
+      } 
+    },
+    { 
+      "type":"ExprAssign", 
+      "var":{ 
+        "type":"ExprVar", 
+        "name":"c" 
+      }, 
+      "expr":{ 
+        "type":"ExprOp", 
+        "oper":"Add", 
+        "left":{ 
+          "type":"ExprVar", 
+          "name":"c"
+        }, 
+        "right":{ 
+          "type":"ExprLitInt", 
+          "value":8 
+        } 
+      } 
+    }
+  ]
+}

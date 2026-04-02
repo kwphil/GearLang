@@ -53,13 +53,14 @@
     * [ ] Match/Case
       * [ ] Exhaustiveness checking
       * [ ] Pattern binding
-  * [x] Functions
+  * [ ] Functions
     * [x] Main function
     * [x] Calling functions
     * [x] Parameters
     * [x] Non-exit return
     * [X] Recursion
     * [ ] Tail-call optimization hooks
+    * [ ] C++ operator overload calls
   * [ ] Variables
     * [X] Basic types
     * [X] Pointers
@@ -68,12 +69,13 @@
     * [x] Variable variable types
     * [X] Implicit matching
 * [ ] **Compatibility**
-  * [x] Basic C Functions
+  * [ ] Basic C Functions
     * [x] C Runtime
     * [x] Basic data
     * [x] C Strings
     * [x] Variadic Args
-    * [ ] Header-based bindings
+    * [X] Header-based bindings
+    * [ ] Typedefs
   * [ ] Basic C++ Functionality
     * [ ] Common Name Mangling
     * [ ] Extern "C++" support
@@ -89,8 +91,8 @@
   * [ ] Source maps
   * [ ] Test suite
     * [ ] Documentation for adding tests
-    * [ ] Lexer
-    * [ ] Ast
+    * [X] Lexer
+    * [X] Ast
     * [ ] Analyzer
     * [ ] Generator 
   * [ ] Fuzzing

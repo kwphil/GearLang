@@ -1,0 +1,31 @@
+{
+  "type": "parser",
+  "return": 0,
+  "match": [
+    {
+      "type": "ExprAssign",
+      "var": { "type": "ExprVar", "name": "a" },
+      "expr": { "type": "ExprLitInt", "value": 1 }
+    },
+    {
+      "type": "ExprAssign",
+      "var": { "type": "ExprVar", "name": "b" },
+      "expr": {
+        "type": "ExprOp",
+        "oper": "Add",
+        "left": { "type": "ExprVar", "name": "a" },
+        "right": { "type": "ExprLitInt", "value": 2 }
+      }
+    },
+    {
+      "type": "ExprAssign",
+      "var": { "type": "ExprVar", "name": "c" },
+      "expr": {
+        "type": "ExprOp",
+        "oper": "Mul",
+        "left": { "type": "ExprVar", "name": "b" },
+        "right": { "type": "ExprLitInt", "value": 3 }
+      }
+    }
+  ]
+}

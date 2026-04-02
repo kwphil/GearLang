@@ -41,32 +41,32 @@ using std::unordered_map;
 using std::string;
 using namespace Sem;
 
-static unordered_map<string, llvm::StructType*> struct_type_list;
+static unordered_map<string, llvm::StructType*> record_type_list;
 
 llvm::Type* Type::struct_to_llvm(Type& obj, Context& ctx, string name) {
     // gather the types together and convert
     vector<llvm::Type*> tys;
-    tys.reserve(obj.struct_type->size());
+    tys.reserve(obj.record_type->size());
     
-    for(auto& param : *obj.struct_type) {
-        tys.push_back(param.second.to_llvm(ctx));
+    for(auto& param : *obj.record_type) {
+        tys.push_back(param.second->to_llvm(ctx));
     }
 
     llvm::StructType* ty = llvm::StructType::create(tys, name);
 
-    struct_type_list.insert({ name, ty });
+    record_type_list.insert({ name, ty });
     return ty;
 }
 
 llvm::Type* Type::get_llvm_struct(string name, Struct& obj) {
-    auto it = struct_type_list.find(name);
-    assert(it != struct_type_list.end());
+    auto it = record_type_list.find(name);
+    assert(it != record_type_list.end());
     return it->second;
 }
 
 llvm::Type* Type::get_llvm_struct() const {
-    auto it = struct_type_list.find(struct_name);
-    assert(it != struct_type_list.end());
+    auto it = record_type_list.find(record_name);
+    assert(it != record_type_list.end());
     return it->second;
 }
 
@@ -74,9 +74,14 @@ llvm::Type* Type::primitive_to_llvm(PrimType ty, Context& ctx) {
     switch (ty) {
         case PrimType::Bool: return llvm::Type::getInt1Ty(ctx.llvmCtx);
         case PrimType::Char: // Same as i8
+        case PrimType::U8:   // same as i8
         case PrimType::I8: return llvm::Type::getInt8Ty(ctx.llvmCtx);
+        case PrimType::U16:  // Same as i16
         case PrimType::I16: return llvm::Type::getInt16Ty(ctx.llvmCtx);
+        case PrimType::U32:  // Same as i32
         case PrimType::I32:  return llvm::Type::getInt32Ty(ctx.llvmCtx);
+        case PrimType::U64:  // Same as i64
+        case PrimType::I64:  return llvm::Type::getInt64Ty(ctx.llvmCtx);
         case PrimType::F32:  return llvm::Type::getFloatTy(ctx.llvmCtx);
         case PrimType::F64:  return llvm::Type::getDoubleTy(ctx.llvmCtx);
         case PrimType::Void: return llvm::Type::getVoidTy(ctx.llvmCtx);
@@ -102,7 +107,9 @@ llvm::Type* Type::to_llvm(Context& ctx) const {
 }
 
 llvm::Type* Type::get_underlying_type(Context& ctx) const {
-    if (!is_pointer_ty()) return nullptr;
+    if (!is_pointer_ty()) {
+        if(is_array()) return array_type->to_llvm(ctx);
+    };
 
     if(pointer > 1) {
         return llvm::PointerType::getUnqual(ctx.llvmCtx);

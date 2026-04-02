@@ -30,38 +30,48 @@
 
 cmake_minimum_required(VERSION 3.20)
 
-if( NOT DEFINED COMPILE_MODE )
+if(NOT DEFINED COMPILE_MODE)
     set(COMPILE_MODE "executable")
-endif() 
+endif()
 
 project(gearlang LANGUAGES C CXX)
+
+find_program(CCACHE_PROGRAM ccache)
+if (CCACHE_PROGRAM)
+    set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    message(STATUS "Using CCache")
+else()
+    message(STATUS "Not using CCache, consider installing it for faster compilation")
+endif()
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-include(CheckCXXCompilerFlag)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall -fsanitize=address")
 
 set(CMAKE_C_STANDARD 90)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if(DEBUG AND NOT NO_DEBUG)
+    set(CMAKE_BUILD_TYPE Debug)
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+    include(CheckCXXCompilerFlag)
+    set(DEBUG_FLAGS "-fsanitize=undefined,address -O0 -g -D_DEBUG")
+endif()
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall ${DEBUG_FLAGS}")
 
 find_package(LLVM REQUIRED CONFIG)
+find_package(Clang REQUIRED CONFIG)
+
+llvm_map_components_to_libnames(llvm_libs support core irreader)
+
 
 set(GEARLANG_CORE
     error.cpp
     func.cpp
     setup.cpp
-)
-
-set(GEARLANG_LEX
-    lex/char.cpp
-    lex/classify.cpp
-    lex/tokenize.cpp
-    lex/lex.cpp
 )
 
 set(GEARLANG_SEM
@@ -80,31 +90,40 @@ set(GEARLANG_ANALYZE
 )
 
 add_subdirectory(par ${CMAKE_BINARY_DIR}/CMakeFiles/par)
-add_subdirectory(gen ${CMAKE_BINARY_DIR}/CMakeFiles/gen) 
+add_subdirectory(gen ${CMAKE_BINARY_DIR}/CMakeFiles/gen)
+add_subdirectory(lex ${CMAKE_BINARY_DIR}/CMakeFiles/lex)
+add_subdirectory(ffi ${CMAKE_BINARY_DIR}/CMakeFiles/ffi)
 
-add_library(libgear SHARED
+add_library(gearlib SHARED
     ${GEARLANG_CORE}
     ${GEARLANG_LEX}
     ${GEARLANG_SEM}
     ${GEARLANG_ANALYZE}
-    ${GEARLANG_GENERATE}
-    ${GEARLANG_PARSE}
 )
 
 add_executable(gear main.cpp)
-target_link_libraries(libgear gear_parse gear_gen LLVM)
-target_link_libraries(gear libgear)
 
-target_include_directories(libgear PRIVATE 
-    ${LLVM_INCLUDE_DIRS} 
+target_link_libraries(gearlib
+    gear_parse
+    gear_gen
+    gear_lex 
+    gear_ffi_c
+    LLVM
+    ${Clang_LIBRARIES}
+    clang
+    clang-cpp
+)
+
+target_link_libraries(gear gearlib)
+
+target_include_directories(gearlib SYSTEM PUBLIC
+    ${LLVM_INCLUDE_DIRS}
+)
+target_include_directories(gearlib PUBLIC
     ${CMAKE_SOURCE_DIR}/../include
 )
 
-target_include_directories(gear PRIVATE ${CMAKE_SOURCE_DIR}/../include ${LLVM_INCLUDE_DIRS})
-
-llvm_map_components_to_libnames(LLVM_LIBS
-    core
-    support
-    irreader
+target_include_directories(gear PRIVATE
+    ${CMAKE_SOURCE_DIR}/../include
+    ${LLVM_INCLUDE_DIRS}
 )
-

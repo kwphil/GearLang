@@ -1,0 +1,7 @@
+{
+    "type": "lexer",
+    "return": 0,
+    "match": [
+        ["fpos64_t", 1, "Identifier"]
+    ]
+}

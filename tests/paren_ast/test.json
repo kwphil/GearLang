@@ -1,0 +1,21 @@
+{
+  "type": "parser",
+  "return": 0,
+  "match": [
+    {
+      "type": "ExprAssign",
+      "var": { "type": "ExprVar", "name": "a" },
+      "expr": {
+        "type": "ExprOp",
+        "oper": "Mul",
+        "left": {
+          "type": "ExprOp",
+          "oper": "Add",
+          "left": { "type": "ExprLitInt", "value": 1 },
+          "right": { "type": "ExprLitInt", "value": 2 }
+        },
+        "right": { "type": "ExprLitInt", "value": 3 }
+      }
+    }
+  ]
+}

@@ -30,8 +30,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <vector>
 #include <memory>
+#include <deque>
 #include <unordered_map>
 #include <optional>
 
@@ -44,7 +44,7 @@ SOFTWARE.
 
 using namespace Sem;
 using std::string;
-using std::vector;
+using std::deque;
 using std::unique_ptr;
 using std::shared_ptr;
 
@@ -61,7 +61,7 @@ bool Analyzer::analyze_decl_statements(NodeBase* node) {
     return true;
 }
 
-void Analyzer::analyze(vector<unique_ptr<NodeBase>>& nodes) {
+void Analyzer::analyze(deque<unique_ptr<NodeBase>>& nodes) {
     // Steps:
     // Declarations
     // Type checking

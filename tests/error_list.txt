@@ -1,0 +1,11 @@
+EXPECT_VALUE....................1
+UNEXPECTED_TOKEN................2
+UNEXPECTED_EOF..................3
+UNKNOWN_TYPE....................4
+VARIABLE_ALREADY_DEFINED........5
+VARIABLE_NOT_DEFINED............6
+FUNCTION_NOT_DEFINED............7
+FUNCTION_INVALID_ARGS...........8
+QUALIFIER_NOT_ALLOWED...........9
+INVALID_AST.....................10
+BAD_TYPE........................11

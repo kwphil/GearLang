@@ -45,6 +45,9 @@ unique_ptr<ExprValue> ExprOp::analyze(Analyzer& analyzer) {
     unique_ptr<ExprValue> rhs = right->analyze(analyzer);
 
     if(!analyzer.type_is_compatible(lhs->ty, rhs->ty)) {
+        assert(left->get_type() != std::nullopt);
+        assert(right->get_type() != std::nullopt);
+
         Error::throw_error(
             span_meta,
             std::format(

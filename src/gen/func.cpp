@@ -50,7 +50,9 @@ llvm::Value* Function::generate(Context& ctx) {
     std::vector<llvm::Type*> param_types;
     param_types.reserve(args.size());
     for (auto& arg : args) {
-        param_types.push_back(arg->get_type().value().to_llvm(ctx));
+        auto ty_wrap = arg->get_type();
+        assert(ty_wrap != std::nullopt);
+        param_types.push_back(ty_wrap.value().to_llvm(ctx));
     }
 
     llvm::Function* fn;

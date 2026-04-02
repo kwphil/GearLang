@@ -59,9 +59,27 @@ string ExprAssign::to_string() {
     return std::format("{{ \"type\":\"ExprAssign\", \"var\":{}, \"expr\":{} }}", var->to_string(), expr->to_string()); 
 }
 
+string oper_string(ExprOp::Type ty) {
+    using enum ExprOp::Type;
+    
+    switch(ty) {
+        case Add: return "Add";
+        case Sub: return "Sub";
+        case Mul: return "Mul";
+        case Div: return "Div";
+        case Gt: return "Gt";
+        case Lt: return "Lt";
+        case Ge: return "Ge";
+        case Le: return "Le";
+        case Eq: return "Eq";
+        case Ne: return "Ne";
+        default: return "Invalid";
+    }
+}
+
 string ExprOp::to_string() {
-    return std::format("{{ \"type\":\"ExprOp\", \"oper\":{}, \"left\":{}, \"right\":{} }}", 
-        (int)type, left->to_string(), right->to_string()
+    return std::format("{{ \"type\":\"ExprOp\", \"oper\":\"{}\", \"left\":{}, \"right\":{} }}", 
+        oper_string(type), left->to_string(), right->to_string()
     );
 }
 

@@ -48,7 +48,10 @@ using std::vector;
 using std::string;
 using std::pair;
 using std::shared_ptr;
+using std::optional;
 using std::unordered_map;
+
+extern int anon_struct;
 
 namespace Sem {
     class Type {
@@ -61,19 +64,29 @@ namespace Sem {
             I8,
             I16,
             I32,
+            I64,
+            U8,
+            U16,
+            U32,
+            U64,
             F32,
             F64,
             Invalid
         };
 
-        using Struct = vector<pair<string, Type>>; 
+        using Struct = vector<pair<string, shared_ptr<Type>>>; 
     private:
-        static unordered_map<string, shared_ptr<Struct>> struct_list;
+        static unordered_map<string, Struct*> struct_list;
+        static unordered_map<string, Struct*> union_list;
 
         PrimType prim_type = PrimType::Invalid;
-        shared_ptr<Struct> struct_type;
-        string struct_name;
-        unsigned int pointer;
+        Struct* record_type = nullptr;
+        string record_name;
+        bool record_is_struct = false; // is false if union 
+        unsigned int pointer = 0;
+
+        shared_ptr<Type> array_type;
+        unsigned int array_size = -1;
 
         static PrimType parse_primitive(std::string& s);
         static PrimType parse_primitive(Lexer::Stream& s);
@@ -82,32 +95,31 @@ namespace Sem {
         /// @param ctx the global context (GearLang)
         /// @returns the llvm type
         inline llvm::Type* underlying_to_llvm(Context& ctx) const {
-            if(struct_type) return get_llvm_struct();
+            if(record_type) return get_llvm_struct();
             return primitive_to_llvm(prim_type, ctx);
         }
     public:
-        Type() = default;
+        Type() : prim_type(PrimType::Invalid) { };
         Type(Lexer::Stream& s);
-        Type(
-            PrimType prim_type, 
-            int pointer, 
-            shared_ptr<Struct> struct_type = { }, 
-            string struct_name = ""
-        )
-        = delete;
-        /// @brief Builds the type with a constant string
+        /// @brief Builds the type with a string
         /// @param s the string
-        constexpr explicit Type(const char* s);
+        explicit inline Type(const char* s) { *this = Type((std::string)s); } 
+        inline Type(std::string s) {
+            Lexer::Stream stream = Lexer::tokenize_by_string(s);
+            *this = Type(stream);
+        }
         /// @brief Builds the type from a list of pairs of strings and Types, creating a struct
         /// @param s the struct object
         /// @param name the name of the struct
-        Type(Struct s, string name="unnamed_struct")
-        : struct_type(std::make_shared<Struct>(s)) 
-        { struct_list.insert({ name, struct_type }); }
+        Type(Struct& s, string name="unnamed_struct") { 
+            record_type = struct_list.insert({ name, new Struct(s) }).first->second; 
+        }
         
         bool operator==(Type&& other) {
             return 
-                struct_type == other.struct_type && 
+                record_type == other.record_type &&
+                record_is_struct == other.record_is_struct &&
+                array_type == other.array_type && 
                 prim_type == other.prim_type &&
                 pointer == other.pointer;
         }
@@ -116,12 +128,23 @@ namespace Sem {
             return *this == Type(other);
         }
 
+        /// @brief Creates a record type
+        /// @param name The name of the record
+        /// @param type true if struct, false if union
+        void create_record(string name, bool type) = delete;
+
+        static Type new_record(string name, bool type);
+
         /// @brief Checks if the type is a primitive (no pointer)
-        bool is_primitive() const { return !(pointer || struct_type); }
+        bool is_primitive() const { return !(pointer || record_type || array_type); }
         /// @brief Checks if the type is a primitive (does not account for pointers)
-        bool is_underlying_primitive() const { return !struct_type; }
+        bool is_underlying_primitive() const { return !(record_type || array_type); }
         /// @brief Checks if the type is a struct type (does not account for pointers)
-        bool is_struct() const { return struct_type.get(); }
+        bool is_struct() const { return record_type && record_is_struct; }
+        /// @brief Checks if the type is a union type (does not account for pointers)
+        bool is_union() const { return record_type && !record_is_struct; }
+        /// @brief Checks if the type is an array type (does not account for pointers)
+        bool is_array() const { return array_type.get(); }
         /// @brief Checks if the type is a pointer
         bool is_pointer_ty() const;
         /// @brief How many pointers stacked on top of eachother. T^ would return 1, T^^ = 2, ...
@@ -130,6 +153,11 @@ namespace Sem {
         Type ref();
         /// @brief Unwraps a pointer type
         Type deref();
+        /// @brief Wraps an array around the type and returns it
+        Type array();
+        /// @brief Wraps an array around the type and returns it
+        /// @param size The size of the array
+        Type array(int size);
         /// @brief Checks if the type is an fxx type
         bool is_float() const;
         /// @brief Checks if the type is an ixx type
@@ -148,7 +176,7 @@ namespace Sem {
         /// @param ctx The global context (GearLang context, not llvm)
         /// @return The returning type
         llvm::Type* to_llvm(Context& ctx) const;
-        /// @brief If the type is a pointer, grabs the underlying type (returns nullptr if not)
+        /// @brief If the type is a pointer OR array, grabs the underlying type (returns nullptr if not)
         /// @param ctx The global context (GearLang context, not llvm)
         /// @return The returning type
         llvm::Type* get_underlying_type(Context& ctx) const;
@@ -156,7 +184,21 @@ namespace Sem {
         /// @brief Checks the type of a parameter at a given index.
         /// @param index The index
         inline Type struct_param_ty(int index) {
-            return struct_type->at(index).second;
+            return *record_type->at(index).second;
+        }
+
+        /// @brief Adds a parameter to the current record object
+        /// @param name The name of the parameter
+        /// @param type The type of the parameter
+        inline void record_add_param(string name, Type ty) {
+            record_type->push_back({ name, std::make_shared<Type>(ty) });
+        }
+
+        /// @brief Adds a parameter to the current record object
+        /// @param name The name of the parameter
+        /// @param type The type of the parameter
+        inline void record_add_param(string name, shared_ptr<Type> ty) {
+            record_type->push_back({ name, ty });
         }
 
         /// @brief Takes a primitive and converts it directly to an llvm type
@@ -175,40 +217,24 @@ namespace Sem {
         static llvm::Type* get_llvm_struct(string name, Struct& obj);
         llvm::Type* get_llvm_struct() const;
 
+        /// @brief Get the name of a record type
+        inline string record_get_name() const { return record_name; } 
+
         /// @brief String representation of the type
         std::string dump();
 
         /// @brief Checks if another type is compatible with this one
         bool is_compatible(Type& other) { return is_compatible(static_cast<Type&&>(other)); }
         bool is_compatible(Type&& other);
-    };
-}
 
-constexpr Sem::Type::Type(const char* s) {
-    std::string str = s;
+        static inline void clear_records() {
+            for(auto& _struct : struct_list) {
+                delete _struct.second;
+            }
 
-    pointer = 0;
-    if(str.back() == '^') {
-        int count = 1;
-        int i;
-
-        for(i = str.size()-1; i >= 0; i--) {
-            if(str[i] != '^') break;
-
-            count++;
+            for(auto& _union : union_list) {
+                delete _union.second;
+            }
         }
-
-        std::string prim_str = str.substr(0, str.size()-1);
-        prim_type = parse_primitive(prim_str);
-
-        pointer = count;
-
-        return;
-    }
-
-    prim_type = parse_primitive(str);
-
-    if(prim_type == PrimType::Invalid) {
-        throw std::runtime_error("Invalid type");
-    }
+    };
 }

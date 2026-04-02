@@ -39,7 +39,8 @@ SOFTWARE.
 
 using namespace Sem;
 
-unordered_map<string, shared_ptr<Type::Struct>> Type::struct_list = { };
+unordered_map<string, Type::Struct*> Type::struct_list = { };
+unordered_map<string, Type::Struct*> Type::union_list = { };
 
 /* ============================
    Queries
@@ -55,18 +56,48 @@ int Type::pointer_level() const {
     return pointer;
 }
 
+Type Type::new_record(string name, bool type) {
+    Type ty; 
+
+    ty.record_type = new Struct;
+    ty.record_name = name;
+    
+    if(type) {
+        if(ty.record_name == "") {
+            ty.record_name = "__GEAR_struct_anonymous_";
+            ty.record_name += std::to_string(anon_struct++);
+        }
+        struct_list.insert({ ty.record_name, ty.record_type });
+        ty.record_is_struct = true;
+        return ty;
+    } 
+
+    if(ty.record_name == "") {
+        ty.record_name = "__GEAR_union_anonymous_";
+        ty.record_name += std::to_string(anon_struct++);
+    }
+
+    union_list.insert({ ty.record_name, ty.record_type });
+    ty.record_is_struct = false;
+    return ty;
+}
+
 std::string Type::dump() {
     std::string s;
 
-    if(is_struct()) {
-        for(auto& entry : struct_list) {
-            if(entry.second == struct_type) {
-                s = entry.first;
-                goto pointer_dump;
-            }
+    if(is_array()) {
+        s = "array(";
+        s += array_type->dump();
+        if(array_size != (unsigned int)-1) {
+            s += ',';
+            s += std::to_string(array_size);
         }
+        s += ")";
+        return s;
+    }
 
-        s = "invalid";
+    if(is_struct() || is_union()) {
+        s = record_name;
         goto pointer_dump;
     }
 
@@ -78,9 +109,14 @@ std::string Type::dump() {
         case(I8): s = "i8"; break;
         case(I16): s = "i16"; break;
         case(I32): s = "i32"; break;
+        case(I64): s = "i64"; break;
+        case(U8): s = "u8"; break;
+        case(U16): s = "u16"; break;
+        case(U32): s = "u32"; break;
+        case(U64): s = "u64"; break;
         case(F32): s = "f32"; break;
         case(F64): s = "f64"; break;
-        default: s = "invalid"; break; 
+        default: s = "__invalid_type__"; break; 
     }
 
     if(is_primitive()) return s;
@@ -115,7 +151,7 @@ bool Type::is_compatible(Type&& other) {
     if(is_pointer_ty() && other.is_pointer_ty()) return true;
     if(is_float() && other.is_float()) return true;
     if(is_int() && other.is_int()) return true;
-    if(struct_type == other.struct_type) return true;
+    if(record_type == other.record_type) return true;
 
     return false;
 }
@@ -125,9 +161,9 @@ int Type::struct_parameter_index(string name) {
         throw std::logic_error("Expected a struct type");
     }
 
-    for(unsigned int i = 0; i < struct_type->size(); i++) {
-        pair<string, Type>& curr = struct_type->at(i);
-        if(name == curr.first) {
+    for(unsigned int i = 0; i < record_type->size(); i++) {
+        pair<string, shared_ptr<Type>>& curr = record_type->at(i);
+        if(name == curr.first) {     
             return i;
         }
     }
@@ -154,5 +190,17 @@ Type Type::deref() {
 
     Type new_type = *this;
     new_type.pointer -= 1;
+    return new_type;
+}
+
+Type Type::array() {
+    Type new_type;
+    new_type.array_type = std::make_shared<Type>(*this);
+    return new_type;
+}
+
+Type Type::array(int size) {
+    Type new_type = this->array();
+    new_type.array_size = size;
     return new_type;
 }

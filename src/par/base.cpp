@@ -82,11 +82,12 @@ unique_ptr<NodeBase> NodeBase::parse(Lexer::Stream& s) {
     // semicolon statements
     unique_ptr<NodeBase> out;
 
-    if(tok == "let")        out = Let::parse(s);
-    else if(tok == "return")out = Return::parse(s);
-    else if(tok == "extern")out = ExternFn::parse(s);
-    else if(tok == "struct")out = Struct::parse(s);
-    else                    out = Expr::parse(s);
+    if(tok == "let")         out = Let::parse(s);
+    else if(tok == "return") out = Return::parse(s);
+    else if(tok == "extern") out = ExternFn::parse(s);
+    else if(tok == "struct") out = Struct::parse(s);
+    else if(tok == "include")out = Include::parse(s);
+    else                     out = Expr::parse(s);
 
     s.expect(";", s.peek()->span);
 

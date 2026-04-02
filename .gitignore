@@ -13,7 +13,7 @@ build.ninja
 
 # The executables
 /gear
-/liblibgear.so
+/libgearlib.so
 
 # Generated output
 build/

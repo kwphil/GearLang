@@ -34,7 +34,6 @@ SOFTWARE.
 #include <gearlang/error.hpp>
 
 #include <iostream>
-#include <fstream>
 #include <format>
 
 Lexer::CharType Lexer::getCharType(char c);
@@ -96,23 +95,27 @@ void Lexer::Stream::dump() {
 
 std::string Lexer::Stream::to_string() {
     std::string out = "[\n";
-    
+
     for(auto& tok : content) {
         std::string token_type = print_type(tok.type);
         // Making sure escape characters get rendered as regular text
         std::string content;
-        for(auto& c : tok.content) {
-            if(c == '\n') {
+
+        auto escape = [&](char c, char escape, char replace) {
+            if(c == escape) {
                 content.push_back('\\');
-                content.push_back('n');
-                continue;
+                content.push_back(replace);
+                return true;
             }
 
-            if(c == '\t') {
-                content.push_back('\\');
-                content.push_back('t');
-                continue;
-            }
+            return false;
+        };
+
+        for(auto& c : tok.content) {
+            if(escape(c, '\n', 'n')) continue;
+            if(escape(c, '\t', 't')) continue;
+            if(escape(c, '\\', '\\')) continue;
+            if(escape(c, '"', '"')) continue;
 
             content.push_back(c);
         }

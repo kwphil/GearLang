@@ -34,6 +34,7 @@ SOFTWARE.
 
 #include <vector>
 #include <memory>
+#include <deque>
 
 #include <gearlang/lex.hpp>
 #include <gearlang/ctx.hpp>
@@ -76,10 +77,15 @@ namespace Ast {
     
     class Program {
     public:
-        std::vector<std::unique_ptr<Nodes::NodeBase>> content;
+        std::deque<std::unique_ptr<Nodes::NodeBase>> content;
         
     public:
         static Program parse(Lexer::Stream& s);
+        inline void add_nodes(std::vector<std::unique_ptr<Nodes::NodeBase>> nodes) {
+            for(auto& n : nodes) {
+                content.push_front(std::move(n));
+            }
+        }
         void generate(Context& ctx);
         std::string to_string();
     };

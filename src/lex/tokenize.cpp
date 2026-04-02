@@ -30,16 +30,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include "gearlang/error.hpp"
 #include <string>
 #include <sstream>
 #include <fstream>
-#include <tuple>
 #include <string>
 #include <unordered_set>
 
 #include <gearlang/lex.hpp>
 
-using std::tuple;
 using std::unordered_set;
 using std::string;
 
@@ -66,9 +65,22 @@ unordered_set<string> split_string(const string& str, char delimiter) {
     return tokens;
 }
 
+#include <sstream>
+
 Lexer::Stream Lexer::tokenize(const std::string& source_path) {
     std::ifstream file(source_path);
+
+    std::string out;
+    std::string buf; 
+    while(std::getline(file, buf)) out += buf + '\n';
+    return tokenize_by_string(out);
+}
+
+Lexer::Stream Lexer::tokenize_by_string(std::string& str) {
+    std::stringstream file;
+    file << str;
     Stream out;
+
     std::ifstream token_list("data/tokens.txt");
     assert(token_list.is_open());
 
@@ -91,11 +103,12 @@ Lexer::Stream Lexer::tokenize(const std::string& source_path) {
     size_t token_start_line  = 1;
     size_t token_start_col   = 1;
 
+    bool token_is_string = false;
     bool is_string  = false;
     bool is_comment = false;
 
     auto flush = [&](size_t end_index) {
-        if(tok.content.empty())
+        if(tok.content.empty() && !token_is_string) // Strings can be empty
             return;
 
         if(state_old == CharType::Invalid ||
@@ -117,7 +130,11 @@ Lexer::Stream Lexer::tokenize(const std::string& source_path) {
             .end   = end_index
         };
 
-        tok.type = classify(tok.content, state_old, tok.span);
+        if (token_is_string) {
+            tok.type = Type::StringLiteral;
+        } else {
+            tok.type = classify(tok.content, state_old, tok.span);
+        }
 
         out.content.push_back(tok);
         tok = Token{};
@@ -135,8 +152,15 @@ Lexer::Stream Lexer::tokenize(const std::string& source_path) {
             );
 
         if(!is_string &&
-           state_old == CharType::Alpha &&
-           state_new == CharType::Num
+            state_old == CharType::Alpha &&
+            state_new == CharType::Num
+        ) {
+            boundary = false;
+        }
+
+        if(!is_string &&
+            state_old == CharType::Num &&
+            state_new == CharType::Alpha
         ) {
             boundary = false;
         }
@@ -167,6 +191,20 @@ Lexer::Stream Lexer::tokenize(const std::string& source_path) {
         }
 
         if(state_new == CharType::Quote) {
+            if (!is_string) {
+                // starting string
+                tok = Token{};
+                token_is_string = true;
+
+                token_start_index = index;
+                token_start_line  = line;
+                token_start_col   = col;
+            } else {
+                // ending string
+                flush(index);
+                token_is_string = false;
+            }
+
             is_string = !is_string;
 
             state_old = state_new;
@@ -174,7 +212,7 @@ Lexer::Stream Lexer::tokenize(const std::string& source_path) {
             col++;
             continue;
         }
-
+        
         if(!is_string && tok.content == "/" && c == '/')
             is_comment = true;
 
@@ -189,9 +227,19 @@ Lexer::Stream Lexer::tokenize(const std::string& source_path) {
             line++;
             col = 1;
             is_comment = false;
+
+            if(is_string) {
+                Span span { .line=token_start_line, .col=token_start_col, .start=token_start_index, .end=index };
+                Error::throw_error(span, "Unterminated string", Error::ErrorCodes::UNEXPECTED_TOKEN);
+            }
         } else {
             col++;
         }
+    }
+
+    if(is_string) {
+        Span span { .line=token_start_line, .col=token_start_col, .start=token_start_index, .end=index };
+        Error::throw_error(span, "Unterminated string", Error::ErrorCodes::UNEXPECTED_TOKEN);
     }
 
     flush(index);

@@ -38,7 +38,6 @@ SOFTWARE.
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/Type.h>          
                                    
-#include <stdexcept>               
 #include <memory>                  
                                    
 #include <gearlang/ast/base.hpp>   
@@ -55,6 +54,7 @@ llvm::Value* Ast::Nodes::Return::generate(Context& ctx) {
     llvm::Type* fn_return = ctx.current_fn->getReturnType();
 
     llvm::Value* ret_ir = retVal;
+    assert(exp->get_type() != std::nullopt);
     if(exp->get_type()->to_llvm(ctx) != fn_return) {
         ret_ir = ctx.builder.CreateIntCast(retVal, fn_return, true);
     }
