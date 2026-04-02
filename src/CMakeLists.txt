@@ -89,16 +89,12 @@ set(GEARLANG_ANALYZE
     ana/expr.cpp
 )
 
-set(GEARLANG_FFI
-    ffi/c_header.cpp
-)
-
 add_subdirectory(par ${CMAKE_BINARY_DIR}/CMakeFiles/par)
 add_subdirectory(gen ${CMAKE_BINARY_DIR}/CMakeFiles/gen)
 add_subdirectory(lex ${CMAKE_BINARY_DIR}/CMakeFiles/lex)
+add_subdirectory(ffi ${CMAKE_BINARY_DIR}/CMakeFiles/ffi)
 
 add_library(gearlib SHARED
-    ${GEARLANG_FFI}
     ${GEARLANG_CORE}
     ${GEARLANG_LEX}
     ${GEARLANG_SEM}
@@ -110,7 +106,8 @@ add_executable(gear main.cpp)
 target_link_libraries(gearlib
     gear_parse
     gear_gen
-    gear_lex
+    gear_lex 
+    gear_ffi_c
     LLVM
     ${Clang_LIBRARIES}
     clang
