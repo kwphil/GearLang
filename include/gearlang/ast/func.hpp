@@ -30,6 +30,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#pragma once
+
 #include <gearlang/sem/val.hpp>
 #include <gearlang/sem/type.hpp>
 #include "base.hpp"

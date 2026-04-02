@@ -31,9 +31,7 @@ SOFTWARE.
 */
 
 #include <clang/AST/AST.h>
-#include <clang/AST/RecursiveASTVisitor.h>
 #include <clang/AST/Type.h>
-#include <clang/Frontend/ASTUnit.h>
 #include <clang/Tooling/Tooling.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/FrontendActions.h>
@@ -52,6 +50,8 @@ SOFTWARE.
 #include <format>
 #include <unordered_set>
 
+#include "visitor.hpp"
+
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
@@ -61,11 +61,6 @@ using std::format;
 
 using namespace Ast::Nodes;
 using namespace clang;
-
-const vector<string> C_FFI_ARGS = {
-    "-I.",
-    "-std=c99"
-};
 
 Sem::Type c_builtin_to_gear(const BuiltinType* ty) {
     using clang::BuiltinType;
@@ -151,122 +146,4 @@ std::shared_ptr<Sem::Type> C_Ffi::c_to_gear_ty(QualType* qt) {
     return result;
 }
 
-#include <iostream>
-class FunctionVisitor : public RecursiveASTVisitor<FunctionVisitor> {
-private:
-    C_Ffi& manager;
 
-public:
-    FunctionVisitor(C_Ffi& manager) : manager(manager) { }
-
-    bool VisitFunctionDecl(FunctionDecl* func) {
-        using clang::QualType;
-
-        if (func->isThisDeclarationADefinition() || func->isExternC()) {
-            using Ast::Nodes::Argument;
-
-            std::deque<unique_ptr<Argument>> args;
-            bool is_variadic = func->isVariadic();
-
-            for (unsigned i = 0; i < func->getNumParams(); ++i) {
-                QualType qt = func->getParamDecl(i)->getType();
-
-                args.push_back(std::make_unique<Argument>(Argument(
-                    "",
-                    *manager.c_to_gear_ty(&qt),
-                    { 0, 0, 0, 0 }
-                )));
-            }
-
-            QualType ret = func->getReturnType();
-            ExternFn fn(
-                func->getNameAsString(), 
-                *manager.c_to_gear_ty(&ret),
-                std::move(args),
-                is_variadic,
-                true,
-                { 0, 0, 0, 0 }   
-            );
-
-            manager.add_node(std::make_unique<ExternFn>(std::move(fn)));
-        }
-        return true;
-    }
-
-    bool VisitRecordDecl(RecordDecl* record) {
-        if (record->isCompleteDefinition()) {
-            manager.c_record_to_gear(record);
-        }
-
-        return true;
-    }
-
-    bool VisitEnumDecl(EnumDecl* enm) {
-        // if (enm->isComplete())
-        //     std::cout << "Enum: " << enm->getNameAsString() << "\n";
-        return true;
-    }
-
-    bool VisitTypedefNameDecl(TypedefNameDecl* td) {
-        // std::cout << "Typedef: " << td->getNameAsString() << "\n";
-        return true;
-    }
-};
-
-class CFfiConsumer : public ASTConsumer {
-public:
-    CFfiConsumer(C_Ffi& manager) : visitor(manager) { }
-
-    void HandleTranslationUnit(ASTContext& context) override {
-        visitor.TraverseDecl(context.getTranslationUnitDecl());
-    }
-
-private:
-    FunctionVisitor visitor;
-};
-
-vector<unique_ptr<NodeBase>> C_Ffi::compile_headers() {
-    vector<unique_ptr<ASTUnit>> asts;
-
-    auto ast = tooling::buildASTFromCodeWithArgs(
-        src.str(), 
-        C_FFI_ARGS,
-        "ffiwrap.c"
-    );
-
-    if (ast) {
-        CFfiConsumer consumer(*this);
-        consumer.HandleTranslationUnit(ast->getASTContext());
-        asts.push_back(std::move(ast));
-    } else {
-        Error::throw_error(
-            {0, 0, 0, 0},
-            "Unable to parse C header",
-            Error::ErrorCodes::INVALID_AST
-        );
-    }
-
-    type_cache.clear();
-
-    return std::move(nodes);
-}
-
-vector<std::string> splitStringstream(const string& input, char delimiter) {
-    vector<std::string> tokens;
-    std::string token;
-    std::istringstream tokenStream(input);
-    while (std::getline(tokenStream, token, delimiter))
-        tokens.push_back(token);
-    return tokens;
-}
-
-void C_Ffi::add_header(string filename) {
-    auto split = splitStringstream(filename, ':');
-    if (split.size() == 1 || split[0] == "loc") {
-        add_header_to_file(format("#include \"{}\"", split.back()));
-    } else if (split[0] == "sys") {
-        add_header_to_file(format("#include <{}>", split[1]));
-    } else {
-        assert(false && "Unexpected header path!");
-    }
-}
