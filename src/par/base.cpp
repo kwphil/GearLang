@@ -68,7 +68,7 @@ unique_ptr<NodeBase> NodeBase::parse(Lexer::Stream& s) {
 
     // no semicolon statements
     if(tok == "fn") return Function::parse(s);
-    if(tok == "{")  return ExprBlock::parse(s);
+    if(tok == "{")  return Block::parse(s);
 
     if(tok == "if") {
         auto if_expr = If::parse(s);

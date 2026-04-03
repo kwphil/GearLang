@@ -34,6 +34,7 @@ SOFTWARE.
 #include <gearlang/sem/val.hpp>
 #include <gearlang/sem/analyze.hpp>
 #include <gearlang/error.hpp>
+#include <gearlang/optimizer.hpp>
 
 #include <format>
 
@@ -67,6 +68,8 @@ unique_ptr<ExprValue> ExprOp::analyze(Analyzer& analyzer) {
 
     // Implicit cast
     right->set_type(lhs->ty);
+
+    // Optimizer::fold(this);
 
     return std::make_unique<ExprValue>(lhs->is_const && rhs->is_const, lhs->ty);
 }

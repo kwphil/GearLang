@@ -42,7 +42,8 @@
   * [X] Type checking
   * [X] Implicit casts
   * [X] Function signature validation
-  * [ ] Unreachable code detection
+  * [X] Unreachable code detection
+  * [ ] Match/Case Exhaustiveness check
 * [ ] **Code Generation**
   * [x] Simple Expressions
     * [x] Arithmetic
@@ -51,7 +52,6 @@
     * [x] If statements
     * [x] If/Else
     * [ ] Match/Case
-      * [ ] Exhaustiveness checking
       * [ ] Pattern binding
   * [ ] Functions
     * [x] Main function

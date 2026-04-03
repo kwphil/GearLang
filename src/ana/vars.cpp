@@ -45,7 +45,7 @@ SOFTWARE.
 using namespace Ast::Nodes;
 using namespace Sem;
 
-void Let::analyze(Analyzer& analyzer) {
+bool Let::analyze(Analyzer& analyzer) {
     unique_ptr<ExprValue> rvalue;
 
     if(expr) {
@@ -90,6 +90,7 @@ void Let::analyze(Analyzer& analyzer) {
     };
 
     analyzer.add_variable(target, var);
+    return false;
 }
 
 unique_ptr<ExprValue> ExprVar::analyze(Analyzer& analyzer) {
@@ -133,9 +134,10 @@ unique_ptr<ExprValue> Argument::analyze(Analyzer& analyzer) {
     return nullptr;
 }
 
-void Struct::analyze(Sem::Analyzer& analyzer) {
+bool Struct::analyze(Sem::Analyzer& analyzer) {
     Variable v = { .name=name, .type=ty, .is_global=true, .let_stmt=this };
     analyzer.add_variable(name, v);
+    return false;
 }
 
 unique_ptr<ExprValue> ExprStructParam::analyze(Sem::Analyzer& analyzer) {

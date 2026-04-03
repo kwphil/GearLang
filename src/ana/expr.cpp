@@ -90,18 +90,6 @@ unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
     return std::make_unique<ExprValue>(false, handle.ret);
 }
 
-unique_ptr<ExprValue> ExprBlock::analyze(Analyzer& analyzer) {
-    analyzer.new_scope();
-    
-    for(auto& node : nodes) {
-        analyze_nodebase(&node, analyzer);
-    }
-
-    analyzer.delete_scope();
-
-    return nullptr;
-}
-
 unique_ptr<ExprValue> ExprAddress::analyze(Analyzer& analyzer) {
     var->analyze(analyzer);
     assert(var->get_type() != std::nullopt);

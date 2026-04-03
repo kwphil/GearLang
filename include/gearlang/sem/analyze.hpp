@@ -110,11 +110,11 @@ namespace Sem {
     };
 }
 
-constexpr void analyze_nodebase(std::unique_ptr<NodeBase>* node, Analyzer& analyzer) {
+constexpr bool analyze_nodebase(std::unique_ptr<NodeBase>* node, Analyzer& analyzer) {
     if(Stmt* stmt = cast_from_uptr<NodeBase, Stmt>(node)) {
-        stmt->analyze(analyzer);
-        return;
+        return stmt->analyze(analyzer);
     }
 
     cast_from_uptr<NodeBase, Expr>(node)->analyze(analyzer);
+    return false;
 }

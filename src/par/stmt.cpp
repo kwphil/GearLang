@@ -63,11 +63,10 @@ string Let::to_string() {
     );
 }
 
-unique_ptr<ExprBlock> ExprBlock::parse(Lexer::Stream& s) {
-    Span start_span = s.peek()->span;
+unique_ptr<Block> Block::parse(Lexer::Stream& s) {
     std::vector<unique_ptr<NodeBase>> nodes;
 
-    s.expect("{", start_span);
+    s.expect(Lexer::Type::BraceOpen);
     unique_ptr<Lexer::Token> t = s.peek();
     int brace_count = 1;
     while(s.has()) {
@@ -84,14 +83,14 @@ unique_ptr<ExprBlock> ExprBlock::parse(Lexer::Stream& s) {
         t = s.peek();
     }
 
-    Span new_span = start_span;
-    start_span.end = s.pop()->span.end; // Remove the }
+    Span span = s.peek()->span;
+    s.expect(Lexer::Type::BraceClose);
 
-    return std::make_unique<ExprBlock>(std::move(nodes), new_span);
+    return std::make_unique<Block>(std::move(nodes), span);
 }
 
-string ExprBlock::to_string() {
-    string out = "{ \"type\":\"ExprBlock\", \"nodes\":[";
+string Block::to_string() {
+    string out = "{ \"type\":\"Block\", \"nodes\":[";
 
     for(auto& n : nodes) {
         out += n->to_string();
