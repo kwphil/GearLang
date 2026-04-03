@@ -19,7 +19,7 @@
         }
       ], 
       "block":{ 
-        "type":"ExprBlock", 
+        "type":"Block", 
         "nodes":[
           { 
             "type":"If", 
@@ -52,7 +52,7 @@
               } 
             }, 
             "expr":{ 
-              "type":"ExprBlock", 
+              "type":"Block", 
               "nodes":[
                 { 
                   "type":"ExprCall", 

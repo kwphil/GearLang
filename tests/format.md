@@ -208,13 +208,13 @@ If you don't see one, looks like YOU get to create the format
 }
 ```
 
-## ExprBlock
+## Block
 
 `type`: `pExpr`
 
 ```json
 {
-  "type": "ExprBlock",
+  "type": "Block",
   "nodes": <array of stmt>
 }
 ```

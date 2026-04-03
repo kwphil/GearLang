@@ -58,6 +58,16 @@ if(DEBUG AND NOT NO_DEBUG)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
     include(CheckCXXCompilerFlag)
     set(DEBUG_FLAGS "-fsanitize=undefined,address -O0 -g -D_DEBUG")
+    if(NOT DEFINED ABORT_ERROR)
+        set(ABORT_ERROR ON)
+    endif()
+endif()
+
+if(ABORT_ERROR)
+    set_source_files_properties(
+        error.cpp
+        PROPERTIES COMPILE_DEFINITIONS "ABORT_ON_FAIL"
+    )
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall ${DEBUG_FLAGS}")
