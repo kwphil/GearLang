@@ -45,6 +45,12 @@ inline To* try_cast(From* from) {
     return dynamic_cast<To*>(from);
 }
 
+template<typename To, typename From>
+inline To* cast_to(From from) {
+    assert(from != nullptr);
+    return dynamic_cast<To*>(from);
+}
+
 /// @brief Wrapper for try_cast to specifically take input from a unique_ptr*
 template<typename From, typename To>
 inline To* cast_from_uptr(std::unique_ptr<From>* from) {
@@ -73,10 +79,11 @@ struct Options {
     bool dump_ast = false;
 };
 
-// If successfully casts, do x with it
-template<typename Ret, typename From, typename To>
-inline Ret if_cast_then_do(From* from, std::function<Ret(To*)> lambda) {
+// If successfully casts, do x with it. Otherwise return NULL
+template<typename To, typename Ret, typename From, class Func, typename ...Args>
+inline Ret if_cast_then_do(From from, Func lambda, Args... args) {
     To* to = dynamic_cast<To*>(from);
-    if(to) return lambda(to);
-    return NULL;
+    if(to) return lambda(to, args...);
+    if constexpr (!std::is_void_v<Ret>) 
+        return Ret{};
 }

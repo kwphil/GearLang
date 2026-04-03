@@ -74,8 +74,7 @@ llvm::Value* Ast::Nodes::If::generate(Context& ctx) {
     // if (cond)
     ctx.builder.SetInsertPoint(if_block);
 
-    Expr* expr2 = dynamic_cast<Expr*>(expr.get());
-    expr2->generate(ctx);
+    expr->generate(ctx);
     ctx.builder.CreateBr(then_block);
 
     // continuation
@@ -114,14 +113,12 @@ llvm::Value* Ast::Nodes::Else::generate(Context& ctx) {
 
     // if (cond)
     ctx.builder.SetInsertPoint(if_block);
-    Expr* expr2 = dynamic_cast<Expr*>(expr.get());
-    expr2->generate(ctx);
+    expr->generate(ctx);
     ctx.builder.CreateBr(then_block);
 
     // else
     ctx.builder.SetInsertPoint(else_block);
-    Expr* else_expr2 = dynamic_cast<Expr*>(expr.get());
-    else_expr2->generate(ctx);
+    else_expr->generate(ctx);
     ctx.builder.CreateBr(then_block);
 
     // end

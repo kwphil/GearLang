@@ -59,10 +59,9 @@ namespace Ast::Nodes {
 
     /// @brief Expression node for integer literals
     class ExprLitInt : public Literal {
-    private:
+    public:
         uint64_t value;
 
-    public:
         ExprLitInt(uint64_t x, Span span) : Literal(span, nullptr), value(x) {}
         static std::unique_ptr<ExprLitInt> parse(Lexer::Stream& s);
 
@@ -73,10 +72,9 @@ namespace Ast::Nodes {
 
     /// @brief Expression node for floating-point literals
     class ExprLitFloat : public Literal {
-    private:
+    public:
         double value;
 
-    public:
         ExprLitFloat(double x, Span span) : Literal(span, nullptr), value(x) { }
         static std::unique_ptr<ExprLitFloat> parse(Lexer::Stream& s);
         

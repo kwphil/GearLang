@@ -72,6 +72,7 @@ set(GEARLANG_CORE
     error.cpp
     func.cpp
     setup.cpp
+    optimize.cpp 
 )
 
 set(GEARLANG_SEM

@@ -51,7 +51,7 @@ SOFTWARE.
 
 // Creates a new scope, generates all the expressions inside the block,
 // then pops the scope
-llvm::Value* Ast::Nodes::ExprBlock::generate(Context& ctx) {
+llvm::Value* Ast::Nodes::Block::generate(Context& ctx) {
     for (auto& expr : nodes)
         generate_node(expr.get(), ctx);
 
