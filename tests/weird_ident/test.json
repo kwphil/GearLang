@@ -2,6 +2,9 @@
     "type": "lexer",
     "return": 0,
     "match": [
-        ["fpos64_t", 1, "Identifier"]
+        [ "fpos64_t", 1, "Identifier" ],
+        [ "_a", 2, "Identifier" ],
+        [ "__hidden", 3, "Identifier" ],
+        [ "a12345678901234567890", 4, "Identifier" ]
     ]
 }

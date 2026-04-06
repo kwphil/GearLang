@@ -47,21 +47,31 @@ test_count = 0
 test_name: str
 test_type: str
 
-def print_test(passes: bool, fail_str: str = ""):
+def print_type(color, str):
+    return f"{color}{str}{Style.RESET_ALL}"
+
+def print_test(passes: bool, fail_str: str = "", skipped=False):
     global test_count
     global test_name
     global test_type
 
     match test_type:
         case 'lexer':
-            test_header = f'{Fore.CYAN}LEXER{Style.RESET_ALL}'
+            test_header = print_type(Fore.CYAN, 'LEXER')
         case 'parser':
-            test_header = f'{Fore.GREEN}PARSE{Style.RESET_ALL}'
+            test_header = print_type(Fore.GREEN, 'PARSE')
+
+    def header():
+        return f"{test_header} {test_name} ---"
+
+    if skipped:
+        print(f"{header()} {print_type(Fore.LIGHTBLACK_EX, 'SKIPPED.')} {fail_str}", flush=True)
+        return
 
     if passes:
-        print(f"{test_header} {test_name} --- {Fore.GREEN}PASSED.{Style.RESET_ALL}", flush=True)
+        print(f"{header()} {print_type(Fore.GREEN, 'PASSED.')}", flush=True)
     else:
-        print(f"{test_header} {test_name} --- {Fore.RED}FAILED.{Style.RESET_ALL} {fail_str}", flush=True)
+        print(f"{header()} {print_type(Fore.RED, 'FAILED.')} {fail_str}", flush=True)
 
 def run_test(test_data: Path, test_code: Path):
     global test_count
@@ -80,16 +90,13 @@ def run_test(test_data: Path, test_code: Path):
         print("==================================")
         return
 
-    def print_type(color, str):
-        return f"{color}{str}{Style.RESET_ALL}"
-
     match data['type']:
         case 'lexer':
             test_flag = '--dump-tokens'
         case 'parser':
             test_flag = '--dump-ast'
         case _:
-            print(f"{print_type(Fore.RED, "INVAL")} {test_name} --- {print_type(Fore.LIGHTBLACK_EX, "SKIPPED.")} Unknown type: {data['type']}")
+            print_test(False, f"Unknown type: {data['type']}", skipped=True)
             return
 
     test_type = data['type']
@@ -189,6 +196,10 @@ def match_output(output: subprocess.CompletedProcess, test_data: json.JSONDecode
     global test_name
     global test_type
 
+    if not 'return' in test_data:
+        print_test(False, 'No key `return` in test data', skipped=True)
+        return
+
     if output.returncode != test_data['return']:
         print_test(False, f"Expected return: {test_data['return']} received: {output.returncode}")
         fail_count+=1
@@ -230,4 +241,9 @@ for curr_test in test_path.iterdir():
 
     run_test(test_data, test_code)
 
-print(f"{fail_count} failed, {pass_count} passed out of {test_count}")
+print("=============================================================")
+print()
+print(f"\t{fail_count} tests failed")
+print(f"\t{pass_count} tests passed")
+print(f"\t{test_count-fail_count-pass_count} tests skipped")
+print(f"\t{test_count} total tests")
