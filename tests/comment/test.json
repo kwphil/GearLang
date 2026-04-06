@@ -1,0 +1,10 @@
+{
+  "type": "lexer",
+  "return": 0,
+  "match": [
+    [ "a", 2, "Identifier" ],
+    [ "=", 2, "Equal" ],
+    [ "1", 2, "IntegerLiteral" ],
+    [ ";", 2, "Semi" ]
+  ]
+}
