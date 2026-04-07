@@ -127,3 +127,7 @@ namespace Ast::Nodes {
         virtual std::string to_string() override;
     };
 }
+
+namespace Ast {
+    unique_ptr<Nodes::Expr> optimize_expr(unique_ptr<Nodes::Expr> node);
+}

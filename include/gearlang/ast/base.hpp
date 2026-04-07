@@ -71,6 +71,8 @@ void generate_node(Ast::Nodes::NodeBase* node, Context& ctx);
 namespace Ast {
     bool check_keyword(std::string target);
 
+    std::unique_ptr<Nodes::NodeBase> optimize(std::unique_ptr<Nodes::NodeBase> node);
+
     class Program {
     public:
         std::deque<std::unique_ptr<Nodes::NodeBase>> content;
