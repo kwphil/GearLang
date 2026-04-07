@@ -34,6 +34,7 @@ SOFTWARE.
 
 #include <memory>
 #include <cassert>
+#include <sstream>
 #include <functional>
 
 #include <llvm/IR/Value.h>
@@ -86,4 +87,14 @@ inline Ret if_cast_then_do(From from, Func lambda, Args... args) {
     if(to) return lambda(to, args...);
     if constexpr (!std::is_void_v<Ret>) 
         return Ret{};
+}
+
+inline std::vector<std::string> split_string(const std::string& str, char delimiter) {
+    std::vector<std::string> tokens;
+    std::stringstream ss(str);
+    std::string token;
+    while (std::getline(ss, token, delimiter)) {
+        tokens.push_back(token);
+    }
+    return tokens;
 }

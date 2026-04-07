@@ -52,16 +52,6 @@ static char get_escape(char c) {
 
 bool is_single_char_token(Lexer::CharType t);
 
-unordered_set<string> split_string(const string& str, char delimiter) {
-    unordered_set<string> tokens;
-    std::stringstream ss(str);
-    string token;
-    while (std::getline(ss, token, delimiter)) {
-        tokens.insert(token);
-    }
-    return tokens;
-}
-
 #include <sstream>
 
 Lexer::Stream Lexer::tokenize(const std::string& source_path) {
@@ -84,9 +74,11 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str) {
     string buf;
     Table table;
     std::getline(token_list, buf);
-    table.keywords = split_string(buf, ' ');
+    auto spl = split_string(buf, ' ');
+    table.keywords = unordered_set<string>(spl.begin(), spl.end());
     std::getline(token_list, buf);
-    table.operators = split_string(buf, ' ');
+    spl = split_string(buf, ' ');
+    table.operators = unordered_set<string>(spl.begin(), spl.end());
 
     char c;
 

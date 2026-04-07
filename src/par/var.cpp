@@ -45,7 +45,7 @@ using std::string;
 using std::unique_ptr;
 
 unique_ptr<ExprVar> ExprVar::parse(const Lexer::Token& token, Lexer::Stream& s) { 
-    if(token.content.back() == '.') return ExprStructParam::parse(token, s);
+    if(token.content.contains('.')) return ExprStructParam::parse(token, s);
 
     return std::make_unique<ExprVar>(token.content, token.span);
 }
@@ -54,10 +54,9 @@ string ExprVar::to_string() { return std::format("{{ \"type\":\"ExprVar\", \"nam
 
 unique_ptr<ExprStructParam> ExprStructParam::parse(const Lexer::Token& token, Lexer::Stream& s) {
     Span span = token.span;
-    string struct_name = token.content;
-    struct_name.pop_back();
-    string param_name = s.peek()->content;
-    span.end = s.pop()->span.end;
+    auto split = split_string(token.content, '.');
+    string struct_name = split[0];
+    string param_name = split[1];
     
     return std::make_unique<ExprStructParam>(struct_name, param_name, span);
 }
