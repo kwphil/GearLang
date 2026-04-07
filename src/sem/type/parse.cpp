@@ -183,6 +183,7 @@ find_parse:
     if(_struct != struct_list.end()) {
         record_type = _struct->second;
         record_name = _struct->first;
+        record_is_struct = true;
         s.pop();
         goto pointer_parse;
     }
@@ -190,6 +191,7 @@ find_parse:
     if(_union != union_list.end()) {
         record_type = _union->second;
         record_name = _union->first;
+        record_is_struct = false;
         s.pop();
         goto pointer_parse;
     }
@@ -234,7 +236,7 @@ pointer_parse:
         return;
     }
 }
-#include <iostream>
+
 void Type::parse_unparsed() {
     no_unparsed = true;
 
