@@ -78,6 +78,9 @@ Sem::Type c_builtin_to_gear(const BuiltinType* ty) {
         case BuiltinType::UInt: return Sem::Type("u32");    
         case BuiltinType::UShort: return Sem::Type("u16");
         case BuiltinType::SChar: return Sem::Type("i8");
+        case BuiltinType::UChar: return Sem::Type("u8");
+        case BuiltinType::Short: return Sem::Type("i16");
+        case BuiltinType::LongDouble: return Sem::Type("f64");
 
         default: 
             LangOptions LO;  // default language options

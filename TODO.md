@@ -69,13 +69,15 @@
     * [x] Variable variable types
     * [X] Implicit matching
 * [ ] **Compatibility**
-  * [ ] Basic C Functions
+  * [X] Basic C Functions
     * [x] C Runtime
     * [x] Basic data
     * [x] C Strings
     * [x] Variadic Args
+  * [ ] Near full C Functionality
     * [X] Header-based bindings
-    * [ ] Typedefs
+    * [X] Typedefs
+    * [ ] Inline functions
   * [ ] Basic C++ Functionality
     * [ ] Common Name Mangling
     * [ ] Extern "C++" support

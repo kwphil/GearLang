@@ -47,7 +47,11 @@ using std::unique_ptr;
 using std::string;
 using std::vector;
 
-vector<string> Ast::keyword_list = { }; 
+std::vector<string> keyword_list;
+
+bool Ast::check_keyword(std::string target) {
+    return std::find(keyword_list.begin(), keyword_list.end(), target) != keyword_list.end();
+}
 
 unique_ptr<NodeBase> NodeBase::parse(Lexer::Stream& s) {
     if(!s.has()) {

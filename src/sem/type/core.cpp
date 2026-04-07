@@ -41,6 +41,7 @@ using namespace Sem;
 
 unordered_map<string, Type::Struct*> Type::struct_list = { };
 unordered_map<string, Type::Struct*> Type::union_list = { };
+unordered_map<string, Type*> Type::alias_list = { };
 
 /* ============================
    Queries

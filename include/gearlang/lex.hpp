@@ -37,10 +37,16 @@ SOFTWARE.
 #include <cstdint>
 #include <source_location>
 #include <memory>
+#include <unordered_set>
 
 #include "etc.hpp"
 
 namespace Lexer {
+
+struct Table {
+    std::unordered_set<std::string> keywords;
+    std::unordered_set<std::string> operators;
+};
 
 /// @brief Character types used during lexing
 enum class CharType {
@@ -92,7 +98,7 @@ const char* print_type(Type ty);
 /// @param content Content of the token
 /// @param state Ending character type of the token
 /// @return Token type
-Type classify(std::string& content, CharType state, Span const& span);
+Type classify(std::string& content, CharType state, Span const& span, Table& table);
 
 /// @brief Token representation
 class Token {

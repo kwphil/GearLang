@@ -59,7 +59,7 @@ def print_test(passes: bool, fail_str: str = "", skipped=False):
         case 'lexer':
             test_header = print_type(Fore.CYAN, 'LEXER')
         case 'parser':
-            test_header = print_type(Fore.GREEN, 'PARSE')
+            test_header = print_type(Fore.BLUE, 'PARSE')
 
     def header():
         return f"{test_header} {test_name} ---"
@@ -247,3 +247,7 @@ print(f"\t{fail_count} tests failed")
 print(f"\t{pass_count} tests passed")
 print(f"\t{test_count-fail_count-pass_count} tests skipped")
 print(f"\t{test_count} total tests")
+
+if pass_count == test_count:
+    print()
+    print("Yay!!!! All tests pass!")
