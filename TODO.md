@@ -83,7 +83,7 @@
     * [ ] Extern "C++" support
     * [ ] Simple class interop
 * [ ] **Optimizer**
-  * [ ] Constant folding
+  * [X] Constant folding
   * [ ] Dead code elimination
   * [ ] Common subexpression elimination
   * [ ] Inlining

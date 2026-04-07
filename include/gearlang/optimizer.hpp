@@ -9,7 +9,7 @@ using namespace Ast::Nodes;
 namespace Optimizer {
     /// @brief Attempts to fold an expression
     /// @param expr The exprop to fold and replace
-    void fold(ExprOp** expr);
+    std::unique_ptr<Expr> fold(std::unique_ptr<ExprOp> expr);
     /// @brief Checks if the expression is a constant
     bool is_const(Expr* expr);
 };
