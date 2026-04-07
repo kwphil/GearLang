@@ -9,7 +9,7 @@
     * [X] `--dump-ast`
     * [X] `--dump-tokens`
     * [ ] `--dump-analyzer`
-    * [ ] `-O,--opt-level`
+    * [X] `-O,--opt-level`
     * [X] `-o,--output`
     * [ ] `--target`
   * [x] Graceful Error Handling

@@ -46,13 +46,14 @@ SOFTWARE.
 #include <gearlang/ast/expr.hpp>   
 #include <gearlang/sem/type.hpp>   
 
+#include <gearlang/optimizer.hpp>
 #include <gearlang/error.hpp>
 #include <gearlang/func.hpp>
 
 // Creates a new scope, generates all the expressions inside the block,
 // then pops the scope
 llvm::Value* Ast::Nodes::Block::generate(Context& ctx) {
-    if(is_dead) return nullptr;
+    if(is_dead && is_opt_active(DEAD_CODE_ELIMINATION)) return nullptr;
 
     for (auto& expr : nodes)
         generate_node(expr.get(), ctx);
@@ -63,7 +64,7 @@ llvm::Value* Ast::Nodes::Block::generate(Context& ctx) {
 void generate_node(Ast::Nodes::NodeBase* node, Context& ctx) {
     using namespace Ast::Nodes;
     
-    if(node->is_dead) return;
+    if(node->is_dead && is_opt_active(DEAD_CODE_ELIMINATION)) return;
     
     if (auto* stmt = dynamic_cast<Stmt*>(node)) {
         stmt->generate(ctx);

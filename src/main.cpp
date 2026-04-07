@@ -99,6 +99,7 @@ static Options parse_args(int argc, char** argv) {
 
     opts.input       = program.get<std::string>("input");
     opts.output      = program.get<std::string>("--output");
+    opts.opt_level   = program.get<int>("--opt-level");
     opts.verbose     = program.get<bool>("--verbose");
     opts.emit_object = program.get<bool>("--object");
     opts.emit_llvm   = program.get<bool>("--emit-llvm");
