@@ -37,6 +37,7 @@ SOFTWARE.
 #include <string>
 #include <vector>
 #include <memory>
+#include <iostream>
 #include <unordered_map>
 
 #include <llvm/IR/Type.h>
@@ -78,6 +79,7 @@ namespace Sem {
     private:
         static unordered_map<string, Struct*> struct_list;
         static unordered_map<string, Struct*> union_list;
+        static unordered_map<string, Type*> alias_list;
 
         PrimType prim_type = PrimType::Invalid;
         Struct* record_type = nullptr;
@@ -87,6 +89,8 @@ namespace Sem {
 
         shared_ptr<Type> array_type;
         unsigned int array_size = -1;
+
+        bool is_invalid = false; // If the type is unparsable and no_unparse is marked
 
         static PrimType parse_primitive(std::string& s);
         static PrimType parse_primitive(Lexer::Stream& s);
@@ -227,6 +231,13 @@ namespace Sem {
         bool is_compatible(Type& other) { return is_compatible(static_cast<Type&&>(other)); }
         bool is_compatible(Type&& other);
 
+        /// @brief Adds an alias type
+        /// @param name The name of the alias
+        /// @param ty The underlying type
+        static inline void add_alias(string name, Type& ty) {
+            alias_list[name] = new Type(ty);
+        }
+
         static inline void clear_records() {
             for(auto& _struct : struct_list) {
                 delete _struct.second;
@@ -235,6 +246,20 @@ namespace Sem {
             for(auto& _union : union_list) {
                 delete _union.second;
             }
+
+            for(auto& _type : alias_list) {
+                delete _type.second;
+            }
         }
+
+        static void dump_alias() {
+            std::cout << "aliases: \n";
+            for(auto& idx : alias_list) {
+                std::cout << idx.first << ", " << idx.second->dump() << '\n';
+            }
+        }
+
+        /// @brief Fills in all unparsed types that were pushed off to later
+        static void parse_unparsed();
     };
 }

@@ -42,9 +42,6 @@ SOFTWARE.
 using std::unordered_set;
 using std::string;
 
-unordered_set<string> keywords;
-unordered_set<string> operators;
-
 static char get_escape(char c) {
     switch(c) {
         case 'n': return '\n';
@@ -85,10 +82,11 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str) {
     assert(token_list.is_open());
 
     string buf;
+    Table table;
     std::getline(token_list, buf);
-    keywords = split_string(buf, ' ');
+    table.keywords = split_string(buf, ' ');
     std::getline(token_list, buf);
-    operators = split_string(buf, ' ');
+    table.operators = split_string(buf, ' ');
 
     char c;
 
@@ -105,10 +103,11 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str) {
 
     bool token_is_string = false;
     bool is_string  = false;
-    bool is_comment = false;
+    bool is_comment = false;    
+    bool is_block_comment = false;  
 
     auto flush = [&](size_t end_index) {
-        if(tok.content.empty() && !token_is_string) // Strings can be empty
+        if(tok.content.empty() && !token_is_string) // strings can be empty
             return;
 
         if(state_old == CharType::Invalid ||
@@ -133,7 +132,7 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str) {
         if (token_is_string) {
             tok.type = Type::StringLiteral;
         } else {
-            tok.type = classify(tok.content, state_old, tok.span);
+            tok.type = classify(tok.content, state_old, tok.span, table);
         }
 
         out.content.push_back(tok);
@@ -152,25 +151,17 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str) {
             );
 
         if(!is_string &&
-            state_old == CharType::Alpha &&
-            state_new == CharType::Num
-        ) {
-            boundary = false;
-        }
+        state_old == CharType::Alpha &&
+        state_new == CharType::Num) boundary = false;
 
         if(!is_string &&
-            state_old == CharType::Num &&
-            state_new == CharType::Alpha
-        ) {
-            boundary = false;
-        }
+        state_old == CharType::Num &&
+        state_new == CharType::Alpha) boundary = false;
 
-        if(boundary)
-            flush(index);
+        if(boundary) flush(index);
 
         if(tok.content.empty() &&
-           state_new != CharType::Format
-        ) {
+        state_new != CharType::Format) {
             token_start_index = index;
             token_start_line  = line;
             token_start_col   = col;
@@ -178,56 +169,57 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str) {
 
         if(is_string && c == '\\') {
             char next;
-
             if(file.get(next)) {
                 tok.content.push_back(get_escape(next));
-
                 index++;
                 col++;
-
                 state_old = state_new;
                 continue;
             }
         }
 
         if(state_new == CharType::Quote) {
-            if (!is_string) {
-                // starting string
+            if(!is_string) {
                 tok = Token{};
                 token_is_string = true;
-
                 token_start_index = index;
                 token_start_line  = line;
                 token_start_col   = col;
             } else {
-                // ending string
                 flush(index);
                 token_is_string = false;
             }
-
             is_string = !is_string;
-
             state_old = state_new;
-            index++;
-            col++;
+            index++; col++;
             continue;
         }
-        
-        if(!is_string && tok.content == "/" && c == '/')
-            is_comment = true;
 
-        if(!is_comment || is_string)
+        if(!is_string) {
+            if(!is_comment && !is_block_comment && tok.content == "/" && c == '/') {
+                is_comment = true;
+            } else if(!is_comment && !is_block_comment && tok.content == "/" && c == '*') {
+                is_block_comment = true;
+                tok.content.clear(); 
+            } else if(is_block_comment && tok.content == "*" && c == '/') {
+                is_block_comment = false;
+                tok.content.clear(); 
+                state_old = CharType::Invalid;
+                index++; col++;
+                continue;
+            }
+        }
+
+        if((!is_comment && !is_block_comment) || is_string)
             tok.content.push_back(c);
 
         state_old = state_new;
-
         index++;
 
         if(c == '\n') {
             line++;
             col = 1;
             is_comment = false;
-
             if(is_string) {
                 Span span { .line=token_start_line, .col=token_start_col, .start=token_start_index, .end=index };
                 Error::throw_error(span, "Unterminated string", Error::ErrorCodes::UNEXPECTED_TOKEN);

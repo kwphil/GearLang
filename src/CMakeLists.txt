@@ -30,10 +30,6 @@
 
 cmake_minimum_required(VERSION 3.20)
 
-if(NOT DEFINED COMPILE_MODE)
-    set(COMPILE_MODE "executable")
-endif()
-
 project(gearlang LANGUAGES C CXX)
 
 find_program(CCACHE_PROGRAM ccache)
@@ -53,14 +49,17 @@ set(CMAKE_C_STANDARD 90)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-if(DEBUG AND NOT NO_DEBUG)
+if(DEBUG)
+    message("-- Compiling in debug mode")
     set(CMAKE_BUILD_TYPE Debug)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
     include(CheckCXXCompilerFlag)
-    set(DEBUG_FLAGS "-fsanitize=undefined,address -O0 -g -D_DEBUG")
+    set(DEBUG_FLAGS "-fsanitize=address,undefined -O0 -g3 -D_DEBUG")
     if(NOT DEFINED ABORT_ERROR)
         set(ABORT_ERROR ON)
     endif()
+else()
+    message("-- Compiling in release mode")
 endif()
 
 if(ABORT_ERROR)
@@ -114,7 +113,7 @@ add_library(gearlib SHARED
 
 add_executable(gear main.cpp)
 
-target_link_libraries(gearlib
+target_link_libraries(gearlib PUBLIC
     gear_parse
     gear_gen
     gear_lex 

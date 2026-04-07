@@ -56,7 +56,7 @@ public:
     CFfiConsumer(C_Ffi& manager) : visitor(manager) { }
 
     void HandleTranslationUnit(ASTContext& context) override {
-        visitor.TraverseDecl(context.getTranslationUnitDecl());
+        visitor.TraverseAST(context);
     }
 
 private:

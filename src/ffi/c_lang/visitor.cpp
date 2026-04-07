@@ -81,8 +81,10 @@ bool CAstVisitor::VisitEnumDecl(clang::EnumDecl* enm) {
     //     std::cout << "Enum: " << enm->getNameAsString() << "\n";
     return true;
 }
-
+#include <iostream>
 bool CAstVisitor::VisitTypedefNameDecl(clang::TypedefNameDecl* td) {
+    auto underlying = td->getUnderlyingType();
+    Sem::Type::add_alias(td->getNameAsString(), *manager.c_to_gear_ty(&underlying));
     // std::cout << "Typedef: " << td->getNameAsString() << "\n";
     return true;
 }

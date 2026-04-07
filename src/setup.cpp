@@ -143,6 +143,11 @@ Ast::Program build_tree(const Options& opts) {
         }
     });
 
+    if(opts.verbose) Type::dump_alias();
+
+    // Fill in the rest of the types
+    Type::parse_unparsed();
+
     RUN_STEP("analyzing",
         analyzer.analyze(root.content);
     );
