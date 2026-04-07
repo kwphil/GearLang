@@ -108,8 +108,19 @@ bool ExternFn::analyze(Analyzer& analyzer) {
 bool Block::analyze(Analyzer& analyzer) {
     analyzer.new_scope();
     bool finishes = false;
+    bool has_warned = false;
     
     for(auto& node : nodes) {
+        if(finishes) {
+            node->is_dead = true;
+            if(!has_warned) {
+                Error::throw_warning(
+                    node->span_meta,
+                    "Control flow will never reach this statement"
+                );
+                has_warned = true;
+            }
+        }
         if(analyze_nodebase(&node, analyzer)) finishes = true;
     }
 

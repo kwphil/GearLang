@@ -84,7 +84,7 @@
     * [ ] Simple class interop
 * [ ] **Optimizer**
   * [X] Constant folding
-  * [ ] Dead code elimination
+  * [X] Dead code elimination
   * [ ] Common subexpression elimination
   * [ ] Inlining
   * [ ] Control-flow graph generation

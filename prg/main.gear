@@ -28,10 +28,6 @@ export fn foo(
     return _a + _b;
 }
 
-fn warn returns i32 {
-    if(1) { } else return 0;
-}
-
 higher = higher + 1;
 
 fn main(argc i32, argv char^) {

@@ -45,6 +45,8 @@ namespace Ast::Nodes {
     public:
         /// @brief The line number in the source code where the node appears
         const Span span_meta;
+        /// @brief Checks if the node is inaccessible
+        bool is_dead = false;
 
         NodeBase(Span span) : span_meta(span) {}
         virtual ~NodeBase() = default;
