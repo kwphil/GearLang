@@ -73,6 +73,10 @@ void init_program(argparse::ArgumentParser& program) {
         .help("Print the AST output. Used for debugging the compiler")
         .flag();
 
+    program.add_argument("-O", "--opt-level")
+        .help("How aggressive the compiler is (e.g. -O 0, -O 1, ...)")
+        .default_value(1)
+        .scan<'i', int>();
 }
 
 llvm::Function* build_runtime(Context& ctx) { 
@@ -104,8 +108,10 @@ llvm::Function* build_runtime(Context& ctx) {
 }
 
 #include <gearlang/ffi/c.hpp>
+#include <gearlang/optimizer.hpp>
 
 std::unordered_map<std::string, std::unique_ptr<Ffi>> ffi_list;
+int Optimizer::opts = 0;
 
 Ast::Program build_tree(const Options& opts) {
     Lexer::Stream tokens;
@@ -144,6 +150,10 @@ Ast::Program build_tree(const Options& opts) {
     });
 
     if(opts.verbose) Type::dump_alias();
+
+    if(opts.opt_level == 1) {
+        Optimizer::opts = DEAD_CODE_ELIMINATION | OPERATION_FOLDING;
+    }
 
     // Fill in the rest of the types
     Type::parse_unparsed();

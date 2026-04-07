@@ -78,6 +78,8 @@ struct Options {
 
     bool dump_tokens = false;
     bool dump_ast = false;
+
+    unsigned char opt_level = -1;
 };
 
 // If successfully casts, do x with it. Otherwise return NULL
