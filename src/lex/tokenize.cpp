@@ -173,6 +173,12 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str, std::string file_name)
         }
 
         if(state_new == CharType::Quote) {
+            if(is_comment || is_block_comment) {
+                continue;
+                index++;
+                col++;
+            }
+
             if(!is_string) {
                 tok = Token{};
                 token_is_string = true;
