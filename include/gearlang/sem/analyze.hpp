@@ -71,7 +71,7 @@ namespace Sem {
     public: 
         bool dump_self;
 
-        Analyzer(bool dump) : dump_self(dump) { new_scope(); }
+        Analyzer(bool dump) : dump_self(dump) { new_scope({ "", 0, 0, 0, 0 }); }
 
         void analyze(std::deque<std::unique_ptr<NodeBase>>& nodes);
 
@@ -98,9 +98,9 @@ namespace Sem {
         optional<Variable> decl_lookup(string name); 
         /// @brief Pushes a new scope to the stack
         /// @return a pointer to the new scope
-        weak_ptr<Scope> new_scope();
+        weak_ptr<Scope> new_scope(Span span);
         /// @brief Pops the scope off the stack
-        void delete_scope();
+        void delete_scope(Span span);
         /// @brief Adds a variable
         /// @param name the name of the variable
         /// @param var the semantic information from the variable

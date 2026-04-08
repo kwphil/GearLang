@@ -53,11 +53,15 @@ bool Let::analyze(Analyzer& analyzer) {
         assert(expr->get_type() != std::nullopt);
         Type rvalue_ty = expr->get_type().value();
         
-        if(!ty) 
+        if(!ty) {
             ty = std::make_unique<Type>(rvalue_ty);
 
-        ;
-
+            analyzer.trace(
+                { { "kind", "find type" }, { "var", target }, { "type", ty->dump() } },
+                Error::ErrorCodes::OK, span_meta
+            );
+        }
+        
         if(!analyzer.type_is_compatible(*ty, rvalue_ty)) {
             Error::throw_error(
                 span_meta,
@@ -89,12 +93,26 @@ bool Let::analyze(Analyzer& analyzer) {
         .let_stmt=this
     };
 
+    analyzer.trace(
+        { 
+            { "kind", "declare" }, 
+            { "declare", "var" }, 
+            { "name", target }, 
+            { "global", std::to_string((int)is_global) },
+        },
+        Error::ErrorCodes::OK, span_meta
+    );
     analyzer.add_variable(target, var);
     return false;
 }
 
 unique_ptr<ExprValue> ExprVar::analyze(Analyzer& analyzer) {
     optional<Variable> var_wrap = analyzer.decl_lookup(name);
+
+    analyzer.trace(
+        { { "kind", "search" }, { "search", name }, { "for", "var" }, { "status", "start" } },
+        Error::ErrorCodes::OK, span_meta
+    );
 
     if(!var_wrap.has_value()) {
         Error::throw_error(
@@ -103,6 +121,11 @@ unique_ptr<ExprValue> ExprVar::analyze(Analyzer& analyzer) {
             Error::ErrorCodes::VARIABLE_NOT_DEFINED
         );
     }
+
+    analyzer.trace(
+        { { "kind", "search" }, { "search", name }, { "status", "pass" } },
+        Error::ErrorCodes::OK, span_meta
+    );
 
     Variable var = var_wrap.value();
 
@@ -143,6 +166,11 @@ bool Struct::analyze(Sem::Analyzer& analyzer) {
 unique_ptr<ExprValue> ExprStructParam::analyze(Sem::Analyzer& analyzer) {
     optional<Variable> v = analyzer.decl_lookup(struct_name);
 
+    analyzer.trace(
+        { { "kind", "search" }, { "search", name }, { "for", "var" }, { "status", "start" } },
+        Error::ErrorCodes::OK, span_meta
+    );
+
     if(!v) {
         Error::throw_error(
             span_meta,
@@ -150,6 +178,11 @@ unique_ptr<ExprValue> ExprStructParam::analyze(Sem::Analyzer& analyzer) {
             Error::ErrorCodes::VARIABLE_NOT_DEFINED
         );
     }
+
+    analyzer.trace(
+        { { "kind", "search" }, { "search", name }, { "status", "pass" } },
+        Error::ErrorCodes::OK, span_meta
+    );
 
     let = v->let_stmt;
     index = v->type.struct_parameter_index(name);
@@ -164,6 +197,16 @@ unique_ptr<ExprValue> ExprStructParam::analyze(Sem::Analyzer& analyzer) {
             Error::ErrorCodes::VARIABLE_NOT_DEFINED
         );
     }
+
+    analyzer.trace(
+        { 
+            { "kind", "struct index" }, 
+            { "struct", v->type.dump() }, 
+            { "param", name }, 
+            { "index", std::to_string(index) } 
+        },
+        Error::ErrorCodes::OK, span_meta
+    );
 
     ty = std::make_unique<Type>(v->type);
 

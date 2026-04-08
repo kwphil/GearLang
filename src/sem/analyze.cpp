@@ -70,7 +70,14 @@ void Analyzer::analyze(deque<unique_ptr<NodeBase>>& nodes) {
     }
 }
 
-weak_ptr<Analyzer::Scope> Analyzer::new_scope() {
+int scope_id = 0;
+
+weak_ptr<Analyzer::Scope> Analyzer::new_scope(Span span) {
+    trace(
+        { { "kind", "scope" }, { "mode", "push" }, { "nest", std::to_string(active_scopes.size()) } },
+        Error::ErrorCodes::OK, span
+    );
+
     shared_ptr<Scope> new_scope = std::make_shared<Scope>();
 
     active_scopes.push_back(std::move(new_scope));
@@ -78,7 +85,12 @@ weak_ptr<Analyzer::Scope> Analyzer::new_scope() {
     return new_scope;
 }
 
-void Analyzer::delete_scope() {
+void Analyzer::delete_scope(Span span) {
+    trace(
+        { { "kind", "scope" }, { "mode", "pop" }, { "nest", std::to_string(active_scopes.size()-1) } },
+        Error::ErrorCodes::OK, span
+    );
+
     active_scopes.pop_back();
 }
 

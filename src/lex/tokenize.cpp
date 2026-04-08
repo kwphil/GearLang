@@ -36,11 +36,14 @@ SOFTWARE.
 #include <fstream>
 #include <string>
 #include <unordered_set>
+#include <filesystem>
 
 #include <gearlang/lex.hpp>
 
 using std::unordered_set;
 using std::string;
+
+namespace fs = std::filesystem;
 
 static char get_escape(char c) {
     switch(c) {
@@ -52,15 +55,13 @@ static char get_escape(char c) {
 
 bool is_single_char_token(Lexer::CharType t);
 
-#include <sstream>
-
 Lexer::Stream Lexer::tokenize(const std::string& source_path) {
     std::ifstream file(source_path);
 
     std::string out;
     std::string buf; 
     while(std::getline(file, buf)) out += buf + '\n';
-    return tokenize_by_string(out);
+    return tokenize_by_string(out, fs::canonical(source_path));
 }
 
 Lexer::Stream Lexer::tokenize_by_string(std::string& str, std::string file_name) {
