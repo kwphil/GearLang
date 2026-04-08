@@ -56,7 +56,7 @@ bool Return::analyze(Analyzer& analyzer) {
 }
 
 bool Function::analyze(Analyzer& analyzer) {
-    weak_ptr<Analyzer::Scope> fn_scope = analyzer.new_scope();
+    weak_ptr<Analyzer::Scope> fn_scope = analyzer.new_scope(span_meta);
     vector<Type> arg_handle;
 
     for(auto& arg : args) { 
@@ -73,7 +73,7 @@ bool Function::analyze(Analyzer& analyzer) {
         );
     }
 
-    analyzer.delete_scope();
+    analyzer.delete_scope(span_meta);
 
     Sem::Func handle = {
         .name=name,
@@ -106,7 +106,7 @@ bool ExternFn::analyze(Analyzer& analyzer) {
 }
 
 bool Block::analyze(Analyzer& analyzer) {
-    analyzer.new_scope();
+    analyzer.new_scope(span_meta);
     bool finishes = false;
     bool has_warned = false;
     
@@ -124,7 +124,7 @@ bool Block::analyze(Analyzer& analyzer) {
         if(analyze_nodebase(&node, analyzer)) finishes = true;
     }
 
-    analyzer.delete_scope();
+    analyzer.delete_scope(span_meta);
 
     return finishes;
 }
