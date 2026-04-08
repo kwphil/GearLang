@@ -72,9 +72,9 @@ unique_ptr<NodeBase> NodeBase::parse(Lexer::Stream& s) {
 
     // no semicolon statements
     if(tok == "fn") return Function::parse(s);
-    if(tok == "{")  return Block::parse(s);
-
-    if(tok == "if") {
+    else if(tok == "{")  return Block::parse(s);
+    else if(tok == "while") return While::parse(s);
+    else if(tok == "if") {
         auto if_expr = If::parse(s);
 
         if(s.peek()->content == "else")
@@ -87,6 +87,7 @@ unique_ptr<NodeBase> NodeBase::parse(Lexer::Stream& s) {
     unique_ptr<NodeBase> out;
 
     if(tok == "let")         out = Let::parse(s);
+    else if(tok == "do")     out = Do::parse(s);
     else if(tok == "return") out = Return::parse(s);
     else if(tok == "extern") out = ExternFn::parse(s);
     else if(tok == "struct") out = Struct::parse(s);

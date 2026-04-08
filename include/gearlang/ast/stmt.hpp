@@ -239,4 +239,36 @@ namespace Ast::Nodes {
         llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
+
+    class While : public Stmt {
+    private:
+        std::unique_ptr<NodeBase> code;
+        std::unique_ptr<Expr> cond;
+
+    public:
+        While(std::unique_ptr<NodeBase> code, std::unique_ptr<Expr> cond, Span span)
+        : Stmt(span), code(std::move(code)), cond(std::move(cond)) { }
+
+        static std::unique_ptr<While> parse(Lexer::Stream& s);
+
+        virtual bool analyze(Sem::Analyzer& analyzer);
+        llvm::Value* generate(Context& ctx) override;
+        virtual std::string to_string() override { return ""; }
+    };
+
+    class Do : public Stmt {
+    private:
+        std::unique_ptr<NodeBase> code;
+        std::unique_ptr<Expr> cond;
+
+    public:
+        Do(std::unique_ptr<NodeBase> code, std::unique_ptr<Expr> cond, Span span)
+        : Stmt(span), code(std::move(code)), cond(std::move(cond)) { }
+
+        static std::unique_ptr<Do> parse(Lexer::Stream& s);
+
+        virtual bool analyze(Sem::Analyzer& analyzer);
+        llvm::Value* generate(Context& ctx) override;
+        virtual std::string to_string() override { return ""; };
+    };
 }
