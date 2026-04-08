@@ -128,3 +128,15 @@ bool Block::analyze(Analyzer& analyzer) {
 
     return finishes;
 }
+
+bool Do::analyze(Sem::Analyzer& analyzer) { 
+    cond->analyze(analyzer);
+    analyze_nodebase(&code, analyzer);
+    return false; 
+}
+
+bool While::analyze(Sem::Analyzer& analyzer) { 
+    cond->analyze(analyzer);
+    analyze_nodebase(&code, analyzer);
+    return false; 
+}

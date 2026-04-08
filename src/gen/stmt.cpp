@@ -114,3 +114,74 @@ llvm::Value* Ast::Nodes::Let::generate(Context& ctx) {
 
     return nullptr;
 }
+
+llvm::Value* Ast::Nodes::While::generate(Context& ctx) {
+    llvm::BasicBlock* loop_cond = 
+        llvm::BasicBlock::Create(ctx.llvmCtx, "while.cond", ctx.current_fn);
+    llvm::BasicBlock* loop_body = 
+        llvm::BasicBlock::Create(ctx.llvmCtx, "while.body", ctx.current_fn);
+    llvm::BasicBlock* after_loop = 
+        llvm::BasicBlock::Create(ctx.llvmCtx, "while.end", ctx.current_fn);
+
+    ctx.builder.CreateBr(loop_cond);
+
+    ctx.builder.SetInsertPoint(loop_cond);
+
+    llvm::Value* cond_val = cond->generate(ctx);
+
+    llvm::Value* condv = ctx.builder.CreateICmpNE(
+        cond_val,
+        llvm::ConstantInt::get(
+            cond_val->getType(),
+            0,
+            true
+        ),
+        "wcond"
+    );
+
+    ctx.builder.CreateCondBr(condv, loop_body, after_loop);
+    ctx.builder.SetInsertPoint(loop_body);
+    
+    code->generate(ctx);
+
+    ctx.builder.CreateBr(loop_cond); 
+    ctx.builder.SetInsertPoint(after_loop);
+
+    return nullptr;
+}
+
+llvm::Value* Ast::Nodes::Do::generate(Context& ctx) {
+    llvm::BasicBlock* loop_body = 
+        llvm::BasicBlock::Create(ctx.llvmCtx, "do.body", ctx.current_fn);
+    llvm::BasicBlock* loop_cond = 
+        llvm::BasicBlock::Create(ctx.llvmCtx, "do.cond", ctx.current_fn);
+    llvm::BasicBlock* after_loop = 
+        llvm::BasicBlock::Create(ctx.llvmCtx, "do.end", ctx.current_fn);
+
+    ctx.builder.CreateBr(loop_body);
+    ctx.builder.SetInsertPoint(loop_body);
+
+    code->generate(ctx);
+
+    ctx.builder.CreateBr(loop_body);
+    ctx.builder.SetInsertPoint(loop_cond);
+
+    llvm::Value* cond_val = cond->generate(ctx);
+    llvm::Value* condv = ctx.builder.CreateICmpNE(
+        cond_val,
+        llvm::ConstantInt::get(
+            cond_val->getType(),
+            0,
+            true
+        ),
+        "dcond"
+    );
+
+    ctx.builder.CreateCondBr(condv, loop_body, after_loop);
+    ctx.builder.SetInsertPoint(loop_body);
+    
+    ctx.builder.CreateBr(loop_body); 
+    ctx.builder.SetInsertPoint(after_loop);
+
+    return nullptr;
+}

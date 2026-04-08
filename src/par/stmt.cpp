@@ -133,3 +133,22 @@ unique_ptr<Include> Include::parse(Lexer::Stream& s) {
 
     return std::make_unique<Include>(lang, type, file, span);
 }
+
+std::unique_ptr<Do> Do::parse(Lexer::Stream& s) {
+    Span span = s.peek()->span;
+    s.expect("do");
+    auto block = NodeBase::parse(s);
+    s.expect("while");
+    auto cond = Expr::parse(s);
+    
+    return std::make_unique<Do>(std::move(block), std::move(cond), span);
+}
+
+std::unique_ptr<While> While::parse(Lexer::Stream& s) {
+    Span span = s.peek()->span;
+    s.expect("while");
+    auto cond = Expr::parse(s);
+    auto block = NodeBase::parse(s);
+
+    return std::make_unique<While>(std::move(block), std::move(cond), span);
+}
