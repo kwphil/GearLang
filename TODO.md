@@ -1,3 +1,6 @@
+* [ ] **Refactor**
+  * [ ] Lexer
+  * [ ] Type system
 * [ ] **Frontend**
   * [ ] Compiler options
     * [x] `--verbose`

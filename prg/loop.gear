@@ -2,13 +2,12 @@ extern("C") fn printf(s char^, ...);
 
 let i = 0;
 
-printf("%d\n", 10 < 10);
-
 do {
     printf("%d\n", i);
     i = i + 1;
 } while(i < 10);
 
-while(1) {
-// printf("");
+while(i < 20) {
+  printf("hi\n");
+  i = i + 1;
 }
