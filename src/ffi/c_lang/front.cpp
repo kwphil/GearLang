@@ -78,7 +78,7 @@ vector<unique_ptr<NodeBase>> C_Ffi::compile_headers() {
         asts.push_back(std::move(ast));
     } else {
         Error::throw_error(
-            {0, 0, 0, 0},
+            {"", 0, 0, 0, 0},
             "Unable to parse C header",
             Error::ErrorCodes::INVALID_AST
         );

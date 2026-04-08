@@ -62,6 +62,7 @@ inline To* cast_from_uptr(std::unique_ptr<From>* from) {
 
 /// @brief span metadata for tokens
 struct Span {
+    std::string file;
     size_t line;
     size_t col;
     size_t start;
@@ -78,6 +79,7 @@ struct Options {
 
     bool dump_tokens = false;
     bool dump_ast = false;
+    bool dump_analyzer = false;
 
     unsigned char opt_level = -1;
 };

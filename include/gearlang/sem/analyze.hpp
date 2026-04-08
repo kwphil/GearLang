@@ -36,6 +36,7 @@ SOFTWARE.
 #include <unordered_map>
 #include <string>
 #include <deque>
+#include <iostream>
 
 #include <gearlang/ast/base.hpp>
 #include <gearlang/ast/stmt.hpp>
@@ -43,6 +44,7 @@ SOFTWARE.
 #include <gearlang/lex.hpp>
 #include <gearlang/etc.hpp>
 #include "type.hpp"
+#include "analyzer_debug.hpp"
 
 using std::string;
 using std::vector;
@@ -60,15 +62,33 @@ namespace Sem {
         typedef std::unordered_map<string, Variable> Scope;
 
     private: 
+        Logger logger;
         vector<shared_ptr<Scope>> active_scopes;
         unordered_map<string, Func> function_list; 
 
         bool analyze_decl_statements(NodeBase* node);
 
     public: 
-        Analyzer() { new_scope(); }
+        bool dump_self;
+
+        Analyzer(bool dump) : dump_self(dump) { new_scope(); }
 
         void analyze(std::deque<std::unique_ptr<NodeBase>>& nodes);
+
+        // ---------- DUMP ANALYZER --------------
+
+        void trace(
+            const std::unordered_map<std::string, std::string>& data,
+            Error::ErrorCodes code,
+            Span span
+        ) {
+            if (!dump_self) return;
+            auto enriched = data;
+
+            logger.log(enriched, code, span);
+        }
+
+        void dump() { if(dump_self) std::cout << logger.to_json() << std::endl; }
 
         // ---------- DECLARATIONS ---------------
         

@@ -97,14 +97,15 @@ static Options parse_args(int argc, char** argv) {
 
     Options opts;
 
-    opts.input       = program.get<std::string>("input");
-    opts.output      = program.get<std::string>("--output");
-    opts.opt_level   = program.get<int>("--opt-level");
-    opts.verbose     = program.get<bool>("--verbose");
-    opts.emit_object = program.get<bool>("--object");
-    opts.emit_llvm   = program.get<bool>("--emit-llvm");
-    opts.dump_tokens = program.get<bool>("--dump-tokens");
-    opts.dump_ast    = program.get<bool>("--dump-ast");
+    opts.input         = program.get<std::string>("input");
+    opts.output        = program.get<std::string>("--output");
+    opts.opt_level     = program.get<int>("--opt-level");
+    opts.verbose       = program.get<bool>("--verbose");
+    opts.emit_object   = program.get<bool>("--object");
+    opts.emit_llvm     = program.get<bool>("--emit-llvm");
+    opts.dump_tokens   = program.get<bool>("--dump-tokens");
+    opts.dump_ast      = program.get<bool>("--dump-ast");
+    opts.dump_analyzer = program.get<bool>("--dump-analyzer");
 
     if(opts.input.empty()) {
         std::cerr << "No input file provided\n";
