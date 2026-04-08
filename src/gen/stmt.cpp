@@ -163,7 +163,7 @@ llvm::Value* Ast::Nodes::Do::generate(Context& ctx) {
 
     code->generate(ctx);
 
-    ctx.builder.CreateBr(loop_body);
+    ctx.builder.CreateBr(loop_cond);
     ctx.builder.SetInsertPoint(loop_cond);
 
     llvm::Value* cond_val = cond->generate(ctx);
