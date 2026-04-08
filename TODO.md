@@ -8,7 +8,7 @@
     * [X] `-S,--emit-llvm`
     * [X] `--dump-ast`
     * [X] `--dump-tokens`
-    * [ ] `--dump-analyzer`
+    * [X] `--dump-analyzer`
     * [X] `-O,--opt-level`
     * [X] `-o,--output`
     * [ ] `--target`
