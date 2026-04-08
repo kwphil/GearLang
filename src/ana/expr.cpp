@@ -35,6 +35,7 @@ SOFTWARE.
 #include <gearlang/sem/analyze.hpp>
 #include <gearlang/error.hpp>
 
+#include <iostream>
 #include <optional>
 #include <format>
 
@@ -45,13 +46,31 @@ using std::optional;
 unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
     optional<Func> ref = analyzer.lookup_func(callee);
 
+    analyzer.trace(
+        { { "type", "search" }, { "search", callee }, { "status", "start" }, { "for", "function" } }, 
+        Error::ErrorCodes::OK, 
+        span_meta
+    );
+
     if(!ref) {
+        analyzer.trace(
+            { { "type", "search" }, { "search", callee }, { "status", "failed" } }, 
+            Error::ErrorCodes::FUNCTION_NOT_DEFINED, 
+            span_meta
+        );
+
         Error::throw_error(
             span_meta,
             "Function not defined",
             Error::ErrorCodes::FUNCTION_NOT_DEFINED
         );
     }
+
+    analyzer.trace(
+        { { "type", "search" }, { "search", callee }, { "status", "pass" } },
+        Error::ErrorCodes::OK,
+        span_meta
+    );
 
     Func handle = ref.value();
 

@@ -36,7 +36,7 @@ SOFTWARE.
 
 namespace Error {
     enum class ErrorCodes {
-        reserved0,
+        OK,
         EXPECT_VALUE,
         UNEXPECTED_TOKEN,
         UNEXPECTED_EOF,

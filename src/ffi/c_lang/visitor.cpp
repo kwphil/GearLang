@@ -49,7 +49,7 @@ bool CAstVisitor::VisitFunctionDecl(clang::FunctionDecl* func) {
             args.push_back(std::make_unique<Argument>(Argument(
                 "",
                 *manager.c_to_gear_ty(&qt),
-                { 0, 0, 0, 0 }
+                { "", 0, 0, 0, 0 }
             )));
         }
 
@@ -60,7 +60,7 @@ bool CAstVisitor::VisitFunctionDecl(clang::FunctionDecl* func) {
             std::move(args),
             is_variadic,
             true,
-            { 0, 0, 0, 0 }   
+            { "", 0, 0, 0, 0 }   
         );
 
         manager.add_node(std::make_unique<ExternFn>(std::move(fn)));

@@ -84,7 +84,7 @@ Type::Type(Lexer::Stream& s) {
 
     if (!s.has()) {
         Error::throw_error(
-            {0, 0, 0, 0},
+            {"", 0, 0, 0, 0},
             "Stream ended unexpectedly.",
             Error::ErrorCodes::INVALID_AST
         );

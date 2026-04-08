@@ -63,7 +63,7 @@ Lexer::Stream Lexer::tokenize(const std::string& source_path) {
     return tokenize_by_string(out);
 }
 
-Lexer::Stream Lexer::tokenize_by_string(std::string& str) {
+Lexer::Stream Lexer::tokenize_by_string(std::string& str, std::string file_name) {
     std::stringstream file;
     file << str;
     Stream out;
@@ -115,6 +115,7 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str) {
         }
 
         tok.span = {
+            .file  = file_name,
             .line  = token_start_line,
             .col   = token_start_col,
             .start = token_start_index,
@@ -213,7 +214,7 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str) {
             col = 1;
             is_comment = false;
             if(is_string) {
-                Span span { .line=token_start_line, .col=token_start_col, .start=token_start_index, .end=index };
+                Span span { .file=file_name, .line=token_start_line, .col=token_start_col, .start=token_start_index, .end=index };
                 Error::throw_error(span, "Unterminated string", Error::ErrorCodes::UNEXPECTED_TOKEN);
             }
         } else {
@@ -222,7 +223,7 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str) {
     }
 
     if(is_string) {
-        Span span { .line=token_start_line, .col=token_start_col, .start=token_start_index, .end=index };
+        Span span { .file=file_name, .line=token_start_line, .col=token_start_col, .start=token_start_index, .end=index };
         Error::throw_error(span, "Unterminated string", Error::ErrorCodes::UNEXPECTED_TOKEN);
     }
 

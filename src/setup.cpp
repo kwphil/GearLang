@@ -73,6 +73,10 @@ void init_program(argparse::ArgumentParser& program) {
         .help("Print the AST output. Used for debugging the compiler")
         .flag();
 
+    program.add_argument("--dump-analyzer")
+        .help("Print the analyzer output. Used for debugging the compiler")
+        .flag();
+
     program.add_argument("-O", "--opt-level")
         .help("How aggressive the compiler is (e.g. -O 0, -O 1, ...)")
         .default_value(1)
@@ -135,7 +139,7 @@ Ast::Program build_tree(const Options& opts) {
         exit(EXIT_SUCCESS);
     }
 
-    Sem::Analyzer analyzer;
+    Sem::Analyzer analyzer(opts.dump_analyzer);
 
     RUN_STEP("Ffi management", {
         for(auto& curr : ffi_list) {
@@ -161,6 +165,8 @@ Ast::Program build_tree(const Options& opts) {
     RUN_STEP("analyzing",
         analyzer.analyze(root.content);
     );
+
+    analyzer.dump();
 
     return root;
 }
