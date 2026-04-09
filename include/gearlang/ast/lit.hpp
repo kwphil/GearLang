@@ -96,4 +96,18 @@ namespace Ast::Nodes {
         virtual llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
+
+    /// @brief Expression node for char
+    class ExprLitChar : public Literal {
+    private:
+        char c;
+    
+    public:
+        ExprLitChar(char c, Span span) : Literal(span, nullptr), c(c) { }
+        static std::unique_ptr<ExprLitChar> parse(Lexer::Stream& s);
+
+        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
+        virtual llvm::Value* generate(Context& ctx) override;
+        virtual std::string to_string() override;
+    };
 };

@@ -61,3 +61,8 @@ unique_ptr<ExprValue> ExprLitString::analyze(Sem::Analyzer& analyzer) {
     ty = std::make_unique<Type>("char^");
     return std::make_unique<ExprValue>(true, *ty);
 }
+
+unique_ptr<ExprValue> ExprLitChar::analyze(Sem::Analyzer& analyzer) {
+    ty = std::make_unique<Type>("char");
+    return std::make_unique<ExprValue>(true, *ty);
+}

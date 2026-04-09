@@ -108,6 +108,9 @@ Type Lexer::classify(std::string& content, CharType state, Span const& span, Tab
         case CharType::Quote:
             return Type::StringLiteral;
 
+        case CharType::Apost:
+            return Type::CharLiteral;
+
         case CharType::Caret:
             return Type::Caret;
 

@@ -84,3 +84,13 @@ string ExprLitString::to_string() {
 
     return std::format("{{ \"type\":\"ExprLitString\", \"string\":\"{}\" }}", out); 
 }
+
+unique_ptr<ExprLitChar> ExprLitChar::parse(Lexer::Stream& s) {
+    auto t = s.pop();
+
+    return std::make_unique<ExprLitChar>(t->content[0], t->span);
+}
+
+string ExprLitChar::to_string() {
+    return std::format("{{ \"type\":\"ExprLitChar\", \"char\":\"{}\" }}", c);
+}

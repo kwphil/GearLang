@@ -51,6 +51,7 @@ Lexer::CharType Lexer::getCharType(char c) {
         case(';'): return CharType::Semi;
         case('#'): return CharType::Hash;
         case('@'): return CharType::At;
+        case('\''): return CharType::Apost;
         default: return CharType::Sym;
     }
 }

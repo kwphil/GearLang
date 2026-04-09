@@ -1,3 +1,7 @@
 struct String {
-    content char^;
-}
+    data char^;
+    len i32;
+};
+
+let a = 'h';
+let b = '\t';
