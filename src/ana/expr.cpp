@@ -89,6 +89,17 @@ unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
         );
     }
 
+    if(handle.is_variadic && handle.args.size() > args.size()) {
+        Error::throw_error(
+            span_meta,
+            std::format(
+                "Expected at least {} elements, received {}",
+                handle.args.size(), args.size()
+            ).c_str(),
+            Error::ErrorCodes::FUNCTION_INVALID_ARGS
+        );
+    }
+
     auto it = args.begin();
     for(auto& a : handle.args) {
         auto curr_type = (*it)->get_type();
