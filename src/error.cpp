@@ -40,8 +40,54 @@ SOFTWARE.
 
 using namespace Error;
 
+#define ANSI_RESET         "\x1b[0m"
+
+#define ANSI_BOLD          "\x1b[1m"
+#define ANSI_DIM           "\x1b[2m"
+#define ANSI_ITALIC        "\x1b[3m"
+#define ANSI_UNDERLINE     "\x1b[4m"
+#define ANSI_BLINK         "\x1b[5m"
+#define ANSI_REVERSE       "\x1b[7m"
+#define ANSI_HIDDEN        "\x1b[8m"
+
+#define ANSI_FG_BLACK      "\x1b[30m"
+#define ANSI_FG_RED        "\x1b[31m"
+#define ANSI_FG_GREEN      "\x1b[32m"
+#define ANSI_FG_YELLOW     "\x1b[33m"
+#define ANSI_FG_BLUE       "\x1b[34m"
+#define ANSI_FG_MAGENTA    "\x1b[35m"
+#define ANSI_FG_CYAN       "\x1b[36m"
+#define ANSI_FG_WHITE      "\x1b[37m"
+
+#define ANSI_FG_BRIGHT_BLACK   "\x1b[90m"
+#define ANSI_FG_BRIGHT_RED     "\x1b[91m"
+#define ANSI_FG_BRIGHT_GREEN   "\x1b[92m"
+#define ANSI_FG_BRIGHT_YELLOW  "\x1b[93m"
+#define ANSI_FG_BRIGHT_BLUE    "\x1b[94m"
+#define ANSI_FG_BRIGHT_MAGENTA "\x1b[95m"
+#define ANSI_FG_BRIGHT_CYAN    "\x1b[96m"
+#define ANSI_FG_BRIGHT_WHITE   "\x1b[97m"
+
+#define ANSI_BG_BLACK      "\x1b[40m"
+#define ANSI_BG_RED        "\x1b[41m"
+#define ANSI_BG_GREEN      "\x1b[42m"
+#define ANSI_BG_YELLOW     "\x1b[43m"
+#define ANSI_BG_BLUE       "\x1b[44m"
+#define ANSI_BG_MAGENTA    "\x1b[45m"
+#define ANSI_BG_CYAN       "\x1b[46m"
+#define ANSI_BG_WHITE      "\x1b[47m"
+
 std::ifstream input_file;
 std::vector<std::string> error_split_file;
+bool disable_color;
+
+#define STYLE_HEADER(x) (disable_color ? "" : x)
+
+#define ERROR_STYLE STYLE_HEADER(ANSI_BOLD ANSI_FG_BRIGHT_RED)
+#define WARNING_STYLE STYLE_HEADER(ANSI_BOLD ANSI_FG_YELLOW)
+#define SPAN_STYLE STYLE_HEADER(ANSI_BOLD ANSI_FG_MAGENTA)
+#define MESSAGE_STYLE STYLE_HEADER(ANSI_BOLD)
+#define RESET_STYLE STYLE_HEADER(ANSI_RESET)
 
 void Error::throw_error (
     Span const& span,
@@ -54,10 +100,10 @@ void Error::throw_error (
     for(size_t i = 0; i < span.col+number.size()+1; i++) highlight.push_back(' ');
     for(size_t i = 0; i < span.end-span.start; i++) highlight.push_back('^');
 
-    std::cerr << "Error: " << err << '\n' <<
-        span.line << ":" << span.col << ": " << 
+    std::cerr << ERROR_STYLE << "Error: " << RESET_STYLE << MESSAGE_STYLE << err << RESET_STYLE << '\n' <<
+        SPAN_STYLE << span.line << ":" << span.col << ": " << RESET_STYLE << 
         error_split_file[span.line-1] << '\n' <<
-        highlight << std::endl;
+        ERROR_STYLE << highlight << RESET_STYLE << std::endl;
 
     #ifdef ABORT_ON_FAIL
         abort();
@@ -75,14 +121,16 @@ void Error::throw_warning(
 
     for(size_t i = 0; i < span.col+number.size()+1; i++) highlight.push_back(' ');
     for(size_t i = 0; i < span.end-span.start; i++) highlight.push_back('^');
-
-    std::cerr << "Warning: " << warning << '\n' <<
-        span.line << ":" << span.col << ": " << 
+    
+    std::cerr << WARNING_STYLE << "Warning: " << RESET_STYLE << MESSAGE_STYLE << warning << RESET_STYLE << '\n' <<
+        SPAN_STYLE << span.line << ":" << span.col << ": " << RESET_STYLE << 
         error_split_file[span.line-1] << '\n' <<
-        highlight << std::endl;
+        WARNING_STYLE << highlight << RESET_STYLE << std::endl;
 }
 
-void Error::setup_error_manager (const char* filename) {
+void Error::setup_error_manager (const char* filename, bool _disable_color) {
+    disable_color = _disable_color;
+
     input_file.open(filename);
 
     std::string line;

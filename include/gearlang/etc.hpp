@@ -73,13 +73,15 @@ struct Options {
     std::string input;
     std::string output;
 
-    bool verbose = false;
-    bool emit_object = false;
-    bool emit_llvm = false;
+    bool verbose : 1 = false;
+    bool emit_object : 1 = false;
+    bool emit_llvm : 1 = false;
 
-    bool dump_tokens = false;
-    bool dump_ast = false;
-    bool dump_analyzer = false;
+    bool disable_color : 1 = false;
+
+    bool dump_tokens : 1 = false;
+    bool dump_ast : 1 = false;
+    bool dump_analyzer : 1 = false;
 
     unsigned char opt_level = -1;
 };

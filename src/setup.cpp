@@ -81,6 +81,10 @@ void init_program(argparse::ArgumentParser& program) {
         .help("How aggressive the compiler is (e.g. -O 0, -O 1, ...)")
         .default_value(1)
         .scan<'i', int>();
+    
+    program.add_argument("--no-color")
+        .help("Disables color output on diagnostics")
+        .flag();
 }
 
 llvm::Function* build_runtime(Context& ctx) { 

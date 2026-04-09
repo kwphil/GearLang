@@ -71,5 +71,5 @@ namespace Error {
 
     /// @brief Sets up the error management system
     /// @param filename the name of the file to open
-    void setup_error_manager (const char* filename);
+    void setup_error_manager (const char* filename, bool disable_color);
 }

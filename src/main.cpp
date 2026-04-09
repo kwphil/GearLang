@@ -69,7 +69,7 @@ Ast::Program build_tree(const Options& opts);
 int main(int argc, char** argv) {
     Options opts = parse_args(argc, argv);
 
-    Error::setup_error_manager(opts.input.c_str());
+    Error::setup_error_manager(opts.input.c_str(), opts.disable_color);
 
     std::string ir = compile_ir(opts);
 
@@ -106,6 +106,7 @@ static Options parse_args(int argc, char** argv) {
     opts.dump_tokens   = program.get<bool>("--dump-tokens");
     opts.dump_ast      = program.get<bool>("--dump-ast");
     opts.dump_analyzer = program.get<bool>("--dump-analyzer");
+    opts.disable_color = program.get<bool>("--no-color");
 
     if(opts.input.empty()) {
         std::cerr << "No input file provided\n";
