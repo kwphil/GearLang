@@ -103,8 +103,11 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str, std::string file_name)
         if(tok.content.empty() && !token_is_string) // strings can be empty
             return;
 
-        if(state_old == CharType::Invalid ||
-           state_old == CharType::Format
+        if(
+            (
+                state_old == CharType::Invalid ||
+                state_old == CharType::Format
+            ) && !is_string
         ) {
             tok.content.clear();
             return;

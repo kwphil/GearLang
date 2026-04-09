@@ -7,6 +7,8 @@
         ["\\", 3, "StringLiteral"],
         ["hello \"world\"", 4, "StringLiteral"],
         ["", 5, "StringLiteral"],
-        ["hello+world", 6, "StringLiteral"]
+        ["hello+world", 6, "StringLiteral"],
+        ["> ", 7, "StringLiteral"],
+        [" ", 8, "StringLiteral"]
     ]
 }
