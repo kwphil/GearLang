@@ -91,18 +91,19 @@ unique_ptr<ExprCall> ExprCall::parse(
     std::string nm = tok.content;
     std::vector<pExpr> args;
 
-    s.expect("(", span);
+    s.expect("(");
     
     while(s.peek()->type != Lexer::Type::ParenClose) {
         args.push_back(Expr::parse(s));
 
-        // Looking for the ) the loop will end anyway
+        // Looking for the ) explicitly to allow a final ,
         if(s.peek()->type != Lexer::Type::ParenClose) {
-            s.expect(",", span);
+            s.expect(",");
         }
     }
 
-    s.expect(")", span);
+    span.end = s.peek()->span.end;
+    s.expect(")");
 
     return std::make_unique<ExprCall>(nm, args, span);
 }
