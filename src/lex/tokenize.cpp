@@ -37,6 +37,7 @@ SOFTWARE.
 #include <string>
 #include <unordered_set>
 #include <filesystem>
+#include <format>
 
 #include <gearlang/lex.hpp>
 
@@ -45,11 +46,18 @@ using std::string;
 
 namespace fs = std::filesystem;
 
-static char get_escape(char c) {
+static char get_escape(char c, Span span) {
     switch(c) {
+        case '0': return '\0';
         case 'n': return '\n';
         case 't': return '\t';
-        default:  return c;
+        case '\\': return '\\';
+        default:
+            Error::throw_warning(
+                span,
+                std::format("Unknown escape char: \\{}", c).c_str()
+            );
+            return c;
     }
 }
 
@@ -147,13 +155,16 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str, std::string file_name)
                 is_single_char_token(state_old)
             );
 
-        if(!is_string &&
-        state_old == CharType::Alpha &&
-        state_new == CharType::Num) boundary = false;
-
-        if(!is_string &&
-        state_old == CharType::Num &&
-        state_new == CharType::Alpha) boundary = false;
+        if(!is_string) {
+            if(
+                state_old == CharType::Alpha &&
+                state_new == CharType::Num
+            ) boundary = false;
+            else if(
+                state_old == CharType::Num &&
+                state_new == CharType::Alpha
+            ) boundary = false;
+        }
 
         if(boundary) flush(index);
 
@@ -167,7 +178,7 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str, std::string file_name)
         if(is_string && c == '\\') {
             char next;
             if(file.get(next)) {
-                tok.content.push_back(get_escape(next));
+                tok.content.push_back(get_escape(next, { file_name, line, col, index, index+1 }));
                 index++;
                 col++;
                 state_old = state_new;
@@ -175,11 +186,41 @@ Lexer::Stream Lexer::tokenize_by_string(std::string& str, std::string file_name)
             }
         }
 
-        if(state_new == CharType::Quote) {
-            if(is_comment || is_block_comment) {
-                continue;
+        if(state_new == CharType::Apost && !(is_comment || is_block_comment)) {
+            char next;
+            file.get(next); // First char
+            index++;
+            col++;
+            if(next == '\\') { // \x
+                file.get(next);
+                tok.content.push_back(get_escape(next, { file_name, line, col, index, index+1 }));
                 index++;
                 col++;
+            } else tok.content.push_back(next);
+
+            file.get(next); // '
+
+            if(next != '\'') {
+                Error::throw_error(
+                    { file_name, line, col, index, index+1 },
+                    std::format("Expected an ', received: {}", next).c_str(),
+                    Error::ErrorCodes::UNEXPECTED_TOKEN
+                );
+            }
+
+            index++;
+            col++;
+            state_old = CharType::Apost;
+
+            flush(index);
+            continue;
+        }
+
+        if(state_new == CharType::Quote) {
+            if(is_comment || is_block_comment) {
+                index++;
+                col++;
+                continue;
             }
 
             if(!is_string) {

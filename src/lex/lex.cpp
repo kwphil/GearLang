@@ -43,7 +43,15 @@ bool Lexer::Stream::has() {
 }
 
 std::unique_ptr<Lexer::Token> Lexer::Stream::peek() {
-    if(index >= content.size()) return nullptr;
+    auto span = content.back().span;
+    if(index >= content.size()) {
+        Error::throw_error(
+            span,
+            "Unexpected EOF",
+            Error::ErrorCodes::UNEXPECTED_EOF
+        );
+    }
+    
     return std::make_unique<Lexer::Token>(content[index]);
 }
 
@@ -155,6 +163,7 @@ const char* Lexer::print_type(Lexer::Type ty) {
         case(Type::Hash): return "Hash";
         case(Type::Equal): return "Equal";
         case(Type::At): return "At";
-        default: return "Invalid";
+        case(Type::CharLiteral): return "CharLiteral";
+        default: return "No string type";
     }
 }

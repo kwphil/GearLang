@@ -106,6 +106,7 @@ pExpr Expr::parseTerm(Lexer::Stream& s) {
         case Lexer::Type::FloatLiteral:   return ExprLitFloat::parse(s);    break;
         case Lexer::Type::IntegerLiteral: return ExprLitInt::parse(s);      break;
         case Lexer::Type::StringLiteral:  return ExprLitString::parse(s);   break;
+        case Lexer::Type::CharLiteral:    return ExprLitChar::parse(s);     break;
 
         case Lexer::Type::At:   return ExprDeref::parse(s); break;
         case Lexer::Type::Hash: return ExprAddress::parse(s); break;
