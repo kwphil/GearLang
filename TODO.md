@@ -19,15 +19,15 @@
     * [x] Structured error types
     * [X] Error codes
     * [ ] Error recovery strategy
-* [ ] **Lexer**
+    * [x] Error handling 
+    * [x] Graceful
+    * [X] Colored
+      * [X] ANSI support
+      * [X] Disable color flag
+* [X] **Lexer**
   * [x] Basic functionality
     * [x] Token stream generation
     * [x] Whitespace & comments
-  * [x] Error handling
-    * [x] Graceful
-    * [ ] Colored
-      * [ ] ANSI support
-      * [ ] Disable color flag
     * [X] Context-binded error handling
       * [X] Line/column tracking
       * [X] Source snippet highlighting
