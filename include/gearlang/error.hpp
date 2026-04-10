@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include "etc.hpp"
 
+namespace Lexer { class Stream; }
+
 namespace Error {
     enum class ErrorCodes {
         OK,
@@ -61,6 +63,18 @@ namespace Error {
         ErrorCodes code
     );
 
+    /// @brief throws an error based on a span, and attempts to recover
+    /// @param span the span to throw at
+    /// @param err a specific message to throw
+    /// @param code the error code to throw after finishing
+    /// @param s the stream to move index to a sync pointe
+    void throw_error_and_recover(
+        Span const& span,
+        const char* err,
+        ErrorCodes code,
+        Lexer::Stream& s
+    );
+
     /// @brief Throws a warning based on a span.
     /// @param span the span to throw at
     /// @param err a specific message to throw
@@ -68,6 +82,9 @@ namespace Error {
         Span const& span,
         const char* err
     );
+
+    /// @brief If there are any errors, print out the errors and exit
+    void flush();
 
     /// @brief Sets up the error management system
     /// @param filename the name of the file to open

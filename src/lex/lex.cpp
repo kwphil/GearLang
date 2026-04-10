@@ -70,13 +70,13 @@ void Lexer::Stream::expect(
 ) {
     auto is = pop()->content;
     if (is != should) {
-        Error::throw_error(
+        Error::throw_error_and_recover(
             span,
             std::format(
                 "Parser found an error. Expected `{}` but received `{}`",
                 should, is
             ).c_str(),
-            Error::ErrorCodes::EXPECT_VALUE
+            Error::ErrorCodes::EXPECT_VALUE, *this
         );
     }
 }
@@ -84,13 +84,13 @@ void Lexer::Stream::expect(
 void Lexer::Stream::expect(Type should, Span const& span) {
     auto is = pop()->type;
     if (is != should) {
-        Error::throw_error(
+        Error::throw_error_and_recover(
             span,
             std::format(
                 "Parser found an error. Expected `{}` but received `{}`",
                 print_type(should), print_type(is)
             ).c_str(),
-            Error::ErrorCodes::EXPECT_VALUE
+            Error::ErrorCodes::EXPECT_VALUE, *this
         );
     }
 }

@@ -35,8 +35,10 @@ SOFTWARE.
 #include <iostream>
 #include <vector>
 #include <format>
+#include <unordered_set>
 
 #include <gearlang/error.hpp>
+#include <gearlang/lex.hpp>
 
 using namespace Error;
 
@@ -77,6 +79,8 @@ using namespace Error;
 #define ANSI_BG_CYAN       "\x1b[46m"
 #define ANSI_BG_WHITE      "\x1b[47m"
 
+std::unordered_set<ErrorCodes> codes;
+
 std::ifstream input_file;
 std::vector<std::string> error_split_file;
 bool disable_color;
@@ -89,7 +93,7 @@ bool disable_color;
 #define MESSAGE_STYLE STYLE_HEADER(ANSI_BOLD)
 #define RESET_STYLE STYLE_HEADER(ANSI_RESET)
 
-void Error::throw_error (
+void throw_error_base(
     Span const& span,
     const char* err,
     ErrorCodes code
@@ -104,6 +108,48 @@ void Error::throw_error (
         SPAN_STYLE << span.line << ":" << span.col << ": " << RESET_STYLE << 
         error_split_file[span.line-1] << '\n' <<
         ERROR_STYLE << highlight << RESET_STYLE << std::endl;
+}
+
+void Error::throw_error_and_recover(
+    Span const& span,
+    const char* err,
+    ErrorCodes code,
+    Lexer::Stream& s
+) {
+    throw_error_base(span, err, code);
+    codes.insert(code);
+
+    while(s.has()) {
+        auto curr = s.peek()->type;
+        if(curr == Lexer::Type::Semi || curr == Lexer::Type::BraceClose) break;
+        s.pop();
+    }
+}
+
+void Error::flush() {
+    if(codes.empty()) return;
+
+    std::cerr << MESSAGE_STYLE << "Codes thrown: " << RESET_STYLE;
+
+    for(auto it = codes.begin(); it != codes.end(); it++) {
+        std::cerr << ERROR_STYLE << "E00" << (int)*it << RESET_STYLE;
+
+        if(std::next(it) != codes.end()) {
+            std::cerr << ", ";
+        }
+    }
+
+    std::cerr << RESET_STYLE << std::endl;
+}
+
+void Error::throw_error (
+    Span const& span,
+    const char* err,
+    ErrorCodes code
+) {
+    throw_error_base(span, err, code);
+    codes.insert(code);
+    flush();
 
     #ifdef ABORT_ON_FAIL
         abort();

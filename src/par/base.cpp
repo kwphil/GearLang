@@ -55,10 +55,10 @@ bool Ast::check_keyword(std::string target) {
 
 unique_ptr<NodeBase> NodeBase::parse(Lexer::Stream& s) {
     if(!s.has()) {
-        Error::throw_error(
+        Error::throw_error_and_recover(
             Span{},
             "Unexpected EOF",
-            Error::ErrorCodes::UNEXPECTED_EOF
+            Error::ErrorCodes::UNEXPECTED_EOF, s
         );
     }
 

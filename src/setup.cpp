@@ -138,6 +138,8 @@ Ast::Program build_tree(const Options& opts) {
         root = Ast::Program::parse(tokens);
     );
 
+    Error::flush();
+
     if(opts.dump_ast) {
         std::cout << root.to_string() << "\n";
         exit(EXIT_SUCCESS);

@@ -63,10 +63,10 @@ parse_function_args(
 
         while(true) {
             if(!s.has()) {
-                Error::throw_error(
+                Error::throw_error_and_recover(
                     span,
                     "Unexpected EOF parsing function args",
-                    Error::ErrorCodes::UNEXPECTED_EOF
+                    Error::ErrorCodes::UNEXPECTED_EOF, s
                 );
             }
 
