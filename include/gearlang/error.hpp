@@ -63,7 +63,7 @@ namespace Error {
         ErrorCodes code
     );
 
-    /// @brief throws an error based on a span, and attempts to recover
+    /// @brief throws an error based on a span, and attempts to recover. Designed for the parser
     /// @param span the span to throw at
     /// @param err a specific message to throw
     /// @param code the error code to throw after finishing
@@ -73,6 +73,16 @@ namespace Error {
         const char* err,
         ErrorCodes code,
         Lexer::Stream& s
+    );
+
+    /// @brief throws an error based on a span, and attempts to recover. Designed for the analyzer
+    /// @param span the span to throw at
+    /// @param err a specific message to throw
+    /// @param code the error code to throw after finishing
+    void throw_error_and_recover(
+        Span const& span,
+        const char* err,
+        ErrorCodes code
     );
 
     /// @brief Throws a warning based on a span.

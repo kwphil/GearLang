@@ -120,9 +120,8 @@ void Error::throw_error_and_recover(
     codes.insert(code);
 
     while(s.has()) {
-        auto curr = s.peek()->type;
+        auto curr = s.pop()->type;
         if(curr == Lexer::Type::Semi || curr == Lexer::Type::BraceClose) break;
-        s.pop();
     }
 }
 
@@ -131,15 +130,17 @@ void Error::flush() {
 
     std::cerr << MESSAGE_STYLE << "Codes thrown: " << RESET_STYLE;
 
+    int code;
     for(auto it = codes.begin(); it != codes.end(); it++) {
         std::cerr << ERROR_STYLE << "E00" << (int)*it << RESET_STYLE;
 
         if(std::next(it) != codes.end()) {
             std::cerr << ", ";
-        }
+        } else code = (int)*it;
     }
 
     std::cerr << RESET_STYLE << std::endl;
+    exit(code);
 }
 
 void Error::throw_error (
@@ -183,4 +184,13 @@ void Error::setup_error_manager (const char* filename, bool _disable_color) {
     while(std::getline(input_file, line)) {
         error_split_file.push_back(line);
     }
+}
+
+void Error::throw_error_and_recover(
+    Span const& span,
+    const char* err,
+    ErrorCodes code
+) {
+    throw_error_base(span, err, code);
+    codes.insert(code);
 }

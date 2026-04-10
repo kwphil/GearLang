@@ -172,6 +172,8 @@ Ast::Program build_tree(const Options& opts) {
         analyzer.analyze(root.content);
     );
 
+    Error::flush();
+
     analyzer.dump();
 
     return root;

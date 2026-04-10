@@ -18,9 +18,9 @@
   * [x] Graceful Error Handling
     * [x] Structured error types
     * [X] Error codes
-    * [ ] Error recovery strategy
+    * [X] Error recovery strategy
       * [X] Parsing 
-      * [ ] Analyzing
+      * [X] Analyzing
     * [x] Error handling 
     * [x] Graceful
     * [X] Colored
