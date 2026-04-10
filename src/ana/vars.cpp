@@ -71,6 +71,7 @@ bool Let::analyze(Analyzer& analyzer) {
                 ).c_str(),
                 Error::ErrorCodes::BAD_TYPE
             );
+            return false;
         }
     }
 
@@ -80,6 +81,7 @@ bool Let::analyze(Analyzer& analyzer) {
             "`export` can not be used on a non-global variable!",
             Error::ErrorCodes::QUALIFIER_NOT_ALLOWED
         );
+        return false;
     }
 
     is_global = is_public 
@@ -115,11 +117,12 @@ unique_ptr<ExprValue> ExprVar::analyze(Analyzer& analyzer) {
     );
 
     if(!var_wrap.has_value()) {
-        Error::throw_error(
+        Error::throw_error_and_recover(
             span_meta,
             "Unknown variable",
             Error::ErrorCodes::VARIABLE_NOT_DEFINED
         );
+        return nullptr;
     }
 
     analyzer.trace(
@@ -172,11 +175,12 @@ unique_ptr<ExprValue> ExprStructParam::analyze(Sem::Analyzer& analyzer) {
     );
 
     if(!v) {
-        Error::throw_error(
+        Error::throw_error_and_recover(
             span_meta,
             "Tried to access a struct that doesn't exist!",
             Error::ErrorCodes::VARIABLE_NOT_DEFINED
         );
+        return nullptr;
     }
 
     analyzer.trace(
@@ -188,7 +192,7 @@ unique_ptr<ExprValue> ExprStructParam::analyze(Sem::Analyzer& analyzer) {
     index = v->type.struct_parameter_index(name);
 
     if(index < 0) {
-        Error::throw_error(
+        Error::throw_error_and_recover(
             span_meta,
             std::format(
                 "Struct: {} has no member: {}",
@@ -196,6 +200,7 @@ unique_ptr<ExprValue> ExprStructParam::analyze(Sem::Analyzer& analyzer) {
             ).c_str(),
             Error::ErrorCodes::VARIABLE_NOT_DEFINED
         );
+        return nullptr;
     }
 
     analyzer.trace(

@@ -59,11 +59,13 @@ unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
             span_meta
         );
 
-        Error::throw_error(
+        Error::throw_error_and_recover(
             span_meta,
             "Function not defined",
             Error::ErrorCodes::FUNCTION_NOT_DEFINED
         );
+
+        return nullptr;
     }
 
     analyzer.trace(
@@ -79,7 +81,7 @@ unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
     } 
 
     if(handle.args.size() != args.size() && !handle.is_variadic) {
-        Error::throw_error(
+        Error::throw_error_and_recover(
             span_meta, 
             std::format(
                 "Expected {} elements, received {}",
@@ -87,10 +89,11 @@ unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
             ).c_str(),
             Error::ErrorCodes::FUNCTION_INVALID_ARGS
         );
+        return nullptr;
     }
 
     if(handle.is_variadic && handle.args.size() > args.size()) {
-        Error::throw_error(
+        Error::throw_error_and_recover(
             span_meta,
             std::format(
                 "Expected at least {} elements, received {}",
@@ -98,6 +101,7 @@ unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
             ).c_str(),
             Error::ErrorCodes::FUNCTION_INVALID_ARGS
         );
+        return nullptr;
     }
 
     auto it = args.begin();
@@ -106,7 +110,7 @@ unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
         assert(curr_type != std::nullopt);
         if(analyzer.type_is_compatible(a, curr_type.value())) { it++; continue; }
 
-        Error::throw_error(
+        Error::throw_error_and_recover(
             (*it)->span_meta,
             std::format(
                 "Expected type {}, got type {}",
@@ -114,6 +118,7 @@ unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
             ).c_str(),
             Error::ErrorCodes::BAD_TYPE
         );
+        return nullptr;
     }
 
     ty = std::make_unique<Type>(handle.ret);
