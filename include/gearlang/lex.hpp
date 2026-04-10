@@ -32,6 +32,8 @@ SOFTWARE.
 
 #pragma once
 
+#define LEX_HPP
+
 #include <string>
 #include <vector>
 #include <cstdint>

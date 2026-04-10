@@ -131,9 +131,11 @@ pExpr Expr::parseTerm(Lexer::Stream& s) {
 
     std::string error_msg = std::format("Unexpect token: {} (type={})", lit.content, (int)lit.type);
     
-    Error::throw_error(
+    Error::throw_error_and_recover(
         span,
         "Unexpected token.",
-        Error::ErrorCodes::UNEXPECTED_TOKEN
+        Error::ErrorCodes::UNEXPECTED_TOKEN, s
     );
+
+    return nullptr;
 }
