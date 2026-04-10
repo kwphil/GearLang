@@ -1,6 +1,9 @@
 * [ ] **Refactor**
+  * [ ] Docs
   * [ ] Lexer
   * [ ] Type system
+    * [ ] Enums
+    * [ ] C ABI structs
 * [ ] **Frontend**
   * [ ] Compiler options
     * [x] `--verbose`
