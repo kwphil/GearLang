@@ -1,28 +1,17 @@
 This file is just dedicated to random thoughts I had about implementation
 
-## C++ (will compile with the C++ code, will need to be linked somehow)
+## C++ 
 
-I'm thinking about having a config file (like Rust's Cargo.toml), it could probably link to a CMakeFiles or something
+Working on how C is implemented, I'm planning on implementing something similar for it. 
 
-Just an example with toml:
+the Clang++ compiler will not be required, but if it is needed, it may link in the middle of runtime.
 
-```toml
-[Cpp]
-Build = "CMake"
-Path = "cpp/src"
+I'm also thinking about having a config file (Similar to Rust's Cargo.toml), that could be used to extend to the build system on both C and C++ for linking projects.
+
 ```
-
-Or maybe if it uses Makefile it might require more info
-
-```toml
-[Cpp] # Require to compile within a path, maybe like cpp/.gearlang or something
-Build = "Unix Makefiles"
-Path = "cpp"
-Args = "build"
+[cxx]
+build = "cmake"
+// options for using cmake and stuff
+cmake_options = { "_DEBUG": { "value": "ON", "type": "string" } } // Or whatever
 ```
-
-As for implementation, it will probably create wrappers between the two
-
-building a `.gearlang/cpp/wrappers.gear` and a `${cpp_path}/.gearlang/wrappers.cpp` to create C functions
-
 
