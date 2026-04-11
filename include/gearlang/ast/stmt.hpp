@@ -67,7 +67,7 @@ namespace Ast::Nodes {
 
         /// @brief For the semantic analyzer
         /// @param analyzer The analyzer object
-        virtual void analyze(Sem::Analyzer& analyzer) = 0;
+        virtual bool analyze(Sem::Analyzer& analyzer) = 0;
     };
 
     /// @brief Node for defining structs
@@ -86,7 +86,7 @@ namespace Ast::Nodes {
 
         static unique_ptr<Struct> parse(Lexer::Stream& s);
         virtual std::string to_string() override;
-        virtual void analyze(Sem::Analyzer& analyzer) override;
+        virtual bool analyze(Sem::Analyzer& analyzer) override;
         virtual llvm::Value* generate(Context& ctx) override { ty.struct_to_llvm(ty, ctx, name); return nullptr; }
     };
 
@@ -125,7 +125,7 @@ namespace Ast::Nodes {
                 lang, type, file
             ); 
         } 
-        virtual void analyze(Sem::Analyzer& analyzer) override { }
+        virtual bool analyze(Sem::Analyzer& analyzer) override { return false; }
         virtual llvm::Value* generate(Context& ctx) override { return nullptr; }
     };
 
@@ -147,7 +147,7 @@ namespace Ast::Nodes {
 
         static unique_ptr<If> parse(Lexer::Stream& s);
 
-        virtual void analyze(Sem::Analyzer& analyzer) override;
+        virtual bool analyze(Sem::Analyzer& analyzer) override;
         llvm::Value* generate(Context& ctx) override;
 
         virtual std::string to_string() override;
@@ -170,7 +170,7 @@ namespace Ast::Nodes {
             Lexer::Stream& s
         );
 
-        virtual void analyze(Sem::Analyzer& analyzer) override;
+        virtual bool analyze(Sem::Analyzer& analyzer) override;
         llvm::Value* generate(Context& ctx);
 
         virtual std::string to_string() override;
@@ -202,7 +202,7 @@ namespace Ast::Nodes {
         std::string get_name() { return target; }
         Sem::Type get_type() { return *ty; }
         llvm::Value* generate(Context& ctx) override;
-        void analyze(Sem::Analyzer& analyzer) override; 
+        bool analyze(Sem::Analyzer& analyzer) override; 
         virtual std::string to_string() override;
     };
 
@@ -218,8 +218,57 @@ namespace Ast::Nodes {
 
         static std::unique_ptr<Return> parse(Lexer::Stream& s);
 
-        virtual void analyze(Sem::Analyzer& analyzer) override;
+        virtual bool analyze(Sem::Analyzer& analyzer) override;
         llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
+    };
+
+    /// @brief Expression node for blocks of nodes
+    class Block : public Stmt {
+    private:
+        /// @brief The list of nodes in the block
+        std::vector<std::unique_ptr<NodeBase>> nodes;
+    
+    public:
+        Block(std::vector<std::unique_ptr<NodeBase>>&& nodes, Span span)
+        : Stmt(span), nodes(std::move(nodes)) { }
+
+        static std::unique_ptr<Block> parse(Lexer::Stream& s);
+
+        virtual bool analyze(Sem::Analyzer& analyzer) override;
+        llvm::Value* generate(Context& ctx) override;
+        virtual std::string to_string() override;
+    };
+
+    class While : public Stmt {
+    private:
+        std::unique_ptr<NodeBase> code;
+        std::unique_ptr<Expr> cond;
+
+    public:
+        While(std::unique_ptr<NodeBase> code, std::unique_ptr<Expr> cond, Span span)
+        : Stmt(span), code(std::move(code)), cond(std::move(cond)) { }
+
+        static std::unique_ptr<While> parse(Lexer::Stream& s);
+
+        virtual bool analyze(Sem::Analyzer& analyzer);
+        llvm::Value* generate(Context& ctx) override;
+        virtual std::string to_string() override { return ""; }
+    };
+
+    class Do : public Stmt {
+    private:
+        std::unique_ptr<NodeBase> code;
+        std::unique_ptr<Expr> cond;
+
+    public:
+        Do(std::unique_ptr<NodeBase> code, std::unique_ptr<Expr> cond, Span span)
+        : Stmt(span), code(std::move(code)), cond(std::move(cond)) { }
+
+        static std::unique_ptr<Do> parse(Lexer::Stream& s);
+
+        virtual bool analyze(Sem::Analyzer& analyzer);
+        llvm::Value* generate(Context& ctx) override;
+        virtual std::string to_string() override { return ""; };
     };
 }

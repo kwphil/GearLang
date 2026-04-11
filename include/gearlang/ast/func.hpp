@@ -78,7 +78,7 @@ namespace Ast::Nodes {
 
         static unique_ptr<Function> parse(Lexer::Stream& s);
 
-        virtual void analyze(Sem::Analyzer& analyzer) override;
+        virtual bool analyze(Sem::Analyzer& analyzer) override;
         llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
@@ -109,7 +109,7 @@ namespace Ast::Nodes {
 
         static unique_ptr<ExternFn> parse(Lexer::Stream& s);
 
-        virtual void analyze(Sem::Analyzer& analyzer) override;
+        virtual bool analyze(Sem::Analyzer& analyzer) override;
         llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };

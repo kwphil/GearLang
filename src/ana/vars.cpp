@@ -45,7 +45,7 @@ SOFTWARE.
 using namespace Ast::Nodes;
 using namespace Sem;
 
-void Let::analyze(Analyzer& analyzer) {
+bool Let::analyze(Analyzer& analyzer) {
     unique_ptr<ExprValue> rvalue;
 
     if(expr) {
@@ -53,11 +53,15 @@ void Let::analyze(Analyzer& analyzer) {
         assert(expr->get_type() != std::nullopt);
         Type rvalue_ty = expr->get_type().value();
         
-        if(!ty) 
+        if(!ty) {
             ty = std::make_unique<Type>(rvalue_ty);
 
-        ;
-
+            analyzer.trace(
+                { { "kind", "find type" }, { "var", target }, { "type", ty->dump() } },
+                Error::ErrorCodes::OK, span_meta
+            );
+        }
+        
         if(!analyzer.type_is_compatible(*ty, rvalue_ty)) {
             Error::throw_error(
                 span_meta,
@@ -67,6 +71,7 @@ void Let::analyze(Analyzer& analyzer) {
                 ).c_str(),
                 Error::ErrorCodes::BAD_TYPE
             );
+            return false;
         }
     }
 
@@ -76,6 +81,7 @@ void Let::analyze(Analyzer& analyzer) {
             "`export` can not be used on a non-global variable!",
             Error::ErrorCodes::QUALIFIER_NOT_ALLOWED
         );
+        return false;
     }
 
     is_global = is_public 
@@ -89,19 +95,40 @@ void Let::analyze(Analyzer& analyzer) {
         .let_stmt=this
     };
 
+    analyzer.trace(
+        { 
+            { "kind", "declare" }, 
+            { "declare", "var" }, 
+            { "name", target }, 
+            { "global", std::to_string((int)is_global) },
+        },
+        Error::ErrorCodes::OK, span_meta
+    );
     analyzer.add_variable(target, var);
+    return false;
 }
 
 unique_ptr<ExprValue> ExprVar::analyze(Analyzer& analyzer) {
     optional<Variable> var_wrap = analyzer.decl_lookup(name);
 
+    analyzer.trace(
+        { { "kind", "search" }, { "search", name }, { "for", "var" }, { "status", "start" } },
+        Error::ErrorCodes::OK, span_meta
+    );
+
     if(!var_wrap.has_value()) {
-        Error::throw_error(
+        Error::throw_error_and_recover(
             span_meta,
             "Unknown variable",
             Error::ErrorCodes::VARIABLE_NOT_DEFINED
         );
+        return nullptr;
     }
+
+    analyzer.trace(
+        { { "kind", "search" }, { "search", name }, { "status", "pass" } },
+        Error::ErrorCodes::OK, span_meta
+    );
 
     Variable var = var_wrap.value();
 
@@ -133,27 +160,39 @@ unique_ptr<ExprValue> Argument::analyze(Analyzer& analyzer) {
     return nullptr;
 }
 
-void Struct::analyze(Sem::Analyzer& analyzer) {
+bool Struct::analyze(Sem::Analyzer& analyzer) {
     Variable v = { .name=name, .type=ty, .is_global=true, .let_stmt=this };
     analyzer.add_variable(name, v);
+    return false;
 }
 
 unique_ptr<ExprValue> ExprStructParam::analyze(Sem::Analyzer& analyzer) {
     optional<Variable> v = analyzer.decl_lookup(struct_name);
 
+    analyzer.trace(
+        { { "kind", "search" }, { "search", name }, { "for", "var" }, { "status", "start" } },
+        Error::ErrorCodes::OK, span_meta
+    );
+
     if(!v) {
-        Error::throw_error(
+        Error::throw_error_and_recover(
             span_meta,
             "Tried to access a struct that doesn't exist!",
             Error::ErrorCodes::VARIABLE_NOT_DEFINED
         );
+        return nullptr;
     }
+
+    analyzer.trace(
+        { { "kind", "search" }, { "search", name }, { "status", "pass" } },
+        Error::ErrorCodes::OK, span_meta
+    );
 
     let = v->let_stmt;
     index = v->type.struct_parameter_index(name);
 
     if(index < 0) {
-        Error::throw_error(
+        Error::throw_error_and_recover(
             span_meta,
             std::format(
                 "Struct: {} has no member: {}",
@@ -161,7 +200,18 @@ unique_ptr<ExprValue> ExprStructParam::analyze(Sem::Analyzer& analyzer) {
             ).c_str(),
             Error::ErrorCodes::VARIABLE_NOT_DEFINED
         );
+        return nullptr;
     }
+
+    analyzer.trace(
+        { 
+            { "kind", "struct index" }, 
+            { "struct", v->type.dump() }, 
+            { "param", name }, 
+            { "index", std::to_string(index) } 
+        },
+        Error::ErrorCodes::OK, span_meta
+    );
 
     ty = std::make_unique<Type>(v->type);
 

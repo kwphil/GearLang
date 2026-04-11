@@ -100,7 +100,7 @@ llvm::Value* Function::generate(Context& ctx) {
 
     generate_node(block.get(), ctx);
 
-    if (!entry->getTerminator()) {
+    if (!fn->back().getTerminator()) {
         if(ty == "void") ctx.builder.CreateRetVoid();
         else ctx.builder.CreateRet(
             llvm::Constant::getNullValue(

@@ -42,15 +42,12 @@ using namespace Lexer;
 using std::unordered_set;
 using std::string;
 
-extern unordered_set<string> keywords;
-extern unordered_set<string> operators;
-
-Lexer::Type Lexer::classify(std::string& content, CharType state, Span const& span) {
-    if (keywords.contains(content)) {
+Type Lexer::classify(std::string& content, CharType state, Span const& span, Table& table) {
+    if (table.keywords.contains(content)) {
         return Type::Keyword;
     }
 
-    if (operators.contains(content)) {
+    if (table.operators.contains(content)) {
         return Type::Operator;
     }
 
@@ -110,6 +107,9 @@ Lexer::Type Lexer::classify(std::string& content, CharType state, Span const& sp
 
         case CharType::Quote:
             return Type::StringLiteral;
+
+        case CharType::Apost:
+            return Type::CharLiteral;
 
         case CharType::Caret:
             return Type::Caret;

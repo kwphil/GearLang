@@ -32,15 +32,23 @@ SOFTWARE.
 
 #pragma once
 
+#define LEX_HPP
+
 #include <string>
 #include <vector>
 #include <cstdint>
 #include <source_location>
 #include <memory>
+#include <unordered_set>
 
 #include "etc.hpp"
 
 namespace Lexer {
+
+struct Table {
+    std::unordered_set<std::string> keywords;
+    std::unordered_set<std::string> operators;
+};
 
 /// @brief Character types used during lexing
 enum class CharType {
@@ -51,6 +59,7 @@ enum class CharType {
     Sym,
     Format,
     Quote,
+    Apost,
     Brace,
     Caret,
     Semi,
@@ -72,6 +81,7 @@ enum class Type {
     IntegerLiteral,
     FloatLiteral,
     StringLiteral,
+    CharLiteral,
     Operator,
     ParenOpen,
     ParenClose,
@@ -92,7 +102,7 @@ const char* print_type(Type ty);
 /// @param content Content of the token
 /// @param state Ending character type of the token
 /// @return Token type
-Type classify(std::string& content, CharType state, Span const& span);
+Type classify(std::string& content, CharType state, Span const& span, Table& table);
 
 /// @brief Token representation
 class Token {
@@ -153,6 +163,6 @@ public:
 /// @param source_path Path to the source file
 /// @return Token stream
 Stream tokenize(const std::string& source_path);
-Stream tokenize_by_string(std::string& str);
+Stream tokenize_by_string(std::string& str, std::string file_name="");
 
 } 

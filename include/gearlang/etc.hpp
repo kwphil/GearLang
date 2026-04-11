@@ -34,6 +34,7 @@ SOFTWARE.
 
 #include <memory>
 #include <cassert>
+#include <sstream>
 #include <functional>
 
 #include <llvm/IR/Value.h>
@@ -41,6 +42,12 @@ SOFTWARE.
 /// @brief Safe casting
 template<typename From, typename To>
 inline To* try_cast(From* from) {
+    assert(from != nullptr);
+    return dynamic_cast<To*>(from);
+}
+
+template<typename To, typename From>
+inline To* cast_to(From from) {
     assert(from != nullptr);
     return dynamic_cast<To*>(from);
 }
@@ -55,6 +62,7 @@ inline To* cast_from_uptr(std::unique_ptr<From>* from) {
 
 /// @brief span metadata for tokens
 struct Span {
+    std::string file;
     size_t line;
     size_t col;
     size_t start;
@@ -65,18 +73,34 @@ struct Options {
     std::string input;
     std::string output;
 
-    bool verbose = false;
-    bool emit_object = false;
-    bool emit_llvm = false;
+    bool verbose : 1 = false;
+    bool emit_object : 1 = false;
+    bool emit_llvm : 1 = false;
 
-    bool dump_tokens = false;
-    bool dump_ast = false;
+    bool disable_color : 1 = false;
+
+    bool dump_tokens : 1 = false;
+    bool dump_ast : 1 = false;
+    bool dump_analyzer : 1 = false;
+
+    unsigned char opt_level = -1;
 };
 
-// If successfully casts, do x with it
-template<typename Ret, typename From, typename To>
-inline Ret if_cast_then_do(From* from, std::function<Ret(To*)> lambda) {
+// If successfully casts, do x with it. Otherwise return NULL
+template<typename To, typename Ret, typename From, class Func, typename ...Args>
+inline Ret if_cast_then_do(From from, Func lambda, Args... args) {
     To* to = dynamic_cast<To*>(from);
-    if(to) return lambda(to);
-    return NULL;
+    if(to) return lambda(to, args...);
+    if constexpr (!std::is_void_v<Ret>) 
+        return Ret{};
+}
+
+inline std::vector<std::string> split_string(const std::string& str, char delimiter) {
+    std::vector<std::string> tokens;
+    std::stringstream ss(str);
+    std::string token;
+    while (std::getline(ss, token, delimiter)) {
+        tokens.push_back(token);
+    }
+    return tokens;
 }

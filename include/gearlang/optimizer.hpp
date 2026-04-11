@@ -30,39 +30,28 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#pragma once
+
 #include <gearlang/ast/expr.hpp>
-#include <gearlang/ast/lit.hpp>
-#include <gearlang/sem/type.hpp>
-#include <gearlang/sem/val.hpp>
+#include <gearlang/etc.hpp>
 
+#include <memory>
+
+using std::unique_ptr;
 using namespace Ast::Nodes;
-using Sem::ExprValue;
-using Sem::Type;
 
-unique_ptr<ExprValue> ExprLitInt::analyze(Sem::Analyzer& analyzer) {
-    Type raw_ty;
+namespace Optimizer {
+    /// @brief Which optimizations that will occur
+    extern int opts;
 
-    if(value <= 0xff) raw_ty = Type("i8");
-    else if(value <= 0xffff) raw_ty = Type("i16");
-    else if(value <= 0xffffffff) raw_ty = Type("i32");
-    else raw_ty = Type("i64");
+    /// @brief Attempts to fold an expression
+    /// @param expr The exprop to fold and replace
+    std::unique_ptr<Expr> fold(std::unique_ptr<ExprOp> expr);
+    /// @brief Checks if the expression is a constant
+    bool is_const(Expr* expr);
+};
 
-    ty = std::make_unique<Type>(raw_ty);
+#define OPERATION_FOLDING 0x1 // 1 + 1 => 2
+#define DEAD_CODE_ELIMINATION 0x2 // Deletes code that will never run
 
-    return std::make_unique<ExprValue>(true, *ty);
-}
-
-unique_ptr<ExprValue> ExprLitFloat::analyze(Sem::Analyzer& analyzer) {
-    ty = std::make_unique<Type>("f32");
-    return std::make_unique<ExprValue>(true, *ty);
-}
-
-unique_ptr<ExprValue> ExprLitString::analyze(Sem::Analyzer& analyzer) {
-    ty = std::make_unique<Type>("char^");
-    return std::make_unique<ExprValue>(true, *ty);
-}
-
-unique_ptr<ExprValue> ExprLitChar::analyze(Sem::Analyzer& analyzer) {
-    ty = std::make_unique<Type>("char");
-    return std::make_unique<ExprValue>(true, *ty);
-}
+constexpr bool is_opt_active(unsigned char opt) { return (Optimizer::opts & opt) > 0; }

@@ -34,6 +34,7 @@ SOFTWARE.
 #include <gearlang/sem/val.hpp>
 #include <gearlang/sem/analyze.hpp>
 #include <gearlang/error.hpp>
+#include <gearlang/optimizer.hpp>
 
 #include <format>
 
@@ -48,7 +49,7 @@ unique_ptr<ExprValue> ExprOp::analyze(Analyzer& analyzer) {
         assert(left->get_type() != std::nullopt);
         assert(right->get_type() != std::nullopt);
 
-        Error::throw_error(
+        Error::throw_error_and_recover(
             span_meta,
             std::format(
                 "Types do not match. lhs: {}, rhs: {}",
@@ -56,6 +57,7 @@ unique_ptr<ExprValue> ExprOp::analyze(Analyzer& analyzer) {
             ).c_str(),
             Error::ErrorCodes::BAD_TYPE
         );
+        return nullptr;
     }
 
     // Checking for boolean operators
@@ -67,6 +69,8 @@ unique_ptr<ExprValue> ExprOp::analyze(Analyzer& analyzer) {
 
     // Implicit cast
     right->set_type(lhs->ty);
+
+    // Optimizer::fold(this);
 
     return std::make_unique<ExprValue>(lhs->is_const && rhs->is_const, lhs->ty);
 }

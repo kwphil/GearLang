@@ -38,34 +38,42 @@ SOFTWARE.
 using namespace Ast::Nodes;
 using namespace Sem;
 
-void If::analyze(Analyzer& analyzer) {
-    analyze_nodebase(&expr, analyzer);
+bool If::analyze(Analyzer& analyzer) {
+    return analyze_nodebase(&expr, analyzer);
 }
 
-void Else::analyze(Analyzer& analyzer) {
+bool Else::analyze(Analyzer& analyzer) {
     cond->analyze(analyzer);
-    analyze_nodebase(&expr, analyzer);
-    analyze_nodebase(&else_expr, analyzer);
+    bool et = analyze_nodebase(&expr, analyzer);
+    bool ef = analyze_nodebase(&else_expr, analyzer);
+
+    return et && ef;
 }
 
-void Return::analyze(Analyzer& analyzer) {
+bool Return::analyze(Analyzer& analyzer) {
     expr->analyze(analyzer);
+    return true;
 }
 
-void Function::analyze(Analyzer& analyzer) {
-    weak_ptr<Analyzer::Scope> fn_scope = analyzer.new_scope();
+bool Function::analyze(Analyzer& analyzer) {
+    weak_ptr<Analyzer::Scope> fn_scope = analyzer.new_scope(span_meta);
     vector<Type> arg_handle;
 
-    for(auto& arg : args) { // Won't matter too much to change values 
+    for(auto& arg : args) { 
         arg->analyze(analyzer);
         auto ty_wrap = arg->get_type();
         assert(ty_wrap != std::nullopt);
         arg_handle.push_back(ty_wrap.value());
     }
     
-    analyze_nodebase(&block, analyzer);
+    if(!analyze_nodebase(&block, analyzer) && ty != Sem::Type("void")) {
+        Error::throw_warning(
+            block->span_meta,
+            "Control reached end of non-void function"
+        );
+    }
 
-    analyzer.delete_scope();
+    analyzer.delete_scope(span_meta);
 
     Sem::Func handle = {
         .name=name,
@@ -75,9 +83,10 @@ void Function::analyze(Analyzer& analyzer) {
     };
 
     analyzer.add_function(name, handle);
+    return true;
 }
 
-void ExternFn::analyze(Analyzer& analyzer) {
+bool ExternFn::analyze(Analyzer& analyzer) {
     vector<Type> arg_handle;
     for(auto& a : args) {
         auto ty_wrap = a->get_type();
@@ -93,4 +102,41 @@ void ExternFn::analyze(Analyzer& analyzer) {
     };
 
     analyzer.add_function(callee, handle);
+    return false;
+}
+
+bool Block::analyze(Analyzer& analyzer) {
+    analyzer.new_scope(span_meta);
+    bool finishes = false;
+    bool has_warned = false;
+    
+    for(auto& node : nodes) {
+        if(finishes) {
+            node->is_dead = true;
+            if(!has_warned) {
+                Error::throw_warning(
+                    node->span_meta,
+                    "Control flow will never reach this statement"
+                );
+                has_warned = true;
+            }
+        }
+        if(analyze_nodebase(&node, analyzer)) finishes = true;
+    }
+
+    analyzer.delete_scope(span_meta);
+
+    return finishes;
+}
+
+bool Do::analyze(Sem::Analyzer& analyzer) { 
+    cond->analyze(analyzer);
+    analyze_nodebase(&code, analyzer);
+    return false; 
+}
+
+bool While::analyze(Sem::Analyzer& analyzer) { 
+    cond->analyze(analyzer);
+    analyze_nodebase(&code, analyzer);
+    return false; 
 }

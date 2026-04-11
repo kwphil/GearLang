@@ -36,6 +36,7 @@ SOFTWARE.
 #include <unordered_map>
 #include <string>
 #include <deque>
+#include <iostream>
 
 #include <gearlang/ast/base.hpp>
 #include <gearlang/ast/stmt.hpp>
@@ -43,6 +44,7 @@ SOFTWARE.
 #include <gearlang/lex.hpp>
 #include <gearlang/etc.hpp>
 #include "type.hpp"
+#include "analyzer_debug.hpp"
 
 using std::string;
 using std::vector;
@@ -60,15 +62,33 @@ namespace Sem {
         typedef std::unordered_map<string, Variable> Scope;
 
     private: 
+        Logger logger;
         vector<shared_ptr<Scope>> active_scopes;
         unordered_map<string, Func> function_list; 
 
         bool analyze_decl_statements(NodeBase* node);
 
     public: 
-        Analyzer() { new_scope(); }
+        bool dump_self;
+
+        Analyzer(bool dump) : dump_self(dump) { new_scope({ "", 0, 0, 0, 0 }); }
 
         void analyze(std::deque<std::unique_ptr<NodeBase>>& nodes);
+
+        // ---------- DUMP ANALYZER --------------
+
+        void trace(
+            const std::unordered_map<std::string, std::string>& data,
+            Error::ErrorCodes code,
+            Span span
+        ) {
+            if (!dump_self) return;
+            auto enriched = data;
+
+            logger.log(enriched, code, span);
+        }
+
+        void dump() { if(dump_self) std::cout << logger.to_json() << std::endl; }
 
         // ---------- DECLARATIONS ---------------
         
@@ -78,9 +98,9 @@ namespace Sem {
         optional<Variable> decl_lookup(string name); 
         /// @brief Pushes a new scope to the stack
         /// @return a pointer to the new scope
-        weak_ptr<Scope> new_scope();
+        weak_ptr<Scope> new_scope(Span span);
         /// @brief Pops the scope off the stack
-        void delete_scope();
+        void delete_scope(Span span);
         /// @brief Adds a variable
         /// @param name the name of the variable
         /// @param var the semantic information from the variable
@@ -110,11 +130,11 @@ namespace Sem {
     };
 }
 
-constexpr void analyze_nodebase(std::unique_ptr<NodeBase>* node, Analyzer& analyzer) {
+constexpr bool analyze_nodebase(std::unique_ptr<NodeBase>* node, Analyzer& analyzer) {
     if(Stmt* stmt = cast_from_uptr<NodeBase, Stmt>(node)) {
-        stmt->analyze(analyzer);
-        return;
+        return stmt->analyze(analyzer);
     }
 
     cast_from_uptr<NodeBase, Expr>(node)->analyze(analyzer);
+    return false;
 }

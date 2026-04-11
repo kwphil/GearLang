@@ -135,13 +135,13 @@ unique_ptr<ExternFn> ExternFn::parse(Lexer::Stream& s) {
         auto tok = s.pop();
 
         if(tok->type != Lexer::Type::StringLiteral) {
-            Error::throw_error(
+            Error::throw_error_and_recover(
                 tok->span,
                 std::format(
                     "Expected StringLiteral, received {}",
                     Lexer::print_type(tok->type)
                 ).c_str(),
-                Error::ErrorCodes::UNEXPECTED_TOKEN
+                Error::ErrorCodes::UNEXPECTED_TOKEN, s
             );
         }
 

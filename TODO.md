@@ -1,3 +1,9 @@
+* [ ] **Refactor**
+  * [ ] Docs
+  * [ ] Lexer
+  * [ ] Type system
+    * [ ] Enums
+    * [ ] C ABI structs
 * [ ] **Frontend**
   * [ ] Compiler options
     * [x] `--verbose`
@@ -8,23 +14,25 @@
     * [X] `-S,--emit-llvm`
     * [X] `--dump-ast`
     * [X] `--dump-tokens`
-    * [ ] `--dump-analyzer`
-    * [ ] `-O,--opt-level`
+    * [X] `--dump-analyzer`
+    * [X] `-O,--opt-level`
     * [X] `-o,--output`
     * [ ] `--target`
   * [x] Graceful Error Handling
     * [x] Structured error types
     * [X] Error codes
-    * [ ] Error recovery strategy
-* [ ] **Lexer**
+    * [X] Error recovery strategy
+      * [X] Parsing 
+      * [X] Analyzing
+    * [x] Error handling 
+    * [x] Graceful
+    * [X] Colored
+      * [X] ANSI support
+      * [X] Disable color flag
+* [X] **Lexer**
   * [x] Basic functionality
     * [x] Token stream generation
     * [x] Whitespace & comments
-  * [x] Error handling
-    * [x] Graceful
-    * [ ] Colored
-      * [ ] ANSI support
-      * [ ] Disable color flag
     * [X] Context-binded error handling
       * [X] Line/column tracking
       * [X] Source snippet highlighting
@@ -42,7 +50,8 @@
   * [X] Type checking
   * [X] Implicit casts
   * [X] Function signature validation
-  * [ ] Unreachable code detection
+  * [X] Unreachable code detection
+  * [ ] Match/Case Exhaustiveness check
 * [ ] **Code Generation**
   * [x] Simple Expressions
     * [x] Arithmetic
@@ -51,7 +60,6 @@
     * [x] If statements
     * [x] If/Else
     * [ ] Match/Case
-      * [ ] Exhaustiveness checking
       * [ ] Pattern binding
   * [ ] Functions
     * [x] Main function
@@ -69,20 +77,22 @@
     * [x] Variable variable types
     * [X] Implicit matching
 * [ ] **Compatibility**
-  * [ ] Basic C Functions
+  * [X] Basic C Functions
     * [x] C Runtime
     * [x] Basic data
     * [x] C Strings
     * [x] Variadic Args
+  * [ ] Near full C Functionality
     * [X] Header-based bindings
-    * [ ] Typedefs
+    * [X] Typedefs
+    * [ ] Inline functions
   * [ ] Basic C++ Functionality
     * [ ] Common Name Mangling
     * [ ] Extern "C++" support
     * [ ] Simple class interop
 * [ ] **Optimizer**
-  * [ ] Constant folding
-  * [ ] Dead code elimination
+  * [X] Constant folding
+  * [X] Dead code elimination
   * [ ] Common subexpression elimination
   * [ ] Inlining
   * [ ] Control-flow graph generation

@@ -70,47 +70,122 @@ llvm::Value* Ast::Nodes::Return::generate(Context& ctx) {
 // If in the global scope, it creates a global variable
 llvm::Value* Ast::Nodes::Let::generate(Context& ctx) {
     Expr* rvalue = dynamic_cast<Expr*>(expr.get());
-    llvm::Value* initVal;
+    llvm::Value* init_val = nullptr;
 
     if(rvalue) {
-        initVal = rvalue->generate(ctx);
+        init_val = rvalue->generate(ctx);
     }
 
-    if (is_global) {
-        // Creating a placeholder and then assigning the value
-        llvm::Constant* placeholder = 
-            llvm::Constant::getNullValue(ty->to_llvm(ctx));
-        
-        // Create the variable
-        llvm::GlobalVariable* var = new llvm::GlobalVariable(
-            *(ctx.module),
-            ty->to_llvm(ctx),
-            false,
-            is_public 
-            ? llvm::GlobalValue::ExternalLinkage
-            : llvm::GlobalValue::PrivateLinkage,
-            placeholder,
-            target
-        );
+    if(!is_global) {
+        llvm::Function* fn = ctx.current_fn;
+        llvm::AllocaInst* alloca =
+            ctx.create_entry_block(fn, target, ty->to_llvm(ctx));
+
+        var = alloca;
 
         if(rvalue) {
-            ctx.builder.CreateStore(initVal, var);
+            ctx.builder.CreateStore(init_val, alloca);
         }
-
-        this->var = var;
 
         return nullptr;
     }
 
-    llvm::Function* fn = ctx.current_fn;
-    llvm::AllocaInst* alloca =
-        ctx.create_entry_block(fn, target, ty->to_llvm(ctx));
+    llvm::Constant* constant;
+    bool require_store = false;
 
-    var = alloca;
-
-    if(rvalue) {
-        ctx.builder.CreateStore(initVal, alloca);
+    if(auto c = llvm::dyn_cast<llvm::Constant>(init_val)) {
+        constant = c;
+    } else {
+        constant = llvm::Constant::getNullValue(ty->to_llvm(ctx));
+        require_store = true;
     }
+
+    llvm::GlobalVariable* var = new llvm::GlobalVariable(
+        *(ctx.module),
+        ty->to_llvm(ctx),
+        false,
+        is_public 
+            ? llvm::GlobalValue::ExternalLinkage
+            : llvm::GlobalValue::PrivateLinkage,
+        constant,
+        target
+    );
+
+    if(require_store) {
+        ctx.builder.CreateStore(constant, var);
+    }
+
+    this->var = var;
+    return nullptr;
+}
+
+llvm::Value* Ast::Nodes::While::generate(Context& ctx) {
+    llvm::BasicBlock* loop_cond = 
+        llvm::BasicBlock::Create(ctx.llvmCtx, "while.cond", ctx.current_fn);
+    llvm::BasicBlock* loop_body = 
+        llvm::BasicBlock::Create(ctx.llvmCtx, "while.body", ctx.current_fn);
+    llvm::BasicBlock* after_loop = 
+        llvm::BasicBlock::Create(ctx.llvmCtx, "while.end", ctx.current_fn);
+
+    ctx.builder.CreateBr(loop_cond);
+
+    ctx.builder.SetInsertPoint(loop_cond);
+
+    llvm::Value* cond_val = cond->generate(ctx);
+
+    llvm::Value* condv = ctx.builder.CreateICmpNE(
+        cond_val,
+        llvm::ConstantInt::get(
+            cond_val->getType(),
+            0,
+            true
+        ),
+        "wcond"
+    );
+
+    ctx.builder.CreateCondBr(condv, loop_body, after_loop);
+    ctx.builder.SetInsertPoint(loop_body);
+    
+    code->generate(ctx);
+
+    ctx.builder.CreateBr(loop_cond); 
+    ctx.builder.SetInsertPoint(after_loop);
+
+    return nullptr;
+}
+
+llvm::Value* Ast::Nodes::Do::generate(Context& ctx) {
+    llvm::BasicBlock* loop_body = 
+        llvm::BasicBlock::Create(ctx.llvmCtx, "do.body", ctx.current_fn);
+    llvm::BasicBlock* loop_cond = 
+        llvm::BasicBlock::Create(ctx.llvmCtx, "do.cond", ctx.current_fn);
+    llvm::BasicBlock* after_loop = 
+        llvm::BasicBlock::Create(ctx.llvmCtx, "do.end", ctx.current_fn);
+
+    ctx.builder.CreateBr(loop_body);
+    ctx.builder.SetInsertPoint(loop_body);
+
+    code->generate(ctx);
+
+    ctx.builder.CreateBr(loop_cond);
+    ctx.builder.SetInsertPoint(loop_cond);
+
+    llvm::Value* cond_val = cond->generate(ctx);
+    llvm::Value* condv = ctx.builder.CreateICmpNE(
+        cond_val,
+        llvm::ConstantInt::get(
+            cond_val->getType(),
+            0,
+            true
+        ),
+        "dcond"
+    );
+
+    ctx.builder.CreateCondBr(condv, loop_body, after_loop);
+    ctx.builder.SetInsertPoint(loop_body);
+    
+    ctx.builder.CreateBr(loop_body); 
+    ctx.builder.SetInsertPoint(after_loop);
 
     return nullptr;
 }

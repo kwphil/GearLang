@@ -126,23 +126,8 @@ namespace Ast::Nodes {
         llvm::Value* generate(Context& ctx) override;
         virtual std::string to_string() override;
     };
+}
 
-    /// @brief Expression node for blocks of nodes
-    class ExprBlock : public Expr {
-    private:
-        /// @brief The list of nodes in the block
-        std::vector<std::unique_ptr<NodeBase>> nodes;
-    
-    public:
-        ExprBlock(std::vector<std::unique_ptr<NodeBase>>&& nodes, Span span)
-        : Expr(span), nodes(std::move(nodes)) { }
-
-        static std::unique_ptr<ExprBlock> parse(Lexer::Stream& s);
-
-        virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
-        // Will probably return the return variable
-        // Will stay void until I get Function to return non-void
-        llvm::Value* generate(Context& ctx) override;
-        virtual std::string to_string() override;
-    };
+namespace Ast {
+    unique_ptr<Nodes::Expr> optimize_expr(unique_ptr<Nodes::Expr> node);
 }

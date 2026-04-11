@@ -61,7 +61,22 @@ Type::PrimType Type::parse_primitive(Lexer::Stream& s) {
     return parse_primitive(s.pop()->content);
 }
 
+/// @brief A counter to create unique anonymous record names
+// Expect an example to be __GEAR_struct_anonymous_4 or __GEAR_union_anonymous_6
 int anon_struct = 0;
+
+/// @brief A cache for all unparsed types that might be filled by external files
+// Since the AST is required to use a semantic type to properly parse what types are present, 
+// we need a cache to fill in types that will then be parsed after the FFI step.
+//
+// We'll create a function to handle the parsing, 
+// which will just parse each type, and assign them to each type that is associated with the type string
+// 
+// The span object is just for error handling, it points to what the FIRST instance of the type has to say
+static unordered_map<string, pair<vector<Type*>, Span>> unparsed_types;
+
+/// @brief Will stop from caching if there is an unparsable type
+bool no_unparsed = false;
 
 Type::Type(Lexer::Stream& s) {
     auto tok = s.peek();
@@ -69,7 +84,7 @@ Type::Type(Lexer::Stream& s) {
 
     if (!s.has()) {
         Error::throw_error(
-            {0, 0, 0, 0},
+            {"", 0, 0, 0, 0},
             "Stream ended unexpectedly.",
             Error::ErrorCodes::INVALID_AST
         );
@@ -164,9 +179,11 @@ find_parse:
     // First see if there's a defined struct
     auto _struct = struct_list.find(s.peek()->content);
     auto _union = union_list.find(s.peek()->content);
+    auto _alias = alias_list.find(s.peek()->content);
     if(_struct != struct_list.end()) {
         record_type = _struct->second;
         record_name = _struct->first;
+        record_is_struct = true;
         s.pop();
         goto pointer_parse;
     }
@@ -174,25 +191,39 @@ find_parse:
     if(_union != union_list.end()) {
         record_type = _union->second;
         record_name = _union->first;
+        record_is_struct = false;
         s.pop();
+        goto pointer_parse;
+    }
+
+    if(_alias != alias_list.end()) {
+        Type* new_type = _alias->second;
+
+        prim_type = new_type->prim_type;
+        record_type = new_type->record_type;
+        record_name = new_type->record_name;
+        record_is_struct = new_type->record_is_struct;
+        pointer = new_type->pointer;
+        array_type = new_type->array_type;
+        array_size = new_type->array_size;
         goto pointer_parse;
     }
 
     prim_type = parse_primitive(s);
 
     if (prim_type == PrimType::Invalid) {
-        // std::cout << "===============================\n";
-        // for(auto& t : s.content) {
-        //     std::cout << t.content << '\n';
-        // }
+        if(no_unparsed) {
+            is_invalid = true;
+            return;
+        }
 
-        // std::cout << std::endl;
-
-        Error::throw_error(
-            tok->span,
-            "Unknown type",
-            Error::ErrorCodes::UNKNOWN_TYPE
-        );
+        s.back();
+        // If no type is found, we cache it and fill it in later
+        if(!unparsed_types.contains(s.peek()->content)) {
+            unparsed_types[s.pop()->content] = { { this }, s.peek()->span };
+        } else {
+            unparsed_types[s.pop()->content].first.push_back(this);
+        }
     }
 pointer_parse:
     if(!s.has()) return;
@@ -203,5 +234,35 @@ pointer_parse:
         }
 
         return;
+    }
+}
+
+void Type::parse_unparsed() {
+    no_unparsed = true;
+
+    for(auto& ty : unparsed_types) {
+        Type new_ty = ty.first;
+
+        if(new_ty.is_invalid) {
+            // std::cout << "===============================\n";
+            // for(auto& t : s.content) {
+            //     std::cout << t.content << '\n';
+            // }
+
+            // std::cout << std::endl;
+
+            Error::throw_error(
+                ty.second.second,
+                "Unknown type",
+                Error::ErrorCodes::UNKNOWN_TYPE
+            );
+        }
+
+        for(auto& curr : ty.second.first) {
+            // Enforce that pointers stay the same
+            unsigned int pointer_level = curr->pointer; 
+            *curr = new_ty;
+            curr->pointer = pointer_level;
+        }
     }
 }

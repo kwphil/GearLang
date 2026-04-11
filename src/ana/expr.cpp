@@ -35,6 +35,7 @@ SOFTWARE.
 #include <gearlang/sem/analyze.hpp>
 #include <gearlang/error.hpp>
 
+#include <iostream>
 #include <optional>
 #include <format>
 
@@ -45,13 +46,33 @@ using std::optional;
 unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
     optional<Func> ref = analyzer.lookup_func(callee);
 
+    analyzer.trace(
+        { { "type", "search" }, { "search", callee }, { "status", "start" }, { "for", "function" } }, 
+        Error::ErrorCodes::OK, 
+        span_meta
+    );
+
     if(!ref) {
-        Error::throw_error(
+        analyzer.trace(
+            { { "type", "search" }, { "search", callee }, { "status", "failed" } }, 
+            Error::ErrorCodes::FUNCTION_NOT_DEFINED, 
+            span_meta
+        );
+
+        Error::throw_error_and_recover(
             span_meta,
             "Function not defined",
             Error::ErrorCodes::FUNCTION_NOT_DEFINED
         );
+
+        return nullptr;
     }
+
+    analyzer.trace(
+        { { "type", "search" }, { "search", callee }, { "status", "pass" } },
+        Error::ErrorCodes::OK,
+        span_meta
+    );
 
     Func handle = ref.value();
 
@@ -60,7 +81,7 @@ unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
     } 
 
     if(handle.args.size() != args.size() && !handle.is_variadic) {
-        Error::throw_error(
+        Error::throw_error_and_recover(
             span_meta, 
             std::format(
                 "Expected {} elements, received {}",
@@ -68,6 +89,19 @@ unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
             ).c_str(),
             Error::ErrorCodes::FUNCTION_INVALID_ARGS
         );
+        return nullptr;
+    }
+
+    if(handle.is_variadic && handle.args.size() > args.size()) {
+        Error::throw_error_and_recover(
+            span_meta,
+            std::format(
+                "Expected at least {} elements, received {}",
+                handle.args.size(), args.size()
+            ).c_str(),
+            Error::ErrorCodes::FUNCTION_INVALID_ARGS
+        );
+        return nullptr;
     }
 
     auto it = args.begin();
@@ -76,7 +110,7 @@ unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
         assert(curr_type != std::nullopt);
         if(analyzer.type_is_compatible(a, curr_type.value())) { it++; continue; }
 
-        Error::throw_error(
+        Error::throw_error_and_recover(
             (*it)->span_meta,
             std::format(
                 "Expected type {}, got type {}",
@@ -84,22 +118,11 @@ unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
             ).c_str(),
             Error::ErrorCodes::BAD_TYPE
         );
+        return nullptr;
     }
 
     ty = std::make_unique<Type>(handle.ret);
     return std::make_unique<ExprValue>(false, handle.ret);
-}
-
-unique_ptr<ExprValue> ExprBlock::analyze(Analyzer& analyzer) {
-    analyzer.new_scope();
-    
-    for(auto& node : nodes) {
-        analyze_nodebase(&node, analyzer);
-    }
-
-    analyzer.delete_scope();
-
-    return nullptr;
 }
 
 unique_ptr<ExprValue> ExprAddress::analyze(Analyzer& analyzer) {
