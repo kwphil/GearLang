@@ -53,10 +53,6 @@ SOFTWARE.
     { code } \
     if(opts.verbose) std::cout << "done\n";
 
-// extern "C" const char* __asan_default_options() {
-//   return "detect_odr_violation=0";
-// }
-
 llvm::Function* build_runtime(Context& ctx);
 void init_program(argparse::ArgumentParser& program);
 
