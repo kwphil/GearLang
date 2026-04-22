@@ -1,17 +1,6 @@
 // Variadic args
 extern fn printf(s char^, ...);
 
-// Floats
-let a = 0.1 + 0.2;
-let b = a + 4.0;
-
-// Pointers
-let deref = 5;
-let ptr = #deref;
-
-// Strings
-let c = "Hello, World!";
-
 fn float(d f64, e char^) returns f64 {
     return d + 1.0;
 }
@@ -21,7 +10,20 @@ fn str returns char^ {
     return "Hello, World! %f";
 }
 
-// Checking the deref
-printf("%d\n", @ptr);
+fn main {
+    // Floats
+    let a = 0.1 + 0.2;
+    let b = a + 4.0;
 
-return 0;
+    // Pointers
+    let deref = 5;
+    let ptr = #deref;
+
+    // Strings
+    let c = "Hello, World!";
+
+    // Checking the deref
+    printf("%d\n", @ptr);
+
+    return 0;
+}

@@ -48,6 +48,7 @@ namespace Error {
         FUNCTION_NOT_DEFINED,
         FUNCTION_INVALID_ARGS,
         QUALIFIER_NOT_ALLOWED,
+        INVALID_GLOBAL_OPERATION,
         INVALID_AST,
         UNKNOWN_FILE,
         BAD_TYPE,

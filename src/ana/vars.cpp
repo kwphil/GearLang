@@ -86,7 +86,7 @@ bool Let::analyze(Analyzer& analyzer) {
 
     is_global = is_public 
         ? is_public
-        : static_cast<uint8_t>(analyzer.is_global_scope()*2); 
+        : static_cast<uint8_t>(analyzer.is_global_scope()); 
 
     Variable var = {
         .name=target,
@@ -100,7 +100,7 @@ bool Let::analyze(Analyzer& analyzer) {
             { "kind", "declare" }, 
             { "declare", "var" }, 
             { "name", target }, 
-            { "global", std::to_string((int)is_global) },
+            { "global", std::to_string(is_global) },
         },
         Error::ErrorCodes::OK, span_meta
     );
@@ -109,6 +109,7 @@ bool Let::analyze(Analyzer& analyzer) {
 }
 
 unique_ptr<ExprValue> ExprVar::analyze(Analyzer& analyzer) {
+    analyzer.throw_if_in_global(span_meta);
     optional<Variable> var_wrap = analyzer.decl_lookup(name);
 
     analyzer.trace(
@@ -139,6 +140,7 @@ unique_ptr<ExprValue> ExprVar::analyze(Analyzer& analyzer) {
 }
 
 unique_ptr<ExprValue> ExprAssign::analyze(Analyzer& analyzer) {
+    analyzer.throw_if_in_global(span_meta);
     var->analyze(analyzer);
     assert(var->get_type() != std::nullopt);
     ty = std::make_unique<Type>(var->get_type().value());
@@ -167,6 +169,7 @@ bool Struct::analyze(Sem::Analyzer& analyzer) {
 }
 
 unique_ptr<ExprValue> ExprStructParam::analyze(Sem::Analyzer& analyzer) {
+    analyzer.throw_if_in_global(span_meta);
     optional<Variable> v = analyzer.decl_lookup(struct_name);
 
     analyzer.trace(

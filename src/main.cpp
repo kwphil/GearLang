@@ -57,7 +57,7 @@ SOFTWARE.
 //   return "detect_odr_violation=0";
 // }
 
-llvm::Function* build_runtime(Context& ctx);
+// llvm::Function* build_runtime(Context& ctx);
 void init_program(argparse::ArgumentParser& program);
 
 static Options parse_args(int argc, char** argv);
@@ -122,21 +122,7 @@ static std::string compile_ir(const Options& opts) {
     Context ctx;
 
     RUN_STEP("generating", {
-        ctx.current_fn = build_runtime(ctx);
         root.generate(ctx);
-
-        if(ctx.main_entry) {
-            llvm::BasicBlock* main = *ctx.main_entry;
-            ctx.builder.CreateBr(main);
-            ctx.builder.SetInsertPoint(main);
-        }
-
-        ctx.builder.CreateRet(
-            llvm::ConstantInt::get(
-                llvm::Type::getInt32Ty(ctx.llvmCtx),
-                EXIT_SUCCESS
-            )
-        );
     });
 
     std::string output;

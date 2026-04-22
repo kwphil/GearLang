@@ -46,6 +46,8 @@ using std::optional;
 unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
     optional<Func> ref = analyzer.lookup_func(callee);
 
+    analyzer.throw_if_in_global(span_meta);
+
     analyzer.trace(
         { { "type", "search" }, { "search", callee }, { "status", "start" }, { "for", "function" } }, 
         Error::ErrorCodes::OK, 
@@ -126,6 +128,8 @@ unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
 }
 
 unique_ptr<ExprValue> ExprAddress::analyze(Analyzer& analyzer) {
+    analyzer.throw_if_in_global(span_meta);
+
     var->analyze(analyzer);
     assert(var->get_type() != std::nullopt);
     ty = std::make_unique<Type>(var->get_type().value().ref());
@@ -134,6 +138,8 @@ unique_ptr<ExprValue> ExprAddress::analyze(Analyzer& analyzer) {
 }
 
 unique_ptr<ExprValue> ExprDeref::analyze(Analyzer& analyzer) {
+    analyzer.throw_if_in_global(span_meta);
+
     var->analyze(analyzer);
     assert(var->get_type() != std::nullopt);
     ty = std::make_unique<Type>(var->get_type().value().deref());

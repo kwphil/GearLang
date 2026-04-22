@@ -8,3 +8,5 @@ fn dead_code returns i32 {
     return 0;
     puts("Hi");
 }
+
+fn main returns i32 { return 0; }

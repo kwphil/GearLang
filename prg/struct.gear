@@ -6,14 +6,16 @@ struct foo {
     z foo^;
 };
 
-let s: foo;
-s.x = 8200;
-
 fn bar(s2 foo^) {
     let s3 = @s2;
     printf("in bar: %d\n", s3.x);
 }
 
-bar(#s);
+fn main {
+    let s: foo;
+    s.x = 8200;
 
-printf("in main: %d\n", s.x);
+    bar(#s);
+
+    printf("in main: %d\n", s.x);
+}

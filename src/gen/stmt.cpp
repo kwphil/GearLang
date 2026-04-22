@@ -93,11 +93,11 @@ llvm::Value* Ast::Nodes::Let::generate(Context& ctx) {
     llvm::Constant* constant;
     bool require_store = false;
 
-    if(auto c = llvm::dyn_cast<llvm::Constant>(init_val)) {
+    if (auto* c = llvm::dyn_cast_or_null<llvm::Constant>(init_val)) {
         constant = c;
     } else {
         constant = llvm::Constant::getNullValue(ty->to_llvm(ctx));
-        require_store = true;
+        require_store = init_val != nullptr;
     }
 
     llvm::GlobalVariable* var = new llvm::GlobalVariable(
