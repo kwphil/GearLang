@@ -369,6 +369,23 @@ The returned value is a pointer to the global array.
 
 ---
 
+## Name mangling
+
+GearLang mangling follows this format for mangling
+
+```
+_g<module><submodule><name><nargs>.<arg1>.<arg2>
+```
+
+| Type | Prefix | Example |
+| ---- | ------ | ------- |
+| Primitive | p | p3i32 |
+| Pointer | r | rpi32 |
+| Array | a | api32 |
+| Struct | s | s3Foo |
+
+---
+
 ## Dead code elimination
 
 Both `Block::generate` and `generate_node` check:

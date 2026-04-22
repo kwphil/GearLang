@@ -30,7 +30,10 @@
       * [X] Disable color flag
     * [ ] Simple syntax highlighting
 * [ ] **Multi-file**
-  * [ ] Document multi-file usage
+  * [X] Document multi-file usage
+  * [ ] Basic modules
+  * [ ] Submodules
+  * [ ] Directory hierarchies
 * [X] **Lexer**
   * [x] Basic functionality
     * [x] Token stream generation
@@ -78,6 +81,7 @@
     * [ ] Generics
     * [x] Variable variable types
     * [X] Implicit matching
+  * [ ] Name mangling
 * [ ] **Compatibility**
   * [X] Basic C Functions
     * [x] C Runtime
