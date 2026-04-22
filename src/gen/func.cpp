@@ -59,6 +59,7 @@ llvm::Value* Function::generate(Context& ctx) {
     llvm::BasicBlock* entry;
     unsigned idx = 0;
 
+<<<<<<< HEAD
     if(name == "main") {
         fn = ctx.module->getFunction("main");
 
@@ -71,6 +72,13 @@ llvm::Value* Function::generate(Context& ctx) {
 
         entry = llvm::BasicBlock::Create(ctx.llvmCtx, "entry", fn);
     }
+=======
+    fn = declare_func(
+        ty.to_llvm(ctx), param_types, name.c_str(), ctx, is_variadic, is_public
+    );
+
+    entry = llvm::BasicBlock::Create(ctx.llvmCtx, "entry", fn);
+>>>>>>> master
 
     for (auto& llvm_arg : fn->args()) {
         llvm_arg.setName(args[idx++]->name);
@@ -110,7 +118,10 @@ llvm::Value* Function::generate(Context& ctx) {
     }
 
     ctx.current_fn = ctx.module->getFunction("main");
+<<<<<<< HEAD
     ctx.builder.SetInsertPoint(*ctx.global_entry);
+=======
+>>>>>>> master
 
     return nullptr;
 }

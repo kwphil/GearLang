@@ -6,14 +6,28 @@ struct foo {
     z foo^;
 };
 
+<<<<<<< HEAD
 let s: foo;
 s.x = 8200;
 
+=======
+>>>>>>> master
 fn bar(s2 foo^) {
     let s3 = @s2;
     printf("in bar: %d\n", s3.x);
 }
 
+<<<<<<< HEAD
 bar(#s);
 
 printf("in main: %d\n", s.x);
+=======
+fn main {
+    let s: foo;
+    s.x = 8200;
+
+    bar(#s);
+
+    printf("in main: %d\n", s.x);
+}
+>>>>>>> master

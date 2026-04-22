@@ -35,6 +35,7 @@ hi = 4; // ERROR
 
 ## Types
 
+<<<<<<< HEAD
 The primitive type system tries to follow Rust's.
 
 Examples:
@@ -60,11 +61,58 @@ There are three symbols for using pointers
 * `#` denotes a value reference
 
 Smart pointers will be established later with the stdlib, attempting to mimic Rust smart pointers.
+=======
+Gear types are simple and map closely to C types for interoperability.
+
+| Gear Type | C Equivalent |
+| --------- | ------------ |
+| `char`    | `char`       |
+| `i8`      | `char`       |
+| `i16`     | `short`      |
+| `i32`     | `int`        |
+| `i64`     | `long`       |
+| `f32`     | `float`      |
+| `f64`     | `double`     |
+
+**Notes:**
+
+* Use explicit types for FFI for safety.
+* Gear’s type system is inspired by Rust but simplified for C interop.
+
+---
+
+## Pointers
+
+Pointers behave like C pointers. They can store addresses, be dereferenced, and passed to external functions.
+
+```gear
+// Pointer to a string (C-style string)
+let s: char^ = "Hello, World!";
+
+// Address-of operator
+let i = 5;
+let p: i32^ = #i;  // p now points to i
+
+// Dereference operator
+let j: i32 = @p;
+
+// Pointer to pointer
+let pp: i32^^ = #p;
+let k: i32 = @@pp;
+```
+
+**Notes:**
+
+* Use `^` to indicate a pointer type.
+* Use `#` to get the address of a variable.
+* Use `@` to dereference a pointer; multiple `@` operators can be chained for pointer-to-pointer types.
+>>>>>>> master
 
 ---
 
 ## Structs
 
+<<<<<<< HEAD
 ```gr
 struct name {
   field_name Type;
@@ -142,3 +190,24 @@ extern("C") fn puts(s char^);
 // Defining a whole header
 include("C", "sys|loc", "stdio.h");
 ```
+=======
+Structs are pretty generic here.
+
+```gear
+struct s {
+  x i32;
+  y i32;
+}
+
+let foo: s;
+
+printf("%d", s.x);
+
+```
+
+**Notes:**
+
+* Use `struct` to define the struct
+* Syntax for parameters are `<name> <type>;`
+* Structs in GearLang do not require a trailing comma
+>>>>>>> master

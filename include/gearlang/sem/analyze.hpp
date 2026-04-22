@@ -65,6 +65,7 @@ namespace Sem {
         Logger logger;
         vector<shared_ptr<Scope>> active_scopes;
         unordered_map<string, Func> function_list; 
+        Func curr_func;
 
         bool analyze_decl_statements(NodeBase* node);
 
@@ -110,7 +111,10 @@ namespace Sem {
         /// @param fn the semantic info from the func
         inline void add_function(string name, Func fn) {
             function_list.insert({ name, fn }); 
+            curr_func = fn;
         }
+        /// @brief Gets the current function's handle
+        inline Func get_curr_fn() { return curr_func; }
         /// @brief Looks up a function by a given name
         /// @param name the name of the function
         /// @returns an optional Func
@@ -122,6 +126,19 @@ namespace Sem {
         }
         /// @brief Checks if we are in the global scope
         bool is_global_scope();
+
+        /// @brief Throws an error if in the global scope
+        inline bool throw_if_in_global(Span const& span) {
+            if(is_global_scope()) {
+                Error::throw_error_and_recover(
+                    span,
+                    "Operation not allowed in the global scope",
+                    Error::ErrorCodes::INVALID_GLOBAL_OPERATION
+                );    
+            }
+            
+            return is_global_scope();
+        }
 
         // ---------- TYPES ---------------------
 

@@ -23,12 +23,20 @@
     * [X] Error codes
     * [X] Error recovery strategy
       * [X] Parsing 
+<<<<<<< HEAD
       * [X] Analyzing   
+=======
+      * [X] Analyzing
+    * [x] Error handling 
+>>>>>>> master
     * [x] Graceful
     * [X] Colored
       * [X] ANSI support
       * [X] Disable color flag
+<<<<<<< HEAD
     * [ ] Simple syntax highlighting
+=======
+>>>>>>> master
 * [X] **Lexer**
   * [x] Basic functionality
     * [x] Token stream generation

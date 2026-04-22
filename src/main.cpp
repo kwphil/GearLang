@@ -53,7 +53,15 @@ SOFTWARE.
     { code } \
     if(opts.verbose) std::cout << "done\n";
 
+<<<<<<< HEAD
 llvm::Function* build_runtime(Context& ctx);
+=======
+// extern "C" const char* __asan_default_options() {
+//   return "detect_odr_violation=0";
+// }
+
+// llvm::Function* build_runtime(Context& ctx);
+>>>>>>> master
 void init_program(argparse::ArgumentParser& program);
 
 static Options parse_args(int argc, char** argv);
@@ -118,6 +126,7 @@ static std::string compile_ir(const Options& opts) {
     Context ctx;
 
     RUN_STEP("generating", {
+<<<<<<< HEAD
         ctx.current_fn = build_runtime(ctx);
         root.generate(ctx);
 
@@ -133,6 +142,9 @@ static std::string compile_ir(const Options& opts) {
                 EXIT_SUCCESS
             )
         );
+=======
+        root.generate(ctx);
+>>>>>>> master
     });
 
     std::string output;

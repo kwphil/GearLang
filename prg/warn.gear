@@ -7,4 +7,10 @@ fn no_return returns i32 {
 fn dead_code returns i32 {
     return 0;
     puts("Hi");
+<<<<<<< HEAD
 }
+=======
+}
+
+fn main returns i32 { return 0; }
+>>>>>>> master
