@@ -59,9 +59,15 @@ parse_function_args(
     deque<unique_ptr<Argument>> args;
 
     if(s.peek()->content == "(") {
+        bool loop = true; // Quit if no args are present within the parens
+
         s.pop();
 
-        while(true) {
+        if(s.peek()->type == Lexer::Type::ParenClose) {
+            loop = false;
+        }
+
+        while(loop) {
             if(!s.has()) {
                 Error::throw_error_and_recover(
                     span,
