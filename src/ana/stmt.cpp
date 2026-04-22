@@ -39,18 +39,12 @@ using namespace Ast::Nodes;
 using namespace Sem;
 
 bool If::analyze(Analyzer& analyzer) {
-<<<<<<< HEAD
-=======
     analyzer.throw_if_in_global(span_meta);
->>>>>>> master
     return analyze_nodebase(&expr, analyzer);
 }
 
 bool Else::analyze(Analyzer& analyzer) {
-<<<<<<< HEAD
-=======
     analyzer.throw_if_in_global(span_meta);
->>>>>>> master
     cond->analyze(analyzer);
     bool et = analyze_nodebase(&expr, analyzer);
     bool ef = analyze_nodebase(&else_expr, analyzer);
@@ -59,9 +53,6 @@ bool Else::analyze(Analyzer& analyzer) {
 }
 
 bool Return::analyze(Analyzer& analyzer) {
-<<<<<<< HEAD
-    expr->analyze(analyzer);
-=======
     analyzer.throw_if_in_global(span_meta);
 
     auto rvalue = expr->analyze(analyzer);
@@ -75,7 +66,6 @@ bool Return::analyze(Analyzer& analyzer) {
         return true;
     }
 
->>>>>>> master
     return true;
 }
 
@@ -83,8 +73,6 @@ bool Function::analyze(Analyzer& analyzer) {
     weak_ptr<Analyzer::Scope> fn_scope = analyzer.new_scope(span_meta);
     vector<Type> arg_handle;
 
-<<<<<<< HEAD
-=======
     if(name == "main") {
         is_public = true;
         if(ty != "void" && ty != "i32") {
@@ -96,7 +84,6 @@ bool Function::analyze(Analyzer& analyzer) {
         ty = Sem::Type("i32");
     }
 
->>>>>>> master
     for(auto& arg : args) { 
         arg->analyze(analyzer);
         auto ty_wrap = arg->get_type();
@@ -104,11 +91,7 @@ bool Function::analyze(Analyzer& analyzer) {
         arg_handle.push_back(ty_wrap.value());
     }
     
-<<<<<<< HEAD
-    if(!analyze_nodebase(&block, analyzer) && ty != Sem::Type("void")) {
-=======
     if(!analyze_nodebase(&block, analyzer) && ty != "void") {
->>>>>>> master
         Error::throw_warning(
             block->span_meta,
             "Control reached end of non-void function"
@@ -148,10 +131,7 @@ bool ExternFn::analyze(Analyzer& analyzer) {
 }
 
 bool Block::analyze(Analyzer& analyzer) {
-<<<<<<< HEAD
-=======
     analyzer.throw_if_in_global(span_meta);
->>>>>>> master
     analyzer.new_scope(span_meta);
     bool finishes = false;
     bool has_warned = false;
@@ -176,20 +156,14 @@ bool Block::analyze(Analyzer& analyzer) {
 }
 
 bool Do::analyze(Sem::Analyzer& analyzer) { 
-<<<<<<< HEAD
-=======
     analyzer.throw_if_in_global(span_meta);
->>>>>>> master
     cond->analyze(analyzer);
     analyze_nodebase(&code, analyzer);
     return false; 
 }
 
 bool While::analyze(Sem::Analyzer& analyzer) { 
-<<<<<<< HEAD
-=======
     analyzer.throw_if_in_global(span_meta);
->>>>>>> master
     cond->analyze(analyzer);
     analyze_nodebase(&code, analyzer);
     return false; 
