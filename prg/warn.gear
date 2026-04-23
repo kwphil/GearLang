@@ -5,6 +5,7 @@ fn no_return returns i32 {
 }
 
 fn dead_code returns i32 {
+    puts("hi");
     return 0;
     puts("Hi");
 }

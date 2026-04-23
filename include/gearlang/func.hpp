@@ -37,6 +37,7 @@ SOFTWARE.
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Module.h>
 
+#include "sem/val.hpp"
 #include "ctx.hpp"
 
 // Just some quick short hands
@@ -50,3 +51,5 @@ llvm::Function* declare_func(
 );
 
 void call_exit(Context& ctx, llvm::Value* retVal);
+
+string mangle_identifier(Sem::Func handle);

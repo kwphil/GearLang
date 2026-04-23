@@ -34,6 +34,7 @@ SOFTWARE.
 #include <gearlang/ast/func.hpp>
 #include <gearlang/sem/analyze.hpp>
 #include <gearlang/etc.hpp>
+#include <gearlang/func.hpp>
 
 using namespace Ast::Nodes;
 using namespace Sem;
@@ -82,6 +83,7 @@ bool Function::analyze(Analyzer& analyzer) {
             );
         }
         ty = Sem::Type("i32");
+        mangling_scheme=ManglingScheme::None;
     }
 
     for(auto& arg : args) { 
@@ -104,8 +106,11 @@ bool Function::analyze(Analyzer& analyzer) {
         .name=name,
         .ret=ty, 
         .args=arg_handle,
-        .is_variadic=is_variadic
+        .is_variadic=is_variadic,
+        .mangle=mangling_scheme
     };
+
+    identifier = mangle_identifier(handle);
 
     analyzer.add_function(name, handle);
     return true;
@@ -123,8 +128,11 @@ bool ExternFn::analyze(Analyzer& analyzer) {
         .name=callee,
         .ret=ty,
         .args=arg_handle,
-        .is_variadic=is_variadic
+        .is_variadic=is_variadic,
+        .mangle=mangling_scheme
     };
+
+    identifier = mangle_identifier(handle);
 
     analyzer.add_function(callee, handle);
     return false;

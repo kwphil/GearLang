@@ -60,7 +60,7 @@ llvm::Value* Function::generate(Context& ctx) {
     unsigned idx = 0;
 
     fn = declare_func(
-        ty.to_llvm(ctx), param_types, name.c_str(), ctx, is_variadic, is_public
+        ty.to_llvm(ctx), param_types, identifier.c_str(), ctx, is_variadic, is_public
     );
 
     entry = llvm::BasicBlock::Create(ctx.llvmCtx, "entry", fn);
@@ -102,8 +102,7 @@ llvm::Value* Function::generate(Context& ctx) {
         );
     }
 
-    ctx.current_fn = ctx.module->getFunction("main");
-
+    ctx.current_fn = nullptr;
     return nullptr;
 }
 
@@ -115,11 +114,6 @@ llvm::Value* Ast::Nodes::ExternFn::generate(Context& ctx) {
             arg->get_type()->to_llvm(ctx)
         );
     }
-
-    // TODO
-    if(no_mangle) {
-
-    }
     
     llvm::FunctionType* fn_type = llvm::FunctionType::get(
         ty.to_llvm(ctx),
@@ -130,7 +124,7 @@ llvm::Value* Ast::Nodes::ExternFn::generate(Context& ctx) {
     llvm::Function::Create(
         fn_type,
         llvm::Function::ExternalLinkage,
-        callee,
+        identifier,
         *ctx.module
     );
 

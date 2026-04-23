@@ -34,6 +34,7 @@ SOFTWARE.
 
 #include <gearlang/sem/val.hpp>
 #include <gearlang/sem/type.hpp>
+#include <gearlang/etc.hpp>
 #include "base.hpp"
 #include "stmt.hpp"
 #include "vars.hpp"
@@ -62,6 +63,10 @@ namespace Ast::Nodes {
         bool is_variadic;
         /// @brief Build with public linkage
         bool is_public;
+        /// @brief Which mangling scheme to use
+        ManglingScheme mangling_scheme;
+        /// @brief Mangled name
+        string identifier;
 
     public:
         Function(
@@ -71,10 +76,12 @@ namespace Ast::Nodes {
             unique_ptr<NodeBase> block, 
             bool is_variadic,
             Span span,
+            ManglingScheme scheme,
             bool is_public
         ) : 
             Stmt(span), name(name), ty(ty), args(std::move(args)),
-            block(std::move(block)), is_variadic(is_variadic), is_public(is_public) { } 
+            block(std::move(block)), is_variadic(is_variadic), 
+            is_public(is_public), mangling_scheme(scheme) { } 
 
         static unique_ptr<Function> parse(Lexer::Stream& s);
 
@@ -93,8 +100,10 @@ namespace Ast::Nodes {
         deque<unique_ptr<Argument>> args;
         /// @brief is_variadic
         bool is_variadic;
-        /// @brief not implemented yet, but forces no name mangling
-        bool no_mangle;
+        /// @brief which mangling scheme to use
+        ManglingScheme mangling_scheme;
+        /// @brief mangled name
+        string identifier;
 
     public:
         ExternFn(
@@ -102,10 +111,10 @@ namespace Ast::Nodes {
             Sem::Type ty,
             deque<unique_ptr<Argument>> args, 
             bool is_variadic,
-            bool no_mangle,
+            ManglingScheme scheme,
             Span span
         ) : Stmt(span), callee(callee), ty(ty), args(std::move(args)), 
-            is_variadic(is_variadic), no_mangle(no_mangle) { }
+            is_variadic(is_variadic), mangling_scheme(scheme) { }
 
         static unique_ptr<ExternFn> parse(Lexer::Stream& s);
 

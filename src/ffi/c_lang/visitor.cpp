@@ -31,6 +31,7 @@ SOFTWARE.
 */
 
 #include <gearlang/ast/func.hpp>
+#include <gearlang/etc.hpp>
 #include <clang/AST/Type.h>
 
 #include "visitor.hpp"
@@ -59,7 +60,7 @@ bool CAstVisitor::VisitFunctionDecl(clang::FunctionDecl* func) {
             *manager.c_to_gear_ty(&ret),
             std::move(args),
             is_variadic,
-            true,
+            ManglingScheme::None,
             { "", 0, 0, 0, 0 }   
         );
 

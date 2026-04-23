@@ -104,3 +104,11 @@ inline std::vector<std::string> split_string(const std::string& str, char delimi
     }
     return tokens;
 }
+
+/// @brief List of mangling schemes available
+enum class ManglingScheme {
+    None,
+    Gearlang,
+    Itanium,
+    MSVC
+};

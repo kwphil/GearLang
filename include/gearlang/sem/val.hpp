@@ -63,5 +63,6 @@ namespace Sem {
         Type ret;
         vector<Type> args;
         bool is_variadic;
+        ManglingScheme mangle;
     };
 }

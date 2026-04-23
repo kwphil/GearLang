@@ -33,6 +33,8 @@ SOFTWARE.
 #include <gearlang/func.hpp>
 #include <gearlang/ctx.hpp>
 
+using std::string;
+
 llvm::Function* declare_func(
     llvm::Type* ret_type,
     llvm::ArrayRef<llvm::Type*> args,
@@ -68,4 +70,24 @@ void call_exit(Context& ctx, llvm::Value* retVal) {
 
     ctx.builder.CreateCall(exit_fn, { retVal });
     ctx.builder.CreateUnreachable();
+}
+
+string mangle_identifier(Sem::Func handle) {
+    string identifier;
+    if(handle.mangle == ManglingScheme::None) {
+        identifier = handle.name;
+    } else if(handle.mangle == ManglingScheme::Itanium) {
+        throw std::runtime_error("unimplemented itanium");
+    } else if(handle.mangle == ManglingScheme::MSVC) {
+        throw std::runtime_error("unimplemented MSVC");
+    } else if(handle.mangle == ManglingScheme::Gearlang) {
+        identifier = "_g" + std::to_string(handle.name.length()) + handle.name + std::to_string(handle.args.size());
+        for(auto& arg : handle.args) {
+            identifier += '.';
+            string dump = arg.dump();
+            identifier += std::to_string(dump.length()) + dump;
+        }
+    } else { throw std::runtime_error("unknown mangle type"); }
+
+    return identifier;
 }

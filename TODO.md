@@ -82,6 +82,9 @@
     * [x] Variable variable types
     * [X] Implicit matching
   * [ ] Name mangling
+    * [X] Global scope functions
+    * [ ] Top level modules
+    * [ ] Submodules
 * [ ] **Compatibility**
   * [X] Basic C Functions
     * [x] C Runtime

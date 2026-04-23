@@ -105,9 +105,11 @@ namespace Ast::Nodes {
     class ExprCall : public Expr {
     private:
         /// @brief the arguments
-        std::vector<pExpr> args;
+        vector<pExpr> args;
         /// @brief the name of the function to call
-        std::string callee;
+        string callee;
+        /// @brief mangled version of callee
+        string identifier;
     
     public:
         ExprCall(

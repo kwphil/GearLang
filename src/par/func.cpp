@@ -62,7 +62,7 @@ string Argument::to_string() {
     );
 }
 
-std::tuple<Sem::Type, string, deque<unique_ptr<Argument>>>
+std::tuple<Sem::Type, string, deque<unique_ptr<Argument>>, ManglingScheme>
 parse_function_header(
     Lexer::Stream& s,
     Span& span,
@@ -75,8 +75,7 @@ parse_function_args(
     Lexer::Stream& s,
     Span& span,
     bool requires_names,
-    bool& is_variadic,
-    Sem::Type& ty
+    bool& is_variadic
 );
 
 unique_ptr<Function> Function::parse(Lexer::Stream& s) {
@@ -85,7 +84,7 @@ unique_ptr<Function> Function::parse(Lexer::Stream& s) {
 
     s.expect("fn", span);
 
-    auto [ty, name, args] =
+    auto [ty, name, args, scheme] =
         parse_function_header(s, span, false, is_variadic);
 
     auto block = NodeBase::parse(s);
@@ -97,6 +96,7 @@ unique_ptr<Function> Function::parse(Lexer::Stream& s) {
         std::move(block),
         is_variadic,
         span,
+        scheme,
         check_keyword("export")
     );
 }
@@ -125,9 +125,10 @@ unique_ptr<ExternFn> ExternFn::parse(Lexer::Stream& s) {
     Span span = s.peek()->span;
 
     bool is_variadic;
-    bool no_mangle = false;
 
     s.expect("extern", span);
+
+    auto scheme = ManglingScheme::Gearlang;
 
     if(s.peek()->type == Lexer::Type::ParenOpen) {
         s.pop();
@@ -146,8 +147,10 @@ unique_ptr<ExternFn> ExternFn::parse(Lexer::Stream& s) {
         }
 
         if(strcmp(tok->content.c_str(), "C") == 0) {
-            no_mangle = true;
+            scheme = ManglingScheme::None;
             s.expect(")", s.peek()->span);
+        } else if(strcmp(tok->content.c_str(), "C++") == 0) {
+            scheme = ManglingScheme::Itanium;
         } else {
             throw std::runtime_error(tok->content);
         }
@@ -155,15 +158,19 @@ unique_ptr<ExternFn> ExternFn::parse(Lexer::Stream& s) {
 
     s.expect("fn", span);
 
-    auto [ty, name, args] =
+    auto [ty, name, args, new_scheme] =
         parse_function_header(s, span, false, is_variadic);
+
+    if(scheme == ManglingScheme::Gearlang) {
+        scheme = new_scheme;
+    }
 
     return std::make_unique<ExternFn>(
         name,
         ty,
         std::move(args),
         is_variadic,
-        no_mangle,
+        scheme,
         span
     );
 }
@@ -179,11 +186,11 @@ string ExternFn::to_string() {
 
     return std::format(
         "{{ \"type\":\"ExternFn\", \"name\":\"{}\", \"ty\":\"{}\", "
-        "\"args\":[{}], \"is_variadic\":{}, \"no_mangle\":{} }}",
+        "\"args\":[{}], \"is_variadic\":{}, \"mangle\":{} }}",
         callee,
         ty.dump(),
         args_s,
         is_variadic,
-        no_mangle
+        (int)mangling_scheme
     );
 }

@@ -52,8 +52,7 @@ parse_function_args(
     Lexer::Stream& s,
     Span& span,
     bool requires_names,
-    bool& is_variadic,
-    Sem::Type& ty
+    bool& is_variadic
 ) {
     is_variadic = false;
     deque<unique_ptr<Argument>> args;
@@ -96,17 +95,10 @@ parse_function_args(
         s.pop(); // ')'
     }
 
-    ty = Sem::Type("void");
-
-    if(s.peek()->content == "returns") {
-        s.pop();
-        ty = Sem::Type(s);
-    }
-
     return args;
 }
 
-std::tuple<Sem::Type, string, deque<unique_ptr<Argument>>>
+std::tuple<Sem::Type, string, deque<unique_ptr<Argument>>, ManglingScheme>
 parse_function_header(
     Lexer::Stream& s,
     Span& span,
@@ -114,10 +106,31 @@ parse_function_header(
     bool& is_variadic
 ) {
     string name = s.pop()->content;
-    Sem::Type ty;
+    Sem::Type ty = Sem::Type("void");
 
     auto args =
-        parse_function_args(s, span, requires_names, is_variadic, ty);
+        parse_function_args(s, span, requires_names, is_variadic);
 
-    return { ty, name, std::move(args) };
+    if(s.peek()->content == "returns") {
+        s.pop();
+        ty = Sem::Type(s);
+    }
+
+    auto scheme = ManglingScheme::Gearlang;
+
+    if(s.peek()->content == "mangle") {
+        s.pop();
+
+        auto mode = s.pop()->content;
+
+        if(mode == "C") {
+            scheme = ManglingScheme::None;
+        } else if (mode == "C++") {
+            scheme = ManglingScheme::Itanium;
+        } else if (mode == "Gear") {
+            scheme = ManglingScheme::Gearlang;
+        }
+    }
+
+    return { ty, name, std::move(args), scheme };
 }

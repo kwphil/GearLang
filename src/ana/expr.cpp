@@ -34,6 +34,7 @@ SOFTWARE.
 #include <gearlang/ast/vars.hpp>
 #include <gearlang/sem/analyze.hpp>
 #include <gearlang/error.hpp>
+#include <gearlang/func.hpp>
 
 #include <iostream>
 #include <optional>
@@ -77,6 +78,8 @@ unique_ptr<ExprValue> ExprCall::analyze(Analyzer& analyzer) {
     );
 
     Func handle = ref.value();
+
+    identifier = mangle_identifier(handle);
 
     for(auto& arg : args) {
         arg->analyze(analyzer);

@@ -103,7 +103,7 @@ llvm::Value* ExprAssign::generate(Context& ctx) {
 // Gets the function by name, and creates a call for it
 // Parses the expressions for each argument and calls it
 llvm::Value* ExprCall::generate(Context& ctx) {
-    llvm::Function* func = ctx.module->getFunction(callee);
+    llvm::Function* func = ctx.module->getFunction(identifier);
 
     std::vector<llvm::Value*> arg_values;
     
