@@ -76,12 +76,12 @@ namespace Sem {
         };
 
         using Struct = vector<pair<string, shared_ptr<Type>>>; 
+        PrimType prim_type = PrimType::Invalid;
     private:
         static unordered_map<string, Struct*> struct_list;
         static unordered_map<string, Struct*> union_list;
         static unordered_map<string, Type*> alias_list;
 
-        PrimType prim_type = PrimType::Invalid;
         Struct* record_type = nullptr;
         string record_name;
         bool record_is_struct = false; // is false if union 

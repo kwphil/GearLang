@@ -96,8 +96,8 @@
     * [X] Typedefs
     * [ ] Inline functions
   * [ ] Basic C++ Functionality
-    * [ ] Common Name Mangling
-    * [ ] Extern "C++" support
+    * [X] Common Name Mangling
+    * [X] Extern "C++" support
     * [ ] Simple class interop
 * [ ] **Optimizer**
   * [X] Constant folding

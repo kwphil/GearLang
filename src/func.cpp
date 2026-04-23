@@ -72,12 +72,63 @@ void call_exit(Context& ctx, llvm::Value* retVal) {
     ctx.builder.CreateUnreachable();
 }
 
+inline const char* itanium_prim_parse(Sem::Type& ty) {
+    using enum Sem::Type::PrimType;
+
+    switch(ty.prim_type) {
+        case(Void): return "v";
+        case(Char): return "c";
+        case(Bool): return "b";
+        case(I8):
+        case(U8):   return "h";
+        case(I16):  return "s";
+        case(U16):  return "t";
+        case(I32):  return "i";
+        case(U32):  return "j";
+        case(I64):  return "l";
+        case(U64):  return "m";
+        case(F32):  return "f";
+        case(F64):  return "d";
+        case(Invalid): throw std::runtime_error(ty.dump());
+    }
+}
+
 string mangle_identifier(Sem::Func handle) {
     string identifier;
     if(handle.mangle == ManglingScheme::None) {
         identifier = handle.name;
     } else if(handle.mangle == ManglingScheme::Itanium) {
-        throw std::runtime_error("unimplemented itanium");
+        identifier = "_Z";
+
+        vector<string> name_split = split_string(handle.name, '.');
+
+        // Indicate N marker for nested identifiers
+        if(name_split.size() > 1) {
+            identifier += 'N';
+        }
+
+        for(auto& n : name_split) {
+            identifier += std::to_string(n.length()) + n;
+        }
+
+        identifier += 'E';
+
+        if(handle.args.size() == 0) {
+            identifier += "v";
+            return identifier;
+        }
+
+        for(auto& arg : handle.args) {
+            if(arg.is_primitive()) {
+                identifier += itanium_prim_parse(arg);
+            }
+
+            if(arg.is_pointer_ty()) {
+                identifier += 
+                    std::string(arg.pointer_level(), 'P') + 
+                    itanium_prim_parse(arg);
+            }
+        }
     } else if(handle.mangle == ManglingScheme::MSVC) {
         throw std::runtime_error("unimplemented MSVC");
     } else if(handle.mangle == ManglingScheme::Gearlang) {

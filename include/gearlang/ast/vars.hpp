@@ -158,7 +158,7 @@ namespace Ast::Nodes {
         Argument(string name, Sem::Type ty, Span span)
         : ExprVar(name, span), name(name) { set_type(ty); }
 
-        static unique_ptr<Argument> parse(Lexer::Stream& s);
+        static unique_ptr<Argument> parse(Lexer::Stream& s, bool requires_names);
 
         virtual unique_ptr<Sem::ExprValue> analyze(Sem::Analyzer& analyzer) override;
         llvm::Value* generate(Context& ctx) override { return nullptr; } 

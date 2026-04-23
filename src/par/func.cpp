@@ -47,8 +47,13 @@ using std::string;
 using std::unique_ptr;
 using std::deque;
 
-unique_ptr<Argument> Argument::parse(Lexer::Stream& s) {
-    string arg = s.pop()->content;
+unique_ptr<Argument> Argument::parse(Lexer::Stream& s, bool requires_names) {
+    string arg = "";
+    if(s.next()->content == ":" || requires_names) {
+        arg = s.pop()->content;
+        s.expect(":");
+    }
+
     Sem::Type ty(s);
 
     return std::make_unique<Argument>(arg, ty, s.peek()->span);

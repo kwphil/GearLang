@@ -81,7 +81,11 @@ parse_function_args(
                 break;
             }
 
-            args.push_back(Argument::parse(s));
+            if(requires_names && s.next()->content != ":") {
+                Error::throw_error(span, "Function definitions require names", Error::ErrorCodes::FUNCTION_INVALID_ARGS);
+            }
+
+            args.push_back(Argument::parse(s, requires_names));
 
             if(s.peek()->content == ")")
                 break;
@@ -121,6 +125,8 @@ parse_function_header(
     if(s.peek()->content == "mangle") {
         s.pop();
 
+        s.expect(Lexer::Type::ParenOpen);
+
         auto mode = s.pop()->content;
 
         if(mode == "C") {
@@ -130,6 +136,8 @@ parse_function_header(
         } else if (mode == "Gear") {
             scheme = ManglingScheme::Gearlang;
         }
+
+        s.expect(Lexer::Type::ParenClose);
     }
 
     return { ty, name, std::move(args), scheme };

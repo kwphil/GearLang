@@ -51,6 +51,7 @@ static char get_escape(char c, Span span) {
         case '0': return '\0';
         case 'n': return '\n';
         case 't': return '\t';
+        case '"': return '"';
         case '\\': return '\\';
         default:
             Error::throw_warning(
