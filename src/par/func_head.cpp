@@ -117,10 +117,13 @@ parse_function_header(
 
     if(s.peek()->content == "returns") {
         s.pop();
+        span.end = s.peek()->span.end;
         ty = Sem::Type(s);
     }
 
     auto scheme = ManglingScheme::Gearlang;
+
+    span.end = s.peek()->span.end;
 
     if(s.peek()->content == "mangle") {
         s.pop();
@@ -137,7 +140,16 @@ parse_function_header(
             scheme = ManglingScheme::Gearlang;
         }
 
+        span.end = s.peek()->span.end;
         s.expect(Lexer::Type::ParenClose);
+    }
+
+    if(name.contains('.') && scheme != ManglingScheme::Itanium) {
+        Error::throw_error(
+            span,
+            "Non-C++ function declarations cannot contain a `.`",
+            Error::ErrorCodes::INVALID_AST
+        );
     }
 
     return { ty, name, std::move(args), scheme };

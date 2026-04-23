@@ -61,6 +61,7 @@ std::unique_ptr<Lexer::Token> Lexer::Stream::next() {
 }
 
 std::unique_ptr<Lexer::Token> Lexer::Stream::pop() {
+    peek(); // safety checks of peek
     return std::make_unique<Lexer::Token>(content[index++]);
 }
 

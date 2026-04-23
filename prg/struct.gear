@@ -1,4 +1,4 @@
-extern("C") fn printf(s char^, ...);
+extern("C") fn printf(char^, ...);
 
 struct foo {
     x i16;
@@ -6,7 +6,7 @@ struct foo {
     z foo^;
 };
 
-fn bar(s2 foo^) {
+fn bar(s2: foo^) {
     let s3 = @s2;
     printf("in bar: %d\n", s3.x);
 }

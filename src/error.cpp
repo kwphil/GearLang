@@ -98,16 +98,48 @@ void throw_error_base(
     const char* err,
     ErrorCodes code
 ) {
-    std::string number = std::format("{}:{}", span.line, span.col);
-    std::string highlight;
+    std::cerr << ERROR_STYLE << "Error: " << RESET_STYLE
+              << MESSAGE_STYLE << err << RESET_STYLE << '\n';
 
-    for(size_t i = 0; i < span.col+number.size()+1; i++) highlight.push_back(' ');
-    for(size_t i = 0; i < span.end-span.start; i++) highlight.push_back('^');
+    size_t current_index = 0;
 
-    std::cerr << ERROR_STYLE << "Error: " << RESET_STYLE << MESSAGE_STYLE << err << RESET_STYLE << '\n' <<
-        SPAN_STYLE << span.line << ":" << span.col << ": " << RESET_STYLE << 
-        error_split_file[span.line-1] << '\n' <<
-        ERROR_STYLE << highlight << RESET_STYLE << std::endl;
+    for (size_t line = 0; line < error_split_file.size(); ++line) {
+        const std::string& text = error_split_file[line];
+        size_t line_start_index = current_index;
+        size_t line_end_index = current_index + text.size();
+
+        current_index = line_end_index + 1;
+
+        if (line_end_index < span.start || line_start_index > span.end)
+            continue;
+
+        std::cerr << SPAN_STYLE
+                  << (line + 1) << " | " << RESET_STYLE
+                  << text << '\n';
+
+        size_t highlight_start = (span.start > line_start_index)
+            ? span.start - line_start_index
+            : 0;
+
+        size_t highlight_end = (span.end < line_end_index)
+            ? span.end - line_start_index
+            : text.size();
+
+        std::stringstream highlight;
+
+        // align highlight under text
+        std::string prefix = std::to_string(line + 1);
+        highlight << std::string(prefix.size(), ' ');
+
+        highlight << SPAN_STYLE << " | " << RESET_STYLE << ERROR_STYLE;
+
+        highlight << std::string(highlight_start, ' ');
+        highlight << std::string(highlight_end - highlight_start, '^');
+
+        if (!highlight.str().empty()) {
+            std::cerr << ERROR_STYLE << highlight.str() << RESET_STYLE << '\n';
+        }
+    }
 }
 
 void Error::throw_error_and_recover(
@@ -163,16 +195,48 @@ void Error::throw_warning(
     Span const& span,
     const char* warning
 ) {
-    std::string number = std::format("{}:{}", span.line, span.col);
-    std::string highlight;
+    std::cerr << WARNING_STYLE << "Warning: " << RESET_STYLE
+              << MESSAGE_STYLE << warning << RESET_STYLE << '\n';
 
-    for(size_t i = 0; i < span.col+number.size()+1; i++) highlight.push_back(' ');
-    for(size_t i = 0; i < span.end-span.start; i++) highlight.push_back('^');
-    
-    std::cerr << WARNING_STYLE << "Warning: " << RESET_STYLE << MESSAGE_STYLE << warning << RESET_STYLE << '\n' <<
-        SPAN_STYLE << span.line << ":" << span.col << ": " << RESET_STYLE << 
-        error_split_file[span.line-1] << '\n' <<
-        WARNING_STYLE << highlight << RESET_STYLE << std::endl;
+    size_t current_index = 0;
+
+    for (size_t line = 0; line < error_split_file.size(); ++line) {
+        const std::string& text = error_split_file[line];
+        size_t line_start_index = current_index;
+        size_t line_end_index = current_index + text.size();
+
+        current_index = line_end_index + 1;
+
+        if (line_end_index < span.start || line_start_index > span.end)
+            continue;
+
+        std::cerr << SPAN_STYLE
+                  << (line + 1) << " | " << RESET_STYLE
+                  << text << '\n';
+
+        size_t highlight_start = (span.start > line_start_index)
+            ? span.start - line_start_index
+            : 0;
+
+        size_t highlight_end = (span.end < line_end_index)
+            ? span.end - line_start_index
+            : text.size();
+
+        std::stringstream highlight;
+
+        // align highlight under text
+        std::string prefix = std::to_string(line + 1);
+        highlight << std::string(prefix.size(), ' ');
+
+        highlight << SPAN_STYLE << " | " << RESET_STYLE << WARNING_STYLE;
+
+        highlight << std::string(highlight_start, ' ');
+        highlight << std::string(highlight_end - highlight_start, '^');
+
+        if (!highlight.str().empty()) {
+            std::cerr << highlight.str() << '\n';
+        }
+    }
 }
 
 void Error::setup_error_manager (const char* filename, bool _disable_color) {

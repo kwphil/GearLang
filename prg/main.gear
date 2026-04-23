@@ -1,7 +1,13 @@
 // Grabbing C stdio
 include("C", "sys", "stdio.h");
 
-extern fn std.strlen(char^) returns i32 mangle("C++"); 
+fn foo.bar(char, i32, u16) 
+    returns i32
+    mangle("C++") 
+{
+    printf("\"C++\" function called correctly!\n");
+    return 0;
+}
 
 export let higher: i32;
 
@@ -48,10 +54,9 @@ fn main(argc: i32, argv: char^^) {
         higher = 14;
     }
 
-    let s = "Hello, World! %d, %d\n"; 
-    let size = std.strlen(s);
+    foo.bar('h', 3, 3);
 
-    printf(s, x, higher, size);
+    printf("Hello, World! %d, %d\n", x, higher);
     return foo(x, y);
 }
 

@@ -85,6 +85,8 @@
     * [X] Global scope functions
     * [ ] Top level modules
     * [ ] Submodules
+  * [ ] Impls
+    * [ ] Static impls
 * [ ] **Compatibility**
   * [X] Basic C Functions
     * [x] C Runtime

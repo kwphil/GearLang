@@ -1,4 +1,4 @@
-extern("C") fn puts(s char^); 
+extern("C") fn puts(char^); 
 
 fn no_return returns i32 {
     if(1) { } else return 0;
