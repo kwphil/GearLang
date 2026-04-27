@@ -49,6 +49,8 @@ public:
     llvm::IRBuilder<> builder;
     /// @brief LLVM module representing the generated code
     std::unique_ptr<llvm::Module> module;
+    /// @brief LLVM Data layout information
+    llvm::DataLayout layout_query;
 
     /// @brief Start block for code outside functions
     std::unique_ptr<llvm::BasicBlock*> global_entry; 
@@ -58,7 +60,8 @@ public:
     llvm::Function* current_fn;
 
     Context()
-    : builder(llvmCtx), module(std::make_unique<llvm::Module>("gearlang", llvmCtx)) { }
+    : builder(llvmCtx), module(std::make_unique<llvm::Module>("gearlang", llvmCtx)),
+      layout_query(module.get()) { }
 
     /// @brief Create an alloca instruction in the entry block of a function
     /// @param function Function in which to create the alloca

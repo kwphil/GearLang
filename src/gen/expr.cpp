@@ -39,50 +39,106 @@ SOFTWARE.
 #include <gearlang/ast/stmt.hpp>
 #include <gearlang/ast/func.hpp>
 #include <gearlang/ast/vars.hpp>
+#include <gearlang/ast/lit.hpp>
 
 #include <gearlang/error.hpp>
 #include <gearlang/etc.hpp>
 
 using namespace Ast::Nodes;
+using enum Sem::Type::PrimType;
 
-#define CREATE_OP(method, name) \
-    out = ctx.builder.method(lhs, rhs, name)
+#define CREATE_OP(method) \
+    out = ctx.builder.method(lhs, rhs)
+
+inline llvm::Value* cast_float(llvm::Value* val, Sem::Type ty, Context& ctx) {
+    if(ty.is_float()) {
+        llvm::Type* new_ty;
+
+        if(ty.prim_type == F32) {
+            new_ty = Sem::Type("u32").to_llvm(ctx);
+        } else if(ty.prim_type == F64) {
+            new_ty = Sem::Type("u64").to_llvm(ctx);
+        } else {
+            throw std::runtime_error("Unexpected float type");
+        }
+
+        return ctx.builder.CreateFPToUI(val, new_ty);
+    }
+
+    // No need to cast
+    return val;
+}
 
 // Generates both sides of the expression, and stores them in temporary values
 // Matches through each operation and stores the output as a temp
 // Returns the temporary variable
 llvm::Value* ExprOp::generate(Context& ctx) {
     llvm::Value* lhs = left->generate(ctx);
-    llvm::Value* rhs = right->generate(ctx);
+    llvm::Value* rhs;
+    if(right) { // Unary operations won't have an rhs
+        rhs = right->generate(ctx);
+    }
     llvm::Value* out;
+
+    // Bitwise operations
+    if(type >= And && type <= Sizeof) {
+        llvm::Value* l = cast_float(lhs, *left->get_type(), ctx);
+        llvm::Value* r;
+        if(right)
+            r = cast_float(rhs, *right->get_type(), ctx);
+
+        switch(type) {
+            case And: out = ctx.builder.CreateAnd(l, r);  break;
+            case Or:  out = ctx.builder.CreateOr(l, r);   break;
+            case Xor: out = ctx.builder.CreateXor(l, r);  break;
+            case Not: out = ctx.builder.CreateNot(l);     break;
+            case Sizeof: {
+                auto ty = llvm::Type::getInt8Ty(ctx.llvmCtx);
+
+                out = llvm::ConstantInt::get(ty,
+                    ctx.layout_query.getTypeAllocSize(ty) 
+                );
+
+                break;
+            }
+            default: throw std::runtime_error("Unknown operation");
+        }
+
+        assert(out);
+        return out;
+    }
 
     if(ty->is_float()) {
         switch(type) {
-            case Add: CREATE_OP(CreateFAdd, "faddtmp"); break;
-            case Sub: CREATE_OP(CreateFSub, "fsubtmp"); break;
-            case Mul: CREATE_OP(CreateFMul, "fmultmp"); break;
-            case Div: CREATE_OP(CreateFDiv, "fdivtmp"); break;
+            case Add: CREATE_OP(CreateFAdd); break;
+            case Sub: CREATE_OP(CreateFSub); break;
+            case Mul: CREATE_OP(CreateFMul); break;
+            case Div: CREATE_OP(CreateFDiv); break;
 
-            case Eq: CREATE_OP(CreateFCmpOEQ, "feqtmp"); break;
-            case Ne: CREATE_OP(CreateFCmpONE, "fnetmp"); break;
-            case Gt: CREATE_OP(CreateFCmpOGT, "fgttmp"); break;
-            case Lt: CREATE_OP(CreateFCmpOLT, "flttmp"); break;
-            case Ge: CREATE_OP(CreateFCmpOGE, "fgetmp"); break;
-            case Le: CREATE_OP(CreateFCmpOLE, "fletmp"); break;
+            case Eq: CREATE_OP(CreateFCmpOEQ); break;
+            case Ne: CREATE_OP(CreateFCmpONE); break;
+            case Gt: CREATE_OP(CreateFCmpOGT); break;
+            case Lt: CREATE_OP(CreateFCmpOLT); break;
+            case Ge: CREATE_OP(CreateFCmpOGE); break;
+            case Le: CREATE_OP(CreateFCmpOLE); break;
+
+            default: break;
         }
     } else {
         switch (type) {
-            case Add: CREATE_OP(CreateAdd, "iaddtmp"); break;
-            case Sub: CREATE_OP(CreateSub, "isubtmp"); break;
-            case Mul: CREATE_OP(CreateMul, "imultmp"); break;
-            case Div: CREATE_OP(CreateSDiv, "idivtmp"); break;
+            case Add: CREATE_OP(CreateAdd); break;
+            case Sub: CREATE_OP(CreateSub); break;
+            case Mul: CREATE_OP(CreateMul); break;
+            case Div: CREATE_OP(CreateSDiv); break;
 
-            case Eq: CREATE_OP(CreateICmpEQ, "feqtmp"); break;
-            case Ne: CREATE_OP(CreateICmpNE, "fnetmp"); break;
-            case Gt: CREATE_OP(CreateICmpSGT, "fgttmp"); break;
-            case Lt: CREATE_OP(CreateICmpSLT, "flttmp"); break;
-            case Ge: CREATE_OP(CreateICmpSGE, "fgetmp"); break;
-            case Le: CREATE_OP(CreateICmpSLE, "fletmp"); break;
+            case Eq: CREATE_OP(CreateICmpEQ); break;
+            case Ne: CREATE_OP(CreateICmpNE); break;
+            case Gt: CREATE_OP(CreateICmpSGT); break;
+            case Lt: CREATE_OP(CreateICmpSLT); break;
+            case Ge: CREATE_OP(CreateICmpSGE); break;
+            case Le: CREATE_OP(CreateICmpSLE); break;
+
+            default: break;
         }
     }
 

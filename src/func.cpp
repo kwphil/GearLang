@@ -89,7 +89,7 @@ inline const char* itanium_prim_parse(Sem::Type& ty) {
         case(U64):  return "m";
         case(F32):  return "f";
         case(F64):  return "d";
-        case(Invalid): throw std::runtime_error(ty.dump());
+        default: throw std::runtime_error(ty.dump());
     }
 }
 

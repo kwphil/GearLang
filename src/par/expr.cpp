@@ -56,11 +56,37 @@ ExprOp::Type match_op(string content) {
     if(content == "!=") return Ne;
     if(content == ">=") return Ge;
     if(content == "<=") return Le;
+    if(content == "and")return And;
+    if(content == "or") return Or;
+    if(content == "xor")return Xor;
     throw std::runtime_error("Unknown type");
 }
 
 
 pExpr Expr::parseExpr(Lexer::Stream& s) {
+    if(s.peek()->type == Lexer::Type::Operator) {
+        Span span = s.peek()->span;
+        string op = s.pop()->content;
+        auto ex = parseTerm(s);
+        span.end = ex->span_meta.end;
+
+        ExprOp::Type type;
+
+        if(op == "not") { type = ExprOp::Type::Not; }
+        if(op == "sizeof") { type = ExprOp::Type::Sizeof; }
+
+        if(type < ExprOp::Type::Not) {
+            Error::throw_error_and_recover(
+                span,
+                "Operator is not a unary operator",
+                Error::ErrorCodes::INVALID_AST, s
+            );
+            return nullptr;
+        }
+
+        return std::make_unique<ExprOp>(type, std::move(ex), nullptr, span);
+    }
+    
     pExpr left = parseTerm(s);
     
     //no operator 

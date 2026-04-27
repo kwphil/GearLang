@@ -43,7 +43,16 @@ using namespace Sem;
 
 unique_ptr<ExprValue> ExprOp::analyze(Analyzer& analyzer) {
     unique_ptr<ExprValue> lhs = left->analyze(analyzer);
-    unique_ptr<ExprValue> rhs = right->analyze(analyzer);
+    unique_ptr<ExprValue> rhs;
+
+    // Unary operations
+    if(!right) {
+        set_type(lhs->ty);
+        return 
+            std::make_unique<ExprValue>(lhs->is_const || type == Sizeof, lhs->ty);
+    }
+
+    rhs = right->analyze(analyzer);
 
     if(!analyzer.type_is_compatible(lhs->ty, rhs->ty)) {
         assert(left->get_type() != std::nullopt);

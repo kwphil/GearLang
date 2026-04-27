@@ -17,7 +17,7 @@ export fn foo(
     _a: i32, 
     _b: i32,
 ) returns i32 {
-    return _a + _b;
+    return sizeof _a;
 }
 
 fn main(argc: i32, argv: char^^) {
