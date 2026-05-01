@@ -93,6 +93,8 @@ void init_program(argparse::ArgumentParser& program) {
 std::unordered_map<std::string, std::unique_ptr<Ffi>> ffi_list;
 int Optimizer::opts = 0;
 
+vector<unique_ptr<NodeBase>> load_module(string&, Span&, string&, string&);
+
 Ast::Program build_tree(const Options& opts) {
     Lexer::Stream tokens;
     Ast::Program root;
@@ -139,6 +141,12 @@ Ast::Program build_tree(const Options& opts) {
 
     // Fill in the rest of the types
     Type::parse_unparsed();
+
+    string iface = "iface";
+    string build_dir = "/workspaces/GearLang";
+    string src_path = "/workspaces/GearLang/prg/mod_test";
+    Span span = { "", 0, 0, 0, 0 };
+    root.add_nodes(load_module(iface, span, build_dir, src_path));
 
     RUN_STEP("analyzing",
         analyzer.analyze(root.content);

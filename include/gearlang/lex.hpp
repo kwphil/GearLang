@@ -125,6 +125,8 @@ public:
     /// @brief List of tokens in the stream
     std::vector<Token> content;
 
+    /// @brief Resets the index back to 0
+    inline void reset() { index = 0; }
     /// @brief Check if there are more tokens in the stream
     bool has();
     /// @brief Peek at the next token without consuming it

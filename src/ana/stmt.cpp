@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <gearlang/ast/stmt.hpp>
 #include <gearlang/ast/func.hpp>
+#include <gearlang/ast/branch.hpp>
 #include <gearlang/sem/analyze.hpp>
 #include <gearlang/etc.hpp>
 #include <gearlang/func.hpp>

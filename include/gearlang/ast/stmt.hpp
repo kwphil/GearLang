@@ -129,53 +129,6 @@ namespace Ast::Nodes {
         virtual llvm::Value* generate(Context& ctx) override { return nullptr; }
     };
 
-    /// @brief Node for if statements
-    class If : public Stmt {
-    protected:
-        /// @brief The condition expression
-        pExpr cond;
-        /// @brief The expression to execute if the condition is true
-        unique_ptr<NodeBase> expr;
-
-    public:
-        If(unique_ptr<NodeBase> expr, pExpr cond, Span span)
-        : Stmt(span), cond(std::move(cond)), expr(std::move(expr)) { }
-
-        If(If&&) = default;
-        If& operator=(If&&) = default;
-        If(const If&) = delete;
-
-        static unique_ptr<If> parse(Lexer::Stream& s);
-
-        virtual bool analyze(Sem::Analyzer& analyzer) override;
-        llvm::Value* generate(Context& ctx) override;
-
-        virtual std::string to_string() override;
-    };
-
-    /// @brief If/Else
-    class Else : public If {
-    private:
-        /// @brief The condition expression for false if
-        std::unique_ptr<NodeBase> else_expr;
-
-    public:
-        Else(
-            std::unique_ptr<NodeBase> expr,
-            If&& if_expr
-        ) : If(std::move(if_expr)), else_expr(std::move(expr)) { }
-
-        static std::unique_ptr<Else> parse(
-            std::unique_ptr<If>,
-            Lexer::Stream& s
-        );
-
-        virtual bool analyze(Sem::Analyzer& analyzer) override;
-        llvm::Value* generate(Context& ctx);
-
-        virtual std::string to_string() override;
-    };
-
     /// @brief Node for variable declarations
     class Let : public Stmt {
     private:
@@ -185,6 +138,8 @@ namespace Ast::Nodes {
         pExpr expr;
         /// @brief The type of the variable
         unique_ptr<Sem::Type> ty;
+        /// @brief Comes from another file
+        bool is_extern;
     public:
         /// @brief The LLVM variable
         llvm::Value* var;
@@ -194,13 +149,14 @@ namespace Ast::Nodes {
         /// @brief Run an error if not global and this is true. Will build with public linkage?
         bool is_public;
 
-        Let(std::string& target, pExpr expr, unique_ptr<Sem::Type> ty, Span span, bool is_public)
-        : Stmt(span), target(target), expr(std::move(expr)), ty(std::move(ty)), is_public(is_public) {}
+        Let(std::string& target, pExpr expr, unique_ptr<Sem::Type> ty, Span span, bool is_public, bool is_extern)
+        : Stmt(span), target(target), expr(std::move(expr)), ty(std::move(ty)), is_extern(is_extern), is_public(is_public) { }
 
         static std::unique_ptr<Let> parse(Lexer::Stream& s);
 
         std::string get_name() { return target; }
         Sem::Type get_type() { return *ty; }
+        void prefix(string prefix) { target = prefix + '.' + target; }
         llvm::Value* generate(Context& ctx) override;
         bool analyze(Sem::Analyzer& analyzer) override; 
         virtual std::string to_string() override;
@@ -223,52 +179,18 @@ namespace Ast::Nodes {
         virtual std::string to_string() override;
     };
 
-    /// @brief Expression node for blocks of nodes
-    class Block : public Stmt {
+    /// @brief Import for modules
+    class Mod : public Stmt {
     private:
-        /// @brief The list of nodes in the block
-        std::vector<std::unique_ptr<NodeBase>> nodes;
-    
+        /// @brief The name of the module
+        string mod;
     public:
-        Block(std::vector<std::unique_ptr<NodeBase>>&& nodes, Span span)
-        : Stmt(span), nodes(std::move(nodes)) { }
+        Mod(string mod, Span span)
+        : Stmt(span), mod(mod) { } 
 
-        static std::unique_ptr<Block> parse(Lexer::Stream& s);
-
-        virtual bool analyze(Sem::Analyzer& analyzer) override;
-        llvm::Value* generate(Context& ctx) override;
-        virtual std::string to_string() override;
-    };
-
-    class While : public Stmt {
-    private:
-        std::unique_ptr<NodeBase> code;
-        std::unique_ptr<Expr> cond;
-
-    public:
-        While(std::unique_ptr<NodeBase> code, std::unique_ptr<Expr> cond, Span span)
-        : Stmt(span), code(std::move(code)), cond(std::move(cond)) { }
-
-        static std::unique_ptr<While> parse(Lexer::Stream& s);
-
-        virtual bool analyze(Sem::Analyzer& analyzer);
-        llvm::Value* generate(Context& ctx) override;
-        virtual std::string to_string() override { return ""; }
-    };
-
-    class Do : public Stmt {
-    private:
-        std::unique_ptr<NodeBase> code;
-        std::unique_ptr<Expr> cond;
-
-    public:
-        Do(std::unique_ptr<NodeBase> code, std::unique_ptr<Expr> cond, Span span)
-        : Stmt(span), code(std::move(code)), cond(std::move(cond)) { }
-
-        static std::unique_ptr<Do> parse(Lexer::Stream& s);
-
-        virtual bool analyze(Sem::Analyzer& analyzer);
-        llvm::Value* generate(Context& ctx) override;
-        virtual std::string to_string() override { return ""; };
+        static std::unique_ptr<Mod> parse(Lexer::Stream& s);
+        virtual bool analyze(Sem::Analyzer& analyzer) override { return false; }
+        llvm::Value* generate(Context& ctx) override { return nullptr; } // Nothing to do, module is finished after the analyze step
+        virtual std::string to_string() override { return (string)"{ type:\"Mod\", name:\"" + mod + "\" }"; };
     };
 }

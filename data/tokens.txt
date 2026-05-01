@@ -1,2 +1,2 @@
-fn let comptime assert test if else extern return export array include i8 i16 i32 i64 u8 u16 u32 u64 f16 f32 f64 uf16 uf32 uf64 char void
+fn let comptime assert test if else extern return export array include mod i8 i16 i32 i64 u8 u16 u32 u64 f16 f32 f64 uf16 uf32 uf64 char void
 + - * / => : == != >= <= < > and or not xor sizeof

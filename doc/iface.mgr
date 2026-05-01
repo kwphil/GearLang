@@ -1,0 +1,20 @@
+; This is an example of a modgear file
+; This creates signatures to be used in other files
+; Will be placed in the build dir
+; Each signature here will be prefixed by the name of the file
+; So add -> iface.add -> 9iface.add2.3i32.3i32
+; These will be generated on the first attempt to use the module
+
+; Comments are prefixed by a semicolon
+
+; After the statement is finished, there will be a span provided for error handling
+
+; Generated code for an interface to use.
+
+; Information about the module will be provided with a colon, followed by a keyword
+; In this case, it lists the path to the source file
+; (I'm using workspaces as of writing this so I'm basing it off that)
+:FILE /workspaces/GearLang/prg/mod_test/iface.gr
+
+export fn add(i32, i32) returns i32; 1 1 0 63
+export let glob_var: i32; 5 1 66 90

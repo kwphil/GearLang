@@ -90,8 +90,18 @@ unique_ptr<Let> Let::parse(Lexer::Stream& s) {
     Span new_span = start_span;
     new_span.end = s.peek()->span.end;
 
+    bool is_public = check_keyword("export");
+
+    if(is_public && !ty) {
+        Error::throw_error_and_recover(
+            new_span,
+            "Exported variables require an explicit type",
+            Error::ErrorCodes::BAD_TYPE
+        );
+    }
+
     return std::make_unique<Let>(
         target, std::move(expr), std::move(ty), new_span,
-        check_keyword("export")
+        is_public, check_keyword("extern")
     );
 }

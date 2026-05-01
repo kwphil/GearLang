@@ -116,6 +116,8 @@ namespace Ast::Nodes {
         ) : Stmt(span), callee(callee), ty(ty), args(std::move(args)), 
             is_variadic(is_variadic), mangling_scheme(scheme) { }
 
+        void prefix(string prefix) { callee = prefix + '.' + callee; }
+
         static unique_ptr<ExternFn> parse(Lexer::Stream& s);
 
         virtual bool analyze(Sem::Analyzer& analyzer) override;

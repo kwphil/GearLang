@@ -36,6 +36,7 @@ SOFTWARE.
 #include <format>
 
 #include <gearlang/ast/stmt.hpp>
+#include <gearlang/ast/branch.hpp>
 
 using namespace Ast::Nodes;
 using Sem::Type;
@@ -151,4 +152,13 @@ std::unique_ptr<While> While::parse(Lexer::Stream& s) {
     auto block = NodeBase::parse(s);
 
     return std::make_unique<While>(std::move(block), std::move(cond), span);
+}
+
+std::unique_ptr<Mod> Mod::parse(Lexer::Stream& s) {
+    Span span = s.peek()->span;
+    s.expect("mod");
+    span.end = s.peek()->span.end;
+    string name = s.pop()->content;
+
+    return std::make_unique<Mod>(name, span);
 }

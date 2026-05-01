@@ -1,0 +1,9 @@
+include("C", "sys", "stdio.h");
+
+mod iface;
+
+fn main { 
+    let num = iface.add(iface.glob_var, 3);
+
+    printf("%d\n", num);
+}

@@ -35,7 +35,7 @@ SOFTWARE.
 #include <string>
 #include <format>
 
-#include <gearlang/ast/stmt.hpp>
+#include <gearlang/ast/branch.hpp>
 
 using namespace Ast::Nodes;
 using Sem::Type;

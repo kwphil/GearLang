@@ -49,7 +49,9 @@ namespace Error {
         FUNCTION_INVALID_ARGS,
         QUALIFIER_NOT_ALLOWED,
         INVALID_GLOBAL_OPERATION,
+        INVALID_MODULE,
         INVALID_AST,
+        INVALID_EXTERN,
         UNKNOWN_FILE,
         BAD_TYPE,
     };

@@ -34,6 +34,10 @@
   * [ ] Basic modules
   * [ ] Submodules
   * [ ] Directory hierarchies
+  * [ ] Modgear
+    * [ ] Documentation
+    * [ ] Generation
+    * [ ] Parsing
 * [X] **Lexer**
   * [x] Basic functionality
     * [x] Token stream generation
@@ -61,6 +65,7 @@
   * [x] Simple Expressions
     * [x] Arithmetic
     * [x] Comparisons
+    * [X] Bitwise
   * [ ] Branching
     * [x] If statements
     * [x] If/Else
@@ -82,6 +87,10 @@
     * [x] Variable variable types
     * [X] Implicit matching
   * [ ] Name mangling
+    * [X] Itanium
+      * [X] Namespaces
+    * [ ] MSVC
+      * [ ] Namespaces
     * [X] Global scope functions
     * [ ] Top level modules
     * [ ] Submodules

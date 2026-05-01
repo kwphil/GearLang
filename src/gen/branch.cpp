@@ -40,7 +40,8 @@ SOFTWARE.
                                    
 #include <gearlang/ast/base.hpp>   
 #include <gearlang/ast/stmt.hpp>   
-#include <gearlang/ast/expr.hpp>   
+#include <gearlang/ast/expr.hpp> 
+#include <gearlang/ast/branch.hpp>  
 #include <gearlang/sem/type.hpp> 
 #include <gearlang/ctx.hpp>
 

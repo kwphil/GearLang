@@ -81,6 +81,7 @@ using namespace Error;
 
 std::unordered_set<ErrorCodes> codes;
 
+std::string file_name;
 std::ifstream input_file;
 std::vector<std::string> error_split_file;
 bool disable_color;
@@ -98,6 +99,10 @@ void throw_error_base(
     const char* err,
     ErrorCodes code
 ) {
+    if(span.file != "" && file_name != span.file) {
+        setup_error_manager(span.file.c_str(), disable_color);
+    }
+
     std::cerr << ERROR_STYLE << "Error: " << RESET_STYLE
               << MESSAGE_STYLE << err << RESET_STYLE << '\n';
 
@@ -195,6 +200,10 @@ void Error::throw_warning(
     Span const& span,
     const char* warning
 ) {
+    if(span.file != "" && file_name != span.file) {
+        setup_error_manager(span.file.c_str(), disable_color);
+    }
+
     std::cerr << WARNING_STYLE << "Warning: " << RESET_STYLE
               << MESSAGE_STYLE << warning << RESET_STYLE << '\n';
 

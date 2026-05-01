@@ -48,6 +48,36 @@ using namespace Sem;
 bool Let::analyze(Analyzer& analyzer) {
     unique_ptr<ExprValue> rvalue;
 
+    if(is_public && is_extern) {
+        Error::throw_error_and_recover(
+            span_meta,
+            "Can't assign as both export and extern",
+            Error::ErrorCodes::INVALID_EXTERN
+        );
+
+        return false;
+    }
+
+    if(is_extern && expr) {
+        Error::throw_error_and_recover(
+            span_meta,
+            "Can't assign as extern and have rvalue",
+            Error::ErrorCodes::INVALID_EXTERN
+        );
+
+        return false;
+    }
+
+    if(is_extern && !analyzer.is_global_scope()) {
+        Error::throw_error_and_recover(
+            span_meta,
+            "Can't assign as extern outside the global scope",
+            Error::ErrorCodes::INVALID_EXTERN
+        );
+
+        return false;
+    }
+
     if(expr) {
         unique_ptr<ExprValue> rvalue = expr->analyze(analyzer);
         assert(expr->get_type() != std::nullopt);

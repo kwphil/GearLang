@@ -1,0 +1,5 @@
+:FILE /workspaces/GearLang/prg/mod_test/iface.gr
+extern fn add ( a : i32 , b : i32 ) returns i32 ; 1 1 0 43
+
+extern let glob_var : i32 ; 5 1 66 92
+

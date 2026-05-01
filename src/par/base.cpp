@@ -37,6 +37,7 @@ SOFTWARE.
 #include <gearlang/ast/stmt.hpp>
 #include <gearlang/ast/expr.hpp>
 #include <gearlang/ast/func.hpp>
+#include <gearlang/ast/branch.hpp>
 #include <gearlang/sem/type.hpp>
 
 #include <gearlang/lex.hpp>
@@ -68,10 +69,19 @@ unique_ptr<NodeBase> NodeBase::parse(Lexer::Stream& s) {
     if(tok == "export") {
         keyword_list.push_back(s.pop()->content);
         return parse(s);
+    } else if(tok == "extern") {
+        if(s.next()->content == "fn") {
+            auto n = ExternFn::parse(s);
+            s.expect(";");
+            return n;
+        }
+        
+        keyword_list.push_back(s.pop()->content);
+        return parse(s);
     }
 
     // no semicolon statements
-    if(tok == "fn") return Function::parse(s);
+    if(tok == "fn") return Function::parse(s); 
     else if(tok == "{")  return Block::parse(s);
     else if(tok == "while") return While::parse(s);
     else if(tok == "if") {
@@ -88,8 +98,8 @@ unique_ptr<NodeBase> NodeBase::parse(Lexer::Stream& s) {
 
     if(tok == "let")         out = Let::parse(s);
     else if(tok == "do")     out = Do::parse(s);
+    else if(tok == "mod")    out = Mod::parse(s);
     else if(tok == "return") out = Return::parse(s);
-    else if(tok == "extern") out = ExternFn::parse(s);
     else if(tok == "struct") out = Struct::parse(s);
     else if(tok == "include")out = Include::parse(s);
     else                     out = Expr::parse(s);

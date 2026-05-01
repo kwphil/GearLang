@@ -54,12 +54,14 @@ if(DEBUG)
     set(CMAKE_BUILD_TYPE Debug)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
     include(CheckCXXCompilerFlag)
-    set(DEBUG_FLAGS "-fsanitize=address,undefined -O0 -g3 -D_DEBUG")
+    set(FLAGS "-fsanitize=address,undefined -O0 -g3 -D_DEBUG")
     if(NOT DEFINED ABORT_ERROR)
         set(ABORT_ERROR ON)
     endif()
 else()
     message("-- Compiling in release mode")
+    set(CMAKE_BUILD_TYPE Release)
+    set(FLAGS "-O3")
 endif()
 
 if(ABORT_ERROR)
@@ -69,7 +71,7 @@ if(ABORT_ERROR)
     )
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall ${DEBUG_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall ${FLAGS}")
 
 find_package(LLVM REQUIRED CONFIG)
 find_package(Clang REQUIRED CONFIG)
@@ -82,6 +84,7 @@ set(GEARLANG_CORE
     func.cpp
     setup.cpp
     optimize.cpp 
+    iface.cpp
 )
 
 set(GEARLANG_SEM

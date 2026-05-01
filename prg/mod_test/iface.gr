@@ -1,0 +1,5 @@
+export fn add(a: i32, b: i32) returns i32 {
+    return a + b;
+} 
+
+export let glob_var: i32 = 3;

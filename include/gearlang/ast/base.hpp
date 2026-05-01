@@ -44,7 +44,7 @@ namespace Ast::Nodes {
     class NodeBase {
     public:
         /// @brief The line number in the source code where the node appears
-        const Span span_meta;
+        Span span_meta;
         /// @brief Checks if the node is inaccessible
         bool is_dead = false;
 
@@ -79,7 +79,6 @@ namespace Ast {
     public:
         std::deque<std::unique_ptr<Nodes::NodeBase>> content;
         
-    public:
         static Program parse(Lexer::Stream& s);
         inline void add_nodes(std::vector<std::unique_ptr<Nodes::NodeBase>> nodes) {
             for(auto& n : nodes) {
